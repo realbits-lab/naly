@@ -2,11 +2,13 @@
 
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback } from "react"
 
-export default function Login({ searchParams }: { searchParams: { message: string } }) {
+export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const message = searchParams?.get("message");
   const handleGoogleSignIn = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -60,9 +62,9 @@ export default function Login({ searchParams }: { searchParams: { message: strin
           </svg>
           Sign in with Google
         </button>
-        {searchParams?.message && (
+        {message && (
           <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
-            {searchParams.message}
+            {message}
           </p>
         )}
       </div>
