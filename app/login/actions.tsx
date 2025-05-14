@@ -1,3 +1,5 @@
+// Email/password login removed. Google OAuth is now used for authentication.
+
 'use server'
 
 import { revalidatePath } from 'next/cache'
