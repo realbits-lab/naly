@@ -1,7 +1,7 @@
 import Link from "next/link";
 import AuthButton from "./AuthButton";
 
-export default async function Header() {
+export default function Header() {
   return (
     <header className="w-full flex flex-col items-center mb-8">
       <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
