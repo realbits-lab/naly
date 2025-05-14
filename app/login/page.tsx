@@ -1,6 +1,6 @@
+'use client'
+
 import Link from "next/link"
-import { SubmitButton } from "./submit-button"
-import { signIn, signUp } from "./actions"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
