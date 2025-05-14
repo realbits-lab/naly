@@ -1,6 +1,7 @@
 import Link from "next/link";
+import AuthButton from "./AuthButton";
 
-export default function Header() {
+export default async function Header() {
   return (
     <header className="w-full flex flex-col items-center mb-8">
       <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
@@ -12,7 +13,9 @@ export default function Header() {
             <Link href="/pricing" className="text-gray-100">Pricing</Link>
             <Link href="/contact" className="text-gray-100">Contact</Link>
           </div>
-          <Link href="/login" className="ml-8 text-gray-100">Login</Link>
+          <div className="ml-8">
+            <AuthButton />
+          </div>
         </div>
       </nav>
     </header>
