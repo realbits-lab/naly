@@ -18,9 +18,9 @@ export interface Task {
 }
 
 export const metadata: Metadata = constructMetadata({
-  title: "Shadcn UI Blocks Roadmap",
+  title: "Naly Roadmap",
   description:
-    "Shadcn UI Blocks Roadmap is a comprehensive plan outlining the development and release of Shadcn UI Blocks.",
+    "Naly Roadmap is a comprehensive plan outlining the development and release of Naly.",
   alternates: {
     canonical: absoluteUrl("/roadmap"),
   },
@@ -36,7 +36,7 @@ const RoadmapPage = () => {
 
         <div className="max-w-screen-xl mx-auto pb-16 px-6 xl:px-0">
           {/* <h1 className="text-4xl md:text-5xl font-bold text-center">
-            Shadcn UI Blocks Roadmap
+            Naly Roadmap
           </h1> */}
 
           <div className="mt-8 md:mt-12 grid lg:grid-cols-3 gap-x-6 gap-y-12">

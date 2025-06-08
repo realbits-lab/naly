@@ -11,7 +11,7 @@ export const generateMetadata = async (props: {
   const blockDetails = blocks[block];
 
   return constructMetadata({
-    title: `${blockDetails.title} Preview - Shadcn UI Blocks`,
+    title: `${blockDetails.title} Preview - Naly`,
     description: `Fully customized and responsive ${blockDetails.title} Shadcn UI block. Preview, customize, and copy ready-to-use code snippets.`,
     alternates: {
       canonical: absoluteUrl(`/blocks/${block}`),

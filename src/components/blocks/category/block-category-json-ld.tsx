@@ -10,7 +10,7 @@ const BlockCategoryJsonLd = ({ category }: { category: string }) => {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Shadcn UI Blocks",
+        name: "Naly",
         item: app.domain,
       },
       {
@@ -29,7 +29,7 @@ const BlockCategoryJsonLd = ({ category }: { category: string }) => {
   };
   const website: WebSite = {
     "@type": "WebSite",
-    name: "Shadcn UI Blocks",
+    name: "Naly",
     url: app.domain,
   };
   const faqPage: FAQPage = {

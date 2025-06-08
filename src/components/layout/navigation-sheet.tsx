@@ -30,7 +30,7 @@ export function NavigationSheet() {
         <SheetHeader className="pb-12">
           <Link href="/" className="flex items-center gap-2">
             <Logo className="font-bold" />
-            <span className="font-bold">Shadcn UI Blocks</span>
+            <span className="font-bold">Naly</span>
           </Link>
         </SheetHeader>
 

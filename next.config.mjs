@@ -8,7 +8,7 @@ const nextConfig = {
         has: [
           {
             type: "host",
-            value: "shadcn-ui-blocks.akashmoradiya.com",
+            value: "naly.akashmoradiya.com",
           },
         ],
         permanent: true,

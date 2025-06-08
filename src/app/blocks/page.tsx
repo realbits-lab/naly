@@ -4,9 +4,9 @@ import { absoluteUrl } from "@/lib/utils";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Shadcn UI Blocks",
+  title: "Naly",
   description:
-    "Shadcn UI Blocks is a collection of ready-to-use code snippets for web developers to preview, customize, and copy.",
+    "Naly is a collection of ready-to-use code snippets for web developers to preview, customize, and copy.",
   alternates: {
     canonical: absoluteUrl("/blocks"),
   },

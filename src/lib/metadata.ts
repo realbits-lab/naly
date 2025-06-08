@@ -7,14 +7,14 @@ export const constructMetadata = (metadata: Metadata): Metadata => {
     openGraph: {
       title: metadata.title!,
       description: metadata.description!,
-      siteName: "Shadcn UI Blocks",
+      siteName: "Naly",
       type: "website",
       images: [
         {
           url: "/images/og-image.png",
           height: 630,
           width: 1200,
-          alt: "Customized Shadcn UI Blocks & Components",
+          alt: "Customized Naly & Components",
         },
       ],
       locale: "en_US",

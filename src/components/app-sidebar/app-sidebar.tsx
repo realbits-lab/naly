@@ -21,7 +21,7 @@ export function AppSidebar() {
           <div className="text-foreground flex items-center font-bold gap-2">
             <Logo className="h-7 w-7" />
             <span className="group-data-[state=collapsed]:hidden whitespace-nowrap">
-              Shadcn UI Blocks
+              Naly
             </span>
           </div>
         </Link>

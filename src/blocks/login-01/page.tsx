@@ -40,7 +40,7 @@ const Login01Page = () => {
       <div className="max-w-xs w-full flex flex-col items-center">
         <Logo className="h-9 w-9" />
         <p className="mt-4 text-xl font-bold tracking-tight">
-          Log in to Shadcn UI Blocks
+          Log in to Naly
         </p>
 
         <Button className="mt-8 w-full gap-3">

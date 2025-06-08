@@ -15,7 +15,7 @@ const ProductCard = () => {
         <div className="h-8 w-8 flex items-center justify-center bg-primary text-primary-foreground rounded-full">
           <Shapes className="h-5 w-5" />
         </div>
-        Shadcn UI Blocks
+        Naly
       </CardHeader>
 
       <CardContent className="text-[15px] text-muted-foreground px-5">

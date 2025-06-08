@@ -40,7 +40,7 @@ const InformationBar = () => {
       <p className="text-muted-foreground">
         Results for{" "}
         <span className="text-foreground font-bold text-lg capitalize">
-          &quot;{category} Shadcn UI Blocks&quot;
+          &quot;{category} Naly&quot;
         </span>
       </p>
     </div>

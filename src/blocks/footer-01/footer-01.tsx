@@ -228,7 +228,7 @@ const Footer01Page = () => {
             <span className="text-muted-foreground">
               &copy; {new Date().getFullYear()}{" "}
               <Link href="/" target="_blank">
-                Shadcn UI Blocks
+                Naly
               </Link>
               . All rights reserved.
             </span>

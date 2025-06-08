@@ -5,7 +5,7 @@ export const config = {
         process.env.NEXT_PUBLIC_APP_URL!
       : "localhost:3000",
   social: {
-    github: "https://github.com/akash3444/shadcn-ui-blocks",
+    github: "https://github.com/akash3444/naly",
     twitter: "https://twitter.com/akash_3444",
   },
 };

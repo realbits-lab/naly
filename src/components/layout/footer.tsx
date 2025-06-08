@@ -40,7 +40,7 @@ const Footer = () => {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
               <Logo />
-              <span className="font-bold text-lg">Shadcn UI Blocks</span>
+              <span className="font-bold text-lg">Naly</span>
             </Link>
 
             <p className="mt-4 text-muted-foreground">
@@ -73,19 +73,10 @@ const Footer = () => {
           <span className="text-muted-foreground">
             &copy; {new Date().getFullYear()}{" "}
             <Link href="/" target="_blank">
-              Shadcn UI Blocks
+              Naly
             </Link>
             . All rights reserved.
           </span>
-
-          <div className="flex items-center gap-5 text-muted-foreground">
-            <Link href={config.social.github} target="_blank">
-              <GithubLogo className="h-5 w-5" />
-            </Link>
-            <Link href={config.social.twitter} target="_blank">
-              <TwitterLogo className="h-5 w-5" />
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

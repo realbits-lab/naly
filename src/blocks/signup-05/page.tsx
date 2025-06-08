@@ -48,7 +48,7 @@ const SignUp05Page = () => {
         <div className="max-w-xs m-auto w-full flex flex-col items-center">
           <Logo className="h-9 w-9" />
           <p className="mt-4 text-xl font-bold tracking-tight">
-            Sign up for Shadcn UI Blocks
+            Sign up for Naly
           </p>
 
           <div className="mt-8 flex items-center gap-3">

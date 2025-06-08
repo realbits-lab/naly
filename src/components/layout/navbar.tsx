@@ -14,7 +14,7 @@ export const Navbar = () => {
             <Link href="/" className="flex items-center gap-2">
               <Logo className="font-bold" />
               <span className="font-bold hidden sm:block text-lg">
-                Shadcn UI Blocks
+                Naly
               </span>
             </Link>
           </div>
@@ -24,7 +24,7 @@ export const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <GithubStarButton />
+            {/* <GithubStarButton /> */}
             <ThemeToggle />
             <div className="block sm:hidden">
               <NavigationSheet />

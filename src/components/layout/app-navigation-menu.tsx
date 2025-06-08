@@ -70,16 +70,6 @@ export function AppNavigationMenu() {
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Button variant="ghost" asChild>
-            <Link href="/templates">
-              Templates
-              <Badge className="rounded-full bg-blue-500/20 hover:bg-blue-500/30 shadow-none text-blue-500">
-                New
-              </Badge>
-            </Link>
-          </Button>
-        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );

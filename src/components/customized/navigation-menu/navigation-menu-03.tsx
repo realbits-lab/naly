@@ -66,7 +66,7 @@ export default function NavigationMenuWithDropdown() {
                   >
                     <Logo className="h-8 w-8" />
                     <div className="mb-2 mt-4 text-lg font-medium">
-                      Shadcn UI Blocks
+                      Naly
                     </div>
                     <p className="text-sm leading-tight text-muted-foreground">
                       Collection of customized Shadcn UI blocks and components

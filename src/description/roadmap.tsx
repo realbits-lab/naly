@@ -11,7 +11,7 @@ export const roadmap: Task[] = [
     status: "upcoming",
   },
   {
-    title: "20+ Premium Shadcn UI Blocks",
+    title: "20+ Premium Naly",
     description:
       "Addition of new blocks, including hero section, testimonials section, FAQ section, and more.",
     expectedCompletionDate: "2025-01-07",
@@ -19,7 +19,7 @@ export const roadmap: Task[] = [
     status: "inProgress",
   },
   {
-    title: "Features section Shadcn UI Blocks",
+    title: "Features section Naly",
     description:
       "Addition of new fully responsive blocks for features section.",
     expectedCompletionDate: "2025-12-29",
@@ -35,7 +35,7 @@ export const roadmap: Task[] = [
     status: "completed",
   },
   {
-    title: "30+ Premium Shadcn UI Blocks",
+    title: "30+ Premium Naly",
     description:
       "Over 30 new premium blocks, featuring a fresh set of cards and enhanced design flexibility.",
     expectedCompletionDate: "2024-12-15",
@@ -53,7 +53,7 @@ export const roadmap: Task[] = [
   {
     title: "Initial Release: Core Components & Blocks",
     description:
-      "A launch of essential components and blocks to get you started with Shadcn UI Blocks.",
+      "A launch of essential components and blocks to get you started with Naly.",
     expectedCompletionDate: "2024-11-01",
     completionDate: "2024-11-01",
     status: "completed",

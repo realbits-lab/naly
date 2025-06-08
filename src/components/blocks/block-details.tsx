@@ -5,11 +5,11 @@ import Link from "next/link";
 export default function BlockDetails() {
   return (
     <section className="mt-12 prose prose-h2:text-3xl prose-h2:tracking-tight prose-p:text-xl prose-p:leading-loose prose-li:text-xl prose-li:leading-loose mx-auto">
-      <h2 id="what-is-shadcn-ui-blocks-">What is Shadcn UI Blocks?</h2>
+      <h2 id="what-is-naly-">What is Naly?</h2>
       <p>
         In the world of modern web development, UI components play a crucial
         role in building interactive and visually appealing applications.{" "}
-        <strong>Shadcn UI Blocks</strong> is an innovative platform that
+        <strong>Naly</strong> is an innovative platform that
         provides developers with a vast collection of{" "}
         <strong>Shadcn UI components and blocks</strong>, making it easier to
         create sleek and professional UIs with minimal effort. Let&apos;s
@@ -17,9 +17,9 @@ export default function BlockDetails() {
         blocks available with all their functionalities.
       </p>
       <hr />
-      <h2 id="how-shadcn-ui-blocks-works">How Shadcn UI Blocks Works</h2>
+      <h2 id="how-naly-works">How Naly Works</h2>
       <p>
-        Shadcn UI Blocks is designed to be a{" "}
+        Naly is designed to be a{" "}
         <strong>one-stop solution for developers</strong> looking for
         high-quality, ready-to-use components built with{" "}
         <strong>Shadcn UI, Radix UI, and Tailwind CSS</strong>. The platform
@@ -50,15 +50,14 @@ export default function BlockDetails() {
         existing codebases.
       </p>
       <hr />
-      <h2 id="benefits-of-using-shadcn-ui-blocks">
-        Benefits of Using Shadcn UI Blocks
+      <h2 id="benefits-of-using-naly">
+        Benefits of Using Naly
       </h2>
       <h3 id="1-saves-development-time-">
         1. <strong>Saves Development Time</strong>
       </h3>
       <p>
-        Building UI components from scratch can be time-consuming. With Shadcn
-        UI Blocks, developers can simply select a pre-built block, customize it,
+        Building UI components from scratch can be time-consuming. With Naly, developers can simply select a pre-built block, customize it,
         and use it instantly.
       </p>
       <h3 id="2-customizable-and-scalable-">
@@ -106,7 +105,7 @@ export default function BlockDetails() {
       <hr />
       <h2 id="types-of-blocks-available">Types of Blocks Available</h2>
       <p>
-        Shadcn UI Blocks provides a diverse collection of UI blocks, covering
+        Naly provides a diverse collection of UI blocks, covering
         various use cases such as navigation, authentication, hero sections,
         footers, logo clouds, and more. Here are some of the major categories:
       </p>
@@ -127,8 +126,8 @@ export default function BlockDetails() {
         })}
       </ol>
       <hr />
-      <h2 id="how-to-use-shadcn-ui-blocks">How to Use Shadcn UI Blocks</h2>
-      <p>Using Shadcn UI Blocks in your project is a simple process:</p>
+      <h2 id="how-to-use-naly">How to Use Naly</h2>
+      <p>Using Naly in your project is a simple process:</p>
       <ol>
         <li>
           <p>
@@ -163,7 +162,7 @@ export default function BlockDetails() {
       <hr />
       <h2 id="conclusion">Conclusion</h2>
       <p>
-        <strong>Shadcn UI Blocks</strong> is a game-changer for developers
+        <strong>Naly</strong> is a game-changer for developers
         looking to enhance their UI development workflow. By providing
         high-quality, customizable, and accessible UI blocks, it simplifies the
         process of building modern web applications. Whether you&#39;re a
@@ -172,7 +171,7 @@ export default function BlockDetails() {
       </p>
       <p>
         If you&#39;re working on a Next.js or React project and need{" "}
-        <strong>premium UI components</strong>, Shadcn UI Blocks is the perfect
+        <strong>premium UI components</strong>, Naly is the perfect
         resource to streamline your development and take your designs to the
         next level. 🚀
       </p>

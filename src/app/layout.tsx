@@ -19,25 +19,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Customized Shadcn UI Blocks & Components | Preview & Copy",
+  title: "Customized Naly & Components | Preview & Copy",
   description:
-    "Explore a curated collection of customized Shadcn UI blocks and components. Preview, customize, and copy ready-to-use code snippets to streamline your web development workflow. Perfect for creating responsive, high-quality Shadcn UI designs with ease.",
+    "Explore a curated collection of customized Naly blocks and components. Preview, customize, and copy ready-to-use code snippets to streamline your web development workflow. Perfect for creating responsive, high-quality Naly designs with ease.",
   keywords: [
-    "Shadcn UI blocks",
-    "Shadcn UI components",
-    "Shadcn UI previews",
+    "Naly blocks",
+    "Naly components",
+    "Naly previews",
     "UI blocks for developers",
-    "Shadcn UI code snippets",
-    "Shadcn UI examples",
-    "Shadcn UI customization",
-    "Free Shadcn UI blocks",
-    "Preview Shadcn UI components",
-    "Shadcn UI examples for websites",
-    "Copy Shadcn UI code snippets",
+    "Naly code snippets",
+    "Naly examples",
+    "Naly customization",
+    "Free Naly blocks",
+    "Preview Naly components",
+    "Naly examples for websites",
+    "Copy Naly code snippets",
     "UI design components",
     "UI design blocks",
-    "Customized Shadcn UI blocks",
-    "Custom Shadcn UI components",
+    "Customized Naly blocks",
+    "Custom Naly components",
   ],
   icons: [
     {
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     },
   ],
   openGraph: {
-    title: "Customized Shadcn UI Blocks & Components | Preview & Copy",
+    title: "Customized Naly & Components | Preview & Copy",
     description:
-      "Explore a curated collection of customized Shadcn UI blocks and components. Preview, customize, and copy ready-to-use code snippets to streamline your web development workflow. Perfect for creating responsive, high-quality Shadcn UI designs with ease.",
+      "Explore a curated collection of customized Naly blocks and components. Preview, customize, and copy ready-to-use code snippets to streamline your web development workflow. Perfect for creating responsive, high-quality Naly designs with ease.",
     type: "website",
     images: [
       {
@@ -82,7 +82,7 @@ export default function RootLayout({
   const jsonLd: WithContext<WebSite> = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Shadcn UI Blocks",
+    name: "Naly",
     url: "https://${process.env.NEXT_PUBLIC_APP_URL}",
   };
 

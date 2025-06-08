@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { GithubLogo } from "./ui/icons";
 
 const OWNER = "akash3444";
-const REPO = "shadcn-ui-blocks";
+const REPO = "naly";
 
 export const GithubStarButton = async () => {
   return (

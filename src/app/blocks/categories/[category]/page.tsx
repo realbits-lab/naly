@@ -59,7 +59,7 @@ export const generateMetadata = async (
         }),
         width: 1200,
         height: 630,
-        alt: "Customized Shadcn UI Blocks",
+        alt: "Customized Naly",
       },
     ],
   };

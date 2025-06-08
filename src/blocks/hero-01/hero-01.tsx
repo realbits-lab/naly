@@ -11,7 +11,7 @@ const Hero01 = () => {
           Just released v1.0.0
         </Badge>
         <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl md:leading-[1.2] font-bold">
-          Customized Shadcn UI Blocks & Components
+          Customized Naly & Components
         </h1>
         <p className="mt-6 text-[17px] md:text-lg">
           Explore a collection of Shadcn UI blocks and components, ready to
