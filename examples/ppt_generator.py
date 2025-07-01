@@ -42,6 +42,44 @@ class PPTGenerator:
         """Convert EMU (English Metric Units) to inches"""
         return emu_value / 914400.0
     
+    def parse_shape_type_number(self, shape_type_str: str) -> Optional[int]:
+        """Extract shape type number from string like 'FREEFORM (5)'"""
+        import re
+        match = re.search(r'\((\d+)\)', shape_type_str)
+        return int(match.group(1)) if match else None
+    
+    def get_mso_shape_from_type_number(self, type_number: int):
+        """Convert MSO_SHAPE_TYPE number to appropriate MSO_SHAPE for creation"""
+        from pptx.enum.shapes import MSO_SHAPE_TYPE, MSO_SHAPE
+        
+        # Map MSO_SHAPE_TYPE numbers to appropriate MSO_SHAPE constants
+        # for shape creation. Not all shape types can be created as autoshapes.
+        shape_type_mapping = {
+            1: MSO_SHAPE.RECTANGLE,           # AUTO_SHAPE -> Rectangle
+            2: MSO_SHAPE.ROUNDED_RECTANGLE,   # CALLOUT -> Rounded Rectangle 
+            3: None,                          # CANVAS -> Cannot create
+            4: None,                          # CHART -> Use add_chart instead
+            5: MSO_SHAPE.ROUNDED_RECTANGLE,   # FREEFORM -> Fallback to rounded rectangle
+            6: None,                          # GROUP -> Cannot create directly
+            7: None,                          # IGX_GRAPHIC -> SmartArt, cannot create
+            8: None,                          # INK -> Cannot create
+            9: MSO_SHAPE.OVAL,               # LINE -> Use oval as fallback
+            10: None,                         # LINKED_OLE_OBJECT -> Cannot create
+            11: None,                         # LINKED_PICTURE -> Use add_picture
+            12: None,                         # MEDIA -> Cannot create
+            13: None,                         # OLE_CONTROL_OBJECT -> Cannot create
+            14: None,                         # PLACEHOLDER -> Use existing placeholders
+            15: None,                         # PICTURE -> Use add_picture instead
+            16: None,                         # SCRIPT_ANCHOR -> Cannot create
+            17: None,                         # TABLE -> Use add_table instead
+            18: None,                         # TEXT_BOX -> Use add_textbox instead
+            19: MSO_SHAPE.RECTANGLE,          # Other -> Default to rectangle
+            20: MSO_SHAPE.OVAL,               # Other -> Default to oval
+        }
+        
+        # Return mapped shape or default to rectangle
+        return shape_type_mapping.get(type_number, MSO_SHAPE.RECTANGLE)
+    
     def get_layout_by_name(self, layout_name: str) -> Optional[Any]:
         """Get slide layout by name, fallback to first available layout"""
         # Try to find matching layout in presentation
@@ -96,27 +134,153 @@ class PPTGenerator:
             for run in paragraph.runs:
                 run.font.size = Pt(14)
         
+        # Apply fill and line properties
+        self.apply_fill_properties(text_box, shape_info.get('fill', {}))
+        self.apply_line_properties(text_box, shape_info.get('line', {}))
+        
         return text_box
     
-    def create_rectangle(self, slide, shape_info: Dict[str, Any]):
-        """Create a rectangle shape"""
+    def create_shape_from_type(self, slide, shape_info: Dict[str, Any]):
+        """Create a shape based on the shape type from JSON"""
         left = Inches(self.emu_to_inches(shape_info['left']))
         top = Inches(self.emu_to_inches(shape_info['top']))
         width = Inches(self.emu_to_inches(shape_info['width']))
         height = Inches(self.emu_to_inches(shape_info['height']))
         
-        from pptx.enum.shapes import MSO_SHAPE
-        rectangle = slide.shapes.add_shape(
-            MSO_SHAPE.RECTANGLE, left, top, width, height
-        )
+        # Parse shape type to get the MSO_SHAPE
+        shape_type_str = shape_info.get('shape_type', '')
+        type_number = self.parse_shape_type_number(shape_type_str)
         
-        # Apply fill color if available
-        if shape_info.get('has_fill') and shape_info.get('fill_type') == 'SOLID (1)':
-            rectangle.fill.solid()
-            # Use a default color since we don't have specific color info
-            rectangle.fill.fore_color.rgb = RGBColor(173, 216, 230)  # Light blue
+        if type_number:
+            mso_shape = self.get_mso_shape_from_type_number(type_number)
+            if mso_shape:
+                # Create the specific shape type
+                shape = slide.shapes.add_shape(mso_shape, left, top, width, height)
+            else:
+                # Fallback to rectangle for unsupported types
+                from pptx.enum.shapes import MSO_SHAPE
+                shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+        else:
+            # Default fallback
+            from pptx.enum.shapes import MSO_SHAPE
+            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
         
-        return rectangle
+        # Apply fill properties
+        self.apply_fill_properties(shape, shape_info.get('fill', {}))
+        
+        # Apply line properties
+        self.apply_line_properties(shape, shape_info.get('line', {}))
+        
+        return shape
+    
+    def create_rectangle(self, slide, shape_info: Dict[str, Any]):
+        """Create a rectangle shape (legacy method)"""
+        return self.create_shape_from_type(slide, shape_info)
+    
+    def create_freeform_shape(self, slide, shape_info: Dict[str, Any]):
+        """Create a freeform shape using proper shape type mapping"""
+        # Use the new shape type mapping system
+        return self.create_shape_from_type(slide, shape_info)
+    
+    def apply_fill_properties(self, shape, fill_info: Dict[str, Any]):
+        """Apply fill properties to a shape"""
+        if not fill_info:
+            return
+            
+        try:
+            from pptx.enum.dml import MSO_FILL_TYPE
+            
+            fill_type = fill_info.get('type', '')
+            
+            if 'SOLID' in fill_type or fill_info.get('solid'):
+                shape.fill.solid()
+                fore_color = fill_info.get('fore_color', {})
+                self.apply_color_properties(shape.fill.fore_color, fore_color)
+                
+            elif 'PATTERN' in fill_type or fill_info.get('pattern'):
+                shape.fill.patterned()
+                fore_color = fill_info.get('fore_color', {})
+                back_color = fill_info.get('back_color', {})
+                self.apply_color_properties(shape.fill.fore_color, fore_color)
+                self.apply_color_properties(shape.fill.back_color, back_color)
+                
+            elif 'BACKGROUND' in fill_type or fill_info.get('background'):
+                shape.fill.background()
+                
+        except Exception as e:
+            print(f"Warning: Could not apply fill properties: {str(e)}")
+    
+    def apply_line_properties(self, shape, line_info: Dict[str, Any]):
+        """Apply line/border properties to a shape"""
+        if not line_info:
+            return
+            
+        try:
+            line = shape.line
+            
+            # Apply line width
+            if 'width' in line_info and line_info['width'] is not None:
+                from pptx.util import Emu
+                line.width = Emu(line_info['width'])
+            
+            # Apply line color
+            color_info = line_info.get('color', {})
+            if color_info:
+                self.apply_color_properties(line.color, color_info)
+                
+        except Exception as e:
+            print(f"Warning: Could not apply line properties: {str(e)}")
+    
+    def apply_color_properties(self, color_obj, color_info: Dict[str, Any]):
+        """Apply color properties to a color object"""
+        if not color_info:
+            return
+            
+        try:
+            from pptx.enum.dml import MSO_COLOR_TYPE, MSO_THEME_COLOR
+            
+            # Apply RGB color
+            rgb_info = color_info.get('rgb', {})
+            if rgb_info and rgb_info.get('red') is not None:
+                red = rgb_info.get('red', 0)
+                green = rgb_info.get('green', 0)
+                blue = rgb_info.get('blue', 0)
+                color_obj.rgb = RGBColor(red, green, blue)
+                
+            # Apply theme color
+            elif 'theme_color' in color_info:
+                theme_color_str = color_info['theme_color']
+                # Map theme color string to enum (simplified mapping)
+                theme_mapping = {
+                    'ACCENT_1': MSO_THEME_COLOR.ACCENT_1,
+                    'ACCENT_2': MSO_THEME_COLOR.ACCENT_2,
+                    'ACCENT_3': MSO_THEME_COLOR.ACCENT_3,
+                    'ACCENT_4': MSO_THEME_COLOR.ACCENT_4,
+                    'ACCENT_5': MSO_THEME_COLOR.ACCENT_5,
+                    'ACCENT_6': MSO_THEME_COLOR.ACCENT_6,
+                    'BACKGROUND_1': MSO_THEME_COLOR.BACKGROUND_1,
+                    'BACKGROUND_2': MSO_THEME_COLOR.BACKGROUND_2,
+                    'DARK_1': MSO_THEME_COLOR.DARK_1,
+                    'DARK_2': MSO_THEME_COLOR.DARK_2,
+                    'FOLLOWED_HYPERLINK': MSO_THEME_COLOR.FOLLOWED_HYPERLINK,
+                    'HYPERLINK': MSO_THEME_COLOR.HYPERLINK,
+                    'LIGHT_1': MSO_THEME_COLOR.LIGHT_1,
+                    'LIGHT_2': MSO_THEME_COLOR.LIGHT_2,
+                    'TEXT_1': MSO_THEME_COLOR.TEXT_1,
+                    'TEXT_2': MSO_THEME_COLOR.TEXT_2,
+                }
+                
+                for key, value in theme_mapping.items():
+                    if key in theme_color_str:
+                        color_obj.theme_color = value
+                        break
+            
+            # Apply brightness adjustment
+            if 'brightness' in color_info and color_info['brightness'] is not None:
+                color_obj.brightness = color_info['brightness']
+                
+        except Exception as e:
+            print(f"Warning: Could not apply color properties: {str(e)}")
     
     def apply_theme_to_presentation(self):
         """Apply theme settings to the presentation"""
@@ -161,18 +325,18 @@ class PPTGenerator:
         text = shape_info.get('text', '')
         
         try:
+            # Check for special shape types that need different handling
             if 'PLACEHOLDER' in shape_type:
                 # Try to fill existing placeholders first
                 self.fill_placeholder(slide, shape_info)
-            elif 'FREEFORM' in shape_type or 'RECTANGLE' in shape_type:
-                # Create rectangle for freeform shapes
-                shape = self.create_rectangle(slide, shape_info)
+            elif 'TEXT_BOX' in shape_type or (text and 'AUTO_SHAPE' not in shape_type):
+                # Create text box for text-focused shapes
+                self.create_text_box(slide, shape_info)
+            else:
+                # Create appropriate shape based on type mapping
+                shape = self.create_shape_from_type(slide, shape_info)
                 if text:
                     self.add_text_to_shape(shape, text)
-            else:
-                # Default to text box for other shapes
-                if text:  # Only create if there's text
-                    self.create_text_box(slide, shape_info)
         except Exception as e:
             print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
     

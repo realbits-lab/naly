@@ -15,6 +15,95 @@ class PPTExtractor:
         self.file_path = file_path
         self.presentation = Presentation(file_path)
         
+    def extract_fill_properties(self, fill) -> Dict[str, Any]:
+        """Extract detailed fill properties including colors"""
+        fill_info = {
+            'type': str(fill.type) if fill.type else None
+        }
+        
+        try:
+            from pptx.enum.dml import MSO_FILL_TYPE, MSO_COLOR_TYPE
+            
+            if fill.type == MSO_FILL_TYPE.SOLID:
+                fill_info['solid'] = True
+                color_info = self.extract_color_properties(fill.fore_color)
+                fill_info['fore_color'] = color_info
+                
+            elif fill.type == MSO_FILL_TYPE.PATTERN:
+                fill_info['pattern'] = True
+                fill_info['fore_color'] = self.extract_color_properties(fill.fore_color)
+                fill_info['back_color'] = self.extract_color_properties(fill.back_color)
+                
+            elif fill.type == MSO_FILL_TYPE.GRADIENT:
+                fill_info['gradient'] = True
+                
+            elif fill.type == MSO_FILL_TYPE.PICTURE:
+                fill_info['picture'] = True
+                
+            elif fill.type == MSO_FILL_TYPE.BACKGROUND:
+                fill_info['background'] = True
+                
+        except Exception as e:
+            fill_info['error'] = f"Could not extract fill properties: {str(e)}"
+            
+        return fill_info
+    
+    def extract_color_properties(self, color) -> Dict[str, Any]:
+        """Extract color properties including RGB values"""
+        color_info = {
+            'type': str(color.type) if hasattr(color, 'type') and color.type else None
+        }
+        
+        try:
+            from pptx.enum.dml import MSO_COLOR_TYPE
+            
+            if hasattr(color, 'type') and color.type == MSO_COLOR_TYPE.RGB:
+                if hasattr(color, 'rgb') and color.rgb:
+                    rgb = color.rgb
+                    color_info['rgb'] = {
+                        'hex': str(rgb),
+                        'red': rgb.red if hasattr(rgb, 'red') else None,
+                        'green': rgb.green if hasattr(rgb, 'green') else None,
+                        'blue': rgb.blue if hasattr(rgb, 'blue') else None
+                    }
+                    
+            elif hasattr(color, 'type') and color.type == MSO_COLOR_TYPE.SCHEME:
+                if hasattr(color, 'theme_color'):
+                    color_info['theme_color'] = str(color.theme_color)
+                    
+            # Extract brightness if available
+            if hasattr(color, 'brightness') and color.brightness is not None:
+                color_info['brightness'] = color.brightness
+                
+        except Exception as e:
+            color_info['error'] = f"Could not extract color properties: {str(e)}"
+            
+        return color_info
+    
+    def extract_line_properties(self, line) -> Dict[str, Any]:
+        """Extract line/border properties"""
+        line_info = {}
+        
+        try:
+            # Line width
+            if hasattr(line, 'width') and line.width is not None:
+                line_info['width'] = line.width
+                
+            # Line color
+            if hasattr(line, 'color'):
+                color_info = self.extract_color_properties(line.color)
+                line_info['color'] = color_info
+                
+            # Line fill (for compound lines)
+            if hasattr(line, 'fill'):
+                fill_info = self.extract_fill_properties(line.fill)
+                line_info['fill'] = fill_info
+                
+        except Exception as e:
+            line_info['error'] = f"Could not extract line properties: {str(e)}"
+            
+        return line_info
+
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
@@ -39,16 +128,17 @@ class PPTExtractor:
                 if hasattr(shape, 'text_frame') and shape.text_frame:
                     shape_info['text'] = shape.text_frame.text
                 
-                # Add additional properties based on shape type
+                # Add detailed fill properties
                 if hasattr(shape, 'fill'):
                     shape_info['has_fill'] = True
-                    if shape.fill.type:
-                        shape_info['fill_type'] = str(shape.fill.type)
+                    fill_info = self.extract_fill_properties(shape.fill)
+                    shape_info['fill'] = fill_info
                 
+                # Add detailed line properties
                 if hasattr(shape, 'line'):
                     shape_info['has_line'] = True
-                    if shape.line.fill.type:
-                        shape_info['line_fill_type'] = str(shape.line.fill.type)
+                    line_info = self.extract_line_properties(shape.line)
+                    shape_info['line'] = line_info
                 
                 slide_shapes.append(shape_info)
             

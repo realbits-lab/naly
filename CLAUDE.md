@@ -76,3 +76,6 @@ src/
 - Uses pnpm as the package manager (not npm or yarn)
 - Strict TypeScript configuration is enabled
 - Component code follows shadcn/ui patterns and conventions
+
+## Python Development Guidelines
+- Claude Code should check the lint of python file after modifying or adding python file
