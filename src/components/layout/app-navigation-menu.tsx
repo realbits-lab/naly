@@ -70,6 +70,13 @@ export function AppNavigationMenu() {
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link href="/marketplace" className="font-medium px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md">
+              Marketplace
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );
