@@ -125,8 +125,9 @@ class PPTExtractor:
                 # Fallback: return the generic AUTO_SHAPE with number
                 return f"AUTO_SHAPE ({shape.shape_type.value})"
             else:
-                # For non-auto shapes, return the shape type with number
-                return f"{str(shape.shape_type).split('.')[-1]} ({shape.shape_type.value})"
+                # For non-auto shapes, return the shape type with number (avoid duplication)
+                shape_name = str(shape.shape_type).split('.')[-1]
+                return f"{shape_name} ({shape.shape_type.value})"
                 
         except Exception:
             # Fallback to original behavior
@@ -250,7 +251,114 @@ class PPTExtractor:
         }
         
         return geometry_mapping.get(geom_name, geom_name.upper())
+    
+    def get_shape_type_enum_name(self, shape_type_value: int) -> str:
+        """Convert MSO_SHAPE_TYPE enum value to consistent name format"""
+        # Map MSO_SHAPE_TYPE enum values to their names
+        shape_type_names = {
+            -2: 'MIXED',
+            1: 'AUTO_SHAPE',
+            2: 'CALLOUT',
+            3: 'CHART', 
+            4: 'COMMENT',
+            5: 'FREEFORM',
+            6: 'GROUP',
+            7: 'EMBEDDED_OLE_OBJECT',
+            8: 'FORM_CONTROL',
+            9: 'LINE',
+            10: 'LINKED_OLE_OBJECT',
+            11: 'LINKED_PICTURE',
+            12: 'OLE_CONTROL_OBJECT',
+            13: 'PICTURE',
+            14: 'PLACEHOLDER',
+            15: 'TEXT_EFFECT',
+            16: 'MEDIA',
+            17: 'TEXT_BOX',
+            18: 'SCRIPT_ANCHOR',
+            19: 'TABLE',
+            20: 'CANVAS',
+            21: 'DIAGRAM',
+            22: 'INK',
+            23: 'INK_COMMENT',
+            24: 'IGX_GRAPHIC',
+            26: 'WEB_VIDEO',
+            27: 'CONTENT_APP',
+            28: 'GRAPHIC',
+            29: 'LINKED_GRAPHIC',
+            30: '3D_MODEL',
+            31: 'LINKED_3D_MODEL',
+        }
+        
+        return shape_type_names.get(shape_type_value, f'UNKNOWN_{shape_type_value}')
 
+    def extract_chart_data(self, chart) -> Dict[str, Any]:
+        """Extract chart data and properties"""
+        chart_info = {
+            'chart_type': str(chart.chart_type) if hasattr(chart, 'chart_type') else None,
+            'has_title': hasattr(chart, 'chart_title') and chart.chart_title.has_text_frame,
+            'title': chart.chart_title.text_frame.text if hasattr(chart, 'chart_title') and chart.chart_title.has_text_frame else None,
+            'categories': [],
+            'series': [],
+            'has_legend': hasattr(chart, 'has_legend') and chart.has_legend
+        }
+        
+        try:
+            # Extract categories
+            if hasattr(chart, 'plots') and chart.plots:
+                plot = chart.plots[0]
+                if hasattr(plot, 'categories') and plot.categories:
+                    chart_info['categories'] = [cat for cat in plot.categories]
+                
+                # Extract series data
+                if hasattr(plot, 'series'):
+                    for series in plot.series:
+                        series_info = {
+                            'name': series.name if hasattr(series, 'name') else None,
+                            'values': [val for val in series.values] if hasattr(series, 'values') else []
+                        }
+                        chart_info['series'].append(series_info)
+                        
+        except Exception as e:
+            chart_info['error'] = f"Could not extract chart data: {str(e)}"
+            
+        return chart_info
+    
+    def extract_table_data(self, table) -> Dict[str, Any]:
+        """Extract table data and properties"""
+        table_info = {
+            'rows': table.rows.__len__() if hasattr(table, 'rows') else 0,
+            'columns': table.columns.__len__() if hasattr(table, 'columns') else 0,
+            'data': []
+        }
+        
+        try:
+            # Extract table cell data
+            for row_idx, row in enumerate(table.rows):
+                row_data = []
+                for col_idx, cell in enumerate(row.cells):
+                    cell_text = cell.text if hasattr(cell, 'text') else ''
+                    row_data.append(cell_text)
+                table_info['data'].append(row_data)
+                
+        except Exception as e:
+            table_info['error'] = f"Could not extract table data: {str(e)}"
+            
+        return table_info
+    
+    def extract_placeholder_info(self, shape) -> Dict[str, Any]:
+        """Extract placeholder-specific information"""
+        placeholder_info = {}
+        
+        try:
+            if hasattr(shape, 'placeholder_format'):
+                placeholder_info['placeholder_type'] = str(shape.placeholder_format.type)
+                placeholder_info['placeholder_idx'] = shape.placeholder_format.idx if hasattr(shape.placeholder_format, 'idx') else None
+                
+        except Exception as e:
+            placeholder_info['error'] = f"Could not extract placeholder info: {str(e)}"
+            
+        return placeholder_info
+    
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
@@ -274,6 +382,21 @@ class PPTExtractor:
                 # Add text content if available
                 if hasattr(shape, 'text_frame') and shape.text_frame:
                     shape_info['text'] = shape.text_frame.text
+                
+                # Extract chart data for chart shapes
+                from pptx.enum.shapes import MSO_SHAPE_TYPE
+                if shape.shape_type == MSO_SHAPE_TYPE.CHART:
+                    if hasattr(shape, 'chart'):
+                        shape_info['chart_data'] = self.extract_chart_data(shape.chart)
+                
+                # Extract table data for table shapes
+                elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
+                    if hasattr(shape, 'table'):
+                        shape_info['table_data'] = self.extract_table_data(shape.table)
+                
+                # Extract placeholder information
+                elif shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER:
+                    shape_info['placeholder_info'] = self.extract_placeholder_info(shape)
                 
                 # Add detailed fill properties
                 if hasattr(shape, 'fill'):

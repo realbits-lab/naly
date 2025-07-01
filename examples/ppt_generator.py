@@ -43,10 +43,14 @@ class PPTGenerator:
         return emu_value / 914400.0
     
     def parse_shape_type_number(self, shape_type_str: str) -> Optional[int]:
-        """Extract shape type number from string like 'FREEFORM (5)'"""
+        """Extract shape type number from string like 'FREEFORM (5)' or 'FREEFORM (5) (5)'"""
         import re
-        match = re.search(r'\((\d+)\)', shape_type_str)
-        return int(match.group(1)) if match else None
+        # Handle both single and duplicated number formats
+        matches = re.findall(r'\((\d+)\)', shape_type_str)
+        if matches:
+            # Take the first number found
+            return int(matches[0])
+        return None
     
     def get_mso_auto_shape_from_name(self, shape_name: str):
         """Convert auto shape name to MSO_SHAPE constant"""
@@ -286,6 +290,121 @@ class PPTGenerator:
         
         return auto_shape_mapping.get(shape_name, None)
     
+    def map_shape_name_to_geometry(self, shape_name: str) -> str:
+        """Map MSO_SHAPE names back to internal PowerPoint geometry names"""
+        # Reverse mapping from MSO_SHAPE names to internal geometry names
+        shape_to_geometry_mapping = {
+            'RECTANGLE': 'rect',
+            'ROUNDED_RECTANGLE': 'roundRect',
+            'OVAL': 'ellipse',
+            'ISOSCELES_TRIANGLE': 'triangle',
+            'RIGHT_TRIANGLE': 'rtTriangle',
+            'PARALLELOGRAM': 'parallelogram',
+            'TRAPEZOID': 'trapezoid',
+            'DIAMOND': 'diamond',
+            'PENTAGON': 'pentagon',
+            'HEXAGON': 'hexagon',
+            'HEPTAGON': 'heptagon',
+            'OCTAGON': 'octagon',
+            'DECAGON': 'decagon',
+            'DODECAGON': 'dodecagon',
+            'PIE': 'pie',
+            'CHORD': 'chord',
+            'TEAR': 'teardrop',
+            'FRAME': 'frame',
+            'HALF_FRAME': 'halfFrame',
+            'CORNER': 'corner',
+            'DIAGONAL_STRIPE': 'diagStripe',
+            'CROSS': 'plus',
+            'PLAQUE': 'plaque',
+            'CAN': 'can',
+            'CUBE': 'cube',
+            'BEVEL': 'bevel',
+            'DONUT': 'donut',
+            'NO_SYMBOL': 'noSmoking',
+            'BLOCK_ARC': 'blockArc',
+            'FOLDED_CORNER': 'foldedCorner',
+            'SMILEY_FACE': 'smileyFace',
+            'HEART': 'heart',
+            'LIGHTNING_BOLT': 'lightningBolt',
+            'SUN': 'sun',
+            'MOON': 'moon',
+            'ARC': 'arc',
+            'DOUBLE_BRACKET': 'bracketPair',
+            'DOUBLE_BRACE': 'bracePair',
+            'LEFT_BRACKET': 'leftBracket',
+            'RIGHT_BRACKET': 'rightBracket',
+            'LEFT_BRACE': 'leftBrace',
+            'RIGHT_BRACE': 'rightBrace',
+            'RIGHT_ARROW': 'rightArrow',
+            'LEFT_ARROW': 'leftArrow',
+            'UP_ARROW': 'upArrow',
+            'DOWN_ARROW': 'downArrow',
+            'LEFT_RIGHT_ARROW': 'leftRightArrow',
+            'UP_DOWN_ARROW': 'upDownArrow',
+            'QUAD_ARROW': 'quadArrow',
+            'LEFT_RIGHT_UP_ARROW': 'leftRightUpArrow',
+            'BENT_ARROW': 'bentArrow',
+            'U_TURN_ARROW': 'uturnArrow',
+            'LEFT_UP_ARROW': 'leftUpArrow',
+            'BENT_UP_ARROW': 'bentUpArrow',
+            'CURVED_RIGHT_ARROW': 'curvedRightArrow',
+            'CURVED_LEFT_ARROW': 'curvedLeftArrow',
+            'CURVED_UP_ARROW': 'curvedUpArrow',
+            'CURVED_DOWN_ARROW': 'curvedDownArrow',
+            'STRIPED_RIGHT_ARROW': 'stripedRightArrow',
+            'NOTCHED_RIGHT_ARROW': 'notchedRightArrow',
+            'CIRCULAR_ARROW': 'circularArrow',
+            'SWOOSH_ARROW': 'swooshArrow',
+            'STAR_4_POINT': 'star4',
+            'STAR_5_POINT': 'star5',
+            'STAR_6_POINT': 'star6',
+            'STAR_7_POINT': 'star7',
+            'STAR_8_POINT': 'star8',
+            'STAR_10_POINT': 'star10',
+            'STAR_12_POINT': 'star12',
+            'STAR_16_POINT': 'star16',
+            'STAR_24_POINT': 'star24',
+            'STAR_32_POINT': 'star32',
+            'UP_RIBBON': 'ribbon2',
+            'DOWN_RIBBON': 'ribbon',
+            'CURVED_UP_RIBBON': 'ellipseRibbon2',
+            'CURVED_DOWN_RIBBON': 'ellipseRibbon',
+            'VERTICAL_SCROLL': 'verticalScroll',
+            'HORIZONTAL_SCROLL': 'horizontalScroll',
+            'WAVE': 'wave',
+            'DOUBLE_WAVE': 'doubleWave',
+            'GEAR_6': 'gear6',
+            'GEAR_9': 'gear9',
+            'FUNNEL': 'funnel',
+            'MATH_PLUS': 'mathPlus',
+            'MATH_MINUS': 'mathMinus',
+            'MATH_MULTIPLY': 'mathMultiply',
+            'MATH_DIVIDE': 'mathDivide',
+            'MATH_EQUAL': 'mathEqual',
+            'MATH_NOT_EQUAL': 'mathNotEqual',
+            'CHEVRON': 'chevron',
+            'PIE_WEDGE': 'pieWedge',
+            'EXPLOSION1': 'irregularSeal1',
+            'EXPLOSION2': 'irregularSeal2',
+            'CLOUD': 'cloud',
+            'CLOUD_CALLOUT': 'cloudCallout',
+            'RECTANGULAR_CALLOUT': 'callout1',
+            'ROUNDED_RECTANGULAR_CALLOUT': 'callout2',
+            'OVAL_CALLOUT': 'callout3',
+            'LINE_CALLOUT_1': 'borderCallout1',
+            'LINE_CALLOUT_2': 'borderCallout2',
+            'LINE_CALLOUT_3': 'borderCallout3',
+            'LINE_CALLOUT_1_ACCENT_BAR': 'accentCallout1',
+            'LINE_CALLOUT_2_ACCENT_BAR': 'accentCallout2',
+            'LINE_CALLOUT_3_ACCENT_BAR': 'accentCallout3',
+            'LINE_CALLOUT_4': 'callout90',
+            'LINE_CALLOUT_4_ACCENT_BAR': 'accentCallout90',
+            'LINE_CALLOUT_4_BORDER_AND_ACCENT_BAR': 'borderCallout90',
+        }
+        
+        return shape_to_geometry_mapping.get(shape_name.upper(), shape_name.lower())
+    
     def get_mso_shape_from_type_number(self, type_number: int):
         """Convert MSO_SHAPE_TYPE number to appropriate MSO_SHAPE for creation"""
         from pptx.enum.shapes import MSO_SHAPE_TYPE, MSO_SHAPE
@@ -367,6 +486,126 @@ class PPTGenerator:
                 for run in paragraph.runs:
                     run.font.size = Pt(18)
     
+    def create_chart(self, slide, shape_info: Dict[str, Any]):
+        """Create a chart based on chart data"""
+        left = Inches(self.emu_to_inches(shape_info['left']))
+        top = Inches(self.emu_to_inches(shape_info['top']))
+        width = Inches(self.emu_to_inches(shape_info['width']))
+        height = Inches(self.emu_to_inches(shape_info['height']))
+        
+        chart_data_info = shape_info.get('chart_data', {})
+        
+        try:
+            from pptx.chart.data import CategoryChartData
+            from pptx.enum.chart import XL_CHART_TYPE
+            
+            # Default chart type
+            chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
+            
+            # Map chart type string to enum
+            chart_type_str = chart_data_info.get('chart_type', '')
+            if 'BAR' in chart_type_str.upper():
+                chart_type = XL_CHART_TYPE.BAR_CLUSTERED
+            elif 'LINE' in chart_type_str.upper():
+                chart_type = XL_CHART_TYPE.LINE
+            elif 'PIE' in chart_type_str.upper():
+                chart_type = XL_CHART_TYPE.PIE
+            elif 'AREA' in chart_type_str.upper():
+                chart_type = XL_CHART_TYPE.AREA
+            
+            # Create chart data
+            chart_data = CategoryChartData()
+            
+            # Add categories
+            categories = chart_data_info.get('categories', ['Category 1', 'Category 2', 'Category 3'])
+            chart_data.categories = categories
+            
+            # Add series
+            series_list = chart_data_info.get('series', [])
+            if not series_list:
+                # Default series if no data
+                chart_data.add_series('Series 1', [1, 2, 3])
+            else:
+                for series in series_list:
+                    series_name = series.get('name', 'Series')
+                    series_values = series.get('values', [1, 2, 3])
+                    chart_data.add_series(series_name, series_values)
+            
+            # Add chart to slide
+            chart = slide.shapes.add_chart(chart_type, left, top, width, height, chart_data)
+            
+            # Set chart title if available
+            title = chart_data_info.get('title')
+            if title and chart.chart.has_title:
+                chart.chart.chart_title.text_frame.text = title
+            
+            return chart.chart
+            
+        except Exception as e:
+            print(f"Warning: Could not create chart: {str(e)}")
+            # Fallback to text box with chart info
+            return self.create_text_box(slide, shape_info)
+    
+    def create_table(self, slide, shape_info: Dict[str, Any]):
+        """Create a table based on table data"""
+        left = Inches(self.emu_to_inches(shape_info['left']))
+        top = Inches(self.emu_to_inches(shape_info['top']))
+        width = Inches(self.emu_to_inches(shape_info['width']))
+        height = Inches(self.emu_to_inches(shape_info['height']))
+        
+        table_data_info = shape_info.get('table_data', {})
+        
+        try:
+            # Get table dimensions
+            rows = table_data_info.get('rows', 2)
+            cols = table_data_info.get('columns', 2)
+            data = table_data_info.get('data', [])
+            
+            # Ensure minimum table size
+            if rows < 1:
+                rows = 2
+            if cols < 1:
+                cols = 2
+            
+            # Create table
+            table_shape = slide.shapes.add_table(rows, cols, left, top, width, height)
+            table = table_shape.table
+            
+            # Fill table with data
+            for row_idx in range(rows):
+                for col_idx in range(cols):
+                    cell = table.cell(row_idx, col_idx)
+                    
+                    # Get cell text from data if available
+                    if row_idx < len(data) and col_idx < len(data[row_idx]):
+                        cell_text = str(data[row_idx][col_idx])
+                    else:
+                        # Default cell content
+                        if row_idx == 0:
+                            cell_text = f"Header {col_idx + 1}"
+                        else:
+                            cell_text = f"Cell {row_idx},{col_idx + 1}"
+                    
+                    cell.text = cell_text
+                    
+                    # Format header row
+                    if row_idx == 0:
+                        for paragraph in cell.text_frame.paragraphs:
+                            for run in paragraph.runs:
+                                run.font.bold = True
+                                run.font.size = Pt(12)
+                    else:
+                        for paragraph in cell.text_frame.paragraphs:
+                            for run in paragraph.runs:
+                                run.font.size = Pt(10)
+            
+            return table
+            
+        except Exception as e:
+            print(f"Warning: Could not create table: {str(e)}")
+            # Fallback to text box with table info
+            return self.create_text_box(slide, shape_info)
+    
     def create_text_box(self, slide, shape_info: Dict[str, Any]):
         """Create a text box shape"""
         left = Inches(self.emu_to_inches(shape_info['left']))
@@ -406,9 +645,9 @@ class PPTGenerator:
         
         # If no shape found by type number, try auto shape name mapping
         if not mso_shape:
-            # Extract shape name without parentheses and numbers
+            # Extract shape name without parentheses and numbers (handle duplicates)
             import re
-            clean_name = re.sub(r'\s*\(\d+\)', '', shape_type_str).strip()
+            clean_name = re.sub(r'\s*\(\d+\)(\s*\(\d+\))*', '', shape_type_str).strip()
             mso_shape = self.get_mso_auto_shape_from_name(clean_name)
         
         # Create the shape
@@ -495,11 +734,22 @@ class PPTGenerator:
             
             # Apply RGB color
             rgb_info = color_info.get('rgb', {})
-            if rgb_info and rgb_info.get('red') is not None:
-                red = rgb_info.get('red', 0)
-                green = rgb_info.get('green', 0)
-                blue = rgb_info.get('blue', 0)
-                color_obj.rgb = RGBColor(red, green, blue)
+            if rgb_info:
+                # Handle hex color if RGB values are null
+                if rgb_info.get('hex') and (rgb_info.get('red') is None or rgb_info.get('green') is None or rgb_info.get('blue') is None):
+                    hex_color = rgb_info.get('hex', '000000')
+                    # Remove # if present
+                    hex_color = hex_color.replace('#', '')
+                    if len(hex_color) == 6:
+                        red = int(hex_color[0:2], 16)
+                        green = int(hex_color[2:4], 16)
+                        blue = int(hex_color[4:6], 16)
+                        color_obj.rgb = RGBColor(red, green, blue)
+                elif rgb_info.get('red') is not None:
+                    red = rgb_info.get('red', 0)
+                    green = rgb_info.get('green', 0)
+                    blue = rgb_info.get('blue', 0)
+                    color_obj.rgb = RGBColor(red, green, blue)
                 
             # Apply theme color
             elif 'theme_color' in color_info:
@@ -580,9 +830,15 @@ class PPTGenerator:
         
         try:
             # Check for special shape types that need different handling
-            if 'PLACEHOLDER' in shape_type:
-                # Try to fill existing placeholders first
-                self.fill_placeholder(slide, shape_info)
+            if 'CHART' in shape_type:
+                # Create chart from chart data
+                self.create_chart(slide, shape_info)
+            elif 'TABLE' in shape_type:
+                # Create table from table data
+                self.create_table(slide, shape_info)
+            elif 'PLACEHOLDER' in shape_type:
+                # Handle placeholder with special content types
+                self.handle_placeholder(slide, shape_info)
             elif 'TEXT_BOX' in shape_type or (text and 'AUTO_SHAPE' not in shape_type):
                 # Create text box for text-focused shapes
                 self.create_text_box(slide, shape_info)
@@ -593,6 +849,82 @@ class PPTGenerator:
                     self.add_text_to_shape(shape, text)
         except Exception as e:
             print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
+    
+    def handle_placeholder(self, slide, shape_info: Dict[str, Any]):
+        """Handle placeholder shapes with special content types"""
+        placeholder_info = shape_info.get('placeholder_info', {})
+        
+        # Check if placeholder has chart or table data
+        if 'chart_data' in shape_info:
+            # Try to insert chart into placeholder
+            self.insert_chart_into_placeholder(slide, shape_info)
+        elif 'table_data' in shape_info:
+            # Try to insert table into placeholder
+            self.insert_table_into_placeholder(slide, shape_info)
+        else:
+            # Regular text placeholder
+            self.fill_placeholder(slide, shape_info)
+    
+    def insert_chart_into_placeholder(self, slide, shape_info: Dict[str, Any]):
+        """Insert chart into a placeholder if possible"""
+        placeholder_info = shape_info.get('placeholder_info', {})
+        placeholder_type = placeholder_info.get('placeholder_type', '')
+        
+        # Try to find appropriate placeholder for chart
+        for placeholder in slide.placeholders:
+            try:
+                if hasattr(placeholder, 'insert_chart'):
+                    # Use the chart creation method
+                    chart_data_info = shape_info.get('chart_data', {})
+                    
+                    from pptx.chart.data import CategoryChartData
+                    from pptx.enum.chart import XL_CHART_TYPE
+                    
+                    chart_data = CategoryChartData()
+                    categories = chart_data_info.get('categories', ['Cat 1', 'Cat 2', 'Cat 3'])
+                    chart_data.categories = categories
+                    
+                    series_list = chart_data_info.get('series', [])
+                    if not series_list:
+                        chart_data.add_series('Series 1', [1, 2, 3])
+                    else:
+                        for series in series_list:
+                            chart_data.add_series(series.get('name', 'Series'), series.get('values', [1, 2, 3]))
+                    
+                    placeholder.insert_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, chart_data)
+                    return
+            except:
+                continue
+        
+        # Fallback: create chart as regular shape
+        self.create_chart(slide, shape_info)
+    
+    def insert_table_into_placeholder(self, slide, shape_info: Dict[str, Any]):
+        """Insert table into a placeholder if possible"""
+        table_data_info = shape_info.get('table_data', {})
+        
+        # Try to find appropriate placeholder for table
+        for placeholder in slide.placeholders:
+            try:
+                if hasattr(placeholder, 'insert_table'):
+                    rows = table_data_info.get('rows', 2)
+                    cols = table_data_info.get('columns', 2)
+                    data = table_data_info.get('data', [])
+                    
+                    table = placeholder.insert_table(rows, cols)
+                    
+                    # Fill table with data
+                    for row_idx in range(min(rows, len(data))):
+                        for col_idx in range(min(cols, len(data[row_idx]))):
+                            cell = table.table.cell(row_idx, col_idx)
+                            cell.text = str(data[row_idx][col_idx])
+                    
+                    return
+            except:
+                continue
+        
+        # Fallback: create table as regular shape
+        self.create_table(slide, shape_info)
     
     def fill_placeholder(self, slide, shape_info: Dict[str, Any]):
         """Try to fill slide placeholders with content"""
