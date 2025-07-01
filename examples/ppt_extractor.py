@@ -104,6 +104,153 @@ class PPTExtractor:
             
         return line_info
 
+    def get_auto_shape_type(self, shape) -> str:
+        """Extract the specific auto shape type for MSO_SHAPE_TYPE.AUTO_SHAPE"""
+        try:
+            from pptx.enum.shapes import MSO_SHAPE_TYPE
+            
+            if shape.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE:
+                # Try to get the auto shape type from the shape element
+                if hasattr(shape, '_element') and hasattr(shape._element, 'prstGeom'):
+                    prst_geom = shape._element.prstGeom
+                    if hasattr(prst_geom, 'prst') and prst_geom.prst:
+                        # Map internal geometry names to MSO_SHAPE names
+                        geom_name = prst_geom.prst
+                        return self.map_geometry_to_shape_name(geom_name)
+                
+                # If we can't determine the specific type, try to get it from shape properties
+                if hasattr(shape, 'auto_shape_type'):
+                    return str(shape.auto_shape_type)
+                    
+                # Fallback: return the generic AUTO_SHAPE with number
+                return f"AUTO_SHAPE ({shape.shape_type.value})"
+            else:
+                # For non-auto shapes, return the shape type with number
+                return f"{str(shape.shape_type).split('.')[-1]} ({shape.shape_type.value})"
+                
+        except Exception:
+            # Fallback to original behavior
+            return str(shape.shape_type)
+    
+    def map_geometry_to_shape_name(self, geom_name: str) -> str:
+        """Map internal PowerPoint geometry names to MSO_SHAPE names"""
+        # Mapping from internal geometry names to MSO_SHAPE constants
+        geometry_mapping = {
+            'rect': 'RECTANGLE',
+            'roundRect': 'ROUNDED_RECTANGLE',
+            'ellipse': 'OVAL',
+            'triangle': 'ISOSCELES_TRIANGLE',
+            'rtTriangle': 'RIGHT_TRIANGLE',
+            'parallelogram': 'PARALLELOGRAM',
+            'trapezoid': 'TRAPEZOID',
+            'diamond': 'DIAMOND',
+            'pentagon': 'PENTAGON',
+            'hexagon': 'HEXAGON',
+            'heptagon': 'HEPTAGON',
+            'octagon': 'OCTAGON',
+            'decagon': 'DECAGON',
+            'dodecagon': 'DODECAGON',
+            'pie': 'PIE',
+            'chord': 'CHORD',
+            'teardrop': 'TEAR',
+            'frame': 'FRAME',
+            'halfFrame': 'HALF_FRAME',
+            'corner': 'CORNER',
+            'diagStripe': 'DIAGONAL_STRIPE',
+            'plus': 'CROSS',
+            'plaque': 'PLAQUE',
+            'can': 'CAN',
+            'cube': 'CUBE',
+            'bevel': 'BEVEL',
+            'donut': 'DONUT',
+            'noSmoking': 'NO_SYMBOL',
+            'blockArc': 'BLOCK_ARC',
+            'foldedCorner': 'FOLDED_CORNER',
+            'smileyFace': 'SMILEY_FACE',
+            'heart': 'HEART',
+            'lightningBolt': 'LIGHTNING_BOLT',
+            'sun': 'SUN',
+            'moon': 'MOON',
+            'arc': 'ARC',
+            'bracketPair': 'DOUBLE_BRACKET',
+            'bracePair': 'DOUBLE_BRACE',
+            'leftBracket': 'LEFT_BRACKET',
+            'rightBracket': 'RIGHT_BRACKET',
+            'leftBrace': 'LEFT_BRACE',
+            'rightBrace': 'RIGHT_BRACE',
+            'rightArrow': 'RIGHT_ARROW',
+            'leftArrow': 'LEFT_ARROW',
+            'upArrow': 'UP_ARROW',
+            'downArrow': 'DOWN_ARROW',
+            'leftRightArrow': 'LEFT_RIGHT_ARROW',
+            'upDownArrow': 'UP_DOWN_ARROW',
+            'quadArrow': 'QUAD_ARROW',
+            'leftRightUpArrow': 'LEFT_RIGHT_UP_ARROW',
+            'bentArrow': 'BENT_ARROW',
+            'uturnArrow': 'U_TURN_ARROW',
+            'leftUpArrow': 'LEFT_UP_ARROW',
+            'bentUpArrow': 'BENT_UP_ARROW',
+            'curvedRightArrow': 'CURVED_RIGHT_ARROW',
+            'curvedLeftArrow': 'CURVED_LEFT_ARROW',
+            'curvedUpArrow': 'CURVED_UP_ARROW',
+            'curvedDownArrow': 'CURVED_DOWN_ARROW',
+            'stripedRightArrow': 'STRIPED_RIGHT_ARROW',
+            'notchedRightArrow': 'NOTCHED_RIGHT_ARROW',
+            'circularArrow': 'CIRCULAR_ARROW',
+            'swooshArrow': 'SWOOSH_ARROW',
+            'star4': 'STAR_4_POINT',
+            'star5': 'STAR_5_POINT',
+            'star6': 'STAR_6_POINT',
+            'star7': 'STAR_7_POINT',
+            'star8': 'STAR_8_POINT',
+            'star10': 'STAR_10_POINT',
+            'star12': 'STAR_12_POINT',
+            'star16': 'STAR_16_POINT',
+            'star24': 'STAR_24_POINT',
+            'star32': 'STAR_32_POINT',
+            'ribbon2': 'UP_RIBBON',
+            'ribbon': 'DOWN_RIBBON',
+            'ellipseRibbon2': 'CURVED_UP_RIBBON',
+            'ellipseRibbon': 'CURVED_DOWN_RIBBON',
+            'verticalScroll': 'VERTICAL_SCROLL',
+            'horizontalScroll': 'HORIZONTAL_SCROLL',
+            'wave': 'WAVE',
+            'doubleWave': 'DOUBLE_WAVE',
+            'gear6': 'GEAR_6',
+            'gear9': 'GEAR_9',
+            'funnel': 'FUNNEL',
+            'mathPlus': 'MATH_PLUS',
+            'mathMinus': 'MATH_MINUS',
+            'mathMultiply': 'MATH_MULTIPLY',
+            'mathDivide': 'MATH_DIVIDE',
+            'mathEqual': 'MATH_EQUAL',
+            'mathNotEqual': 'MATH_NOT_EQUAL',
+            'homePlate': 'PENTAGON',
+            'chevron': 'CHEVRON',
+            'pieWedge': 'PIE_WEDGE',
+            'irregularSeal1': 'EXPLOSION1',
+            'irregularSeal2': 'EXPLOSION2',
+            'cloud': 'CLOUD',
+            'cloudCallout': 'CLOUD_CALLOUT',
+            'callout1': 'RECTANGULAR_CALLOUT',
+            'callout2': 'ROUNDED_RECTANGULAR_CALLOUT',
+            'callout3': 'OVAL_CALLOUT',
+            'wedgeEllipseCallout': 'OVAL_CALLOUT',
+            'wedgeRectCallout': 'RECTANGULAR_CALLOUT',
+            'wedgeRRectCallout': 'ROUNDED_RECTANGULAR_CALLOUT',
+            'borderCallout1': 'LINE_CALLOUT_1',
+            'borderCallout2': 'LINE_CALLOUT_2',
+            'borderCallout3': 'LINE_CALLOUT_3',
+            'accentCallout1': 'LINE_CALLOUT_1_ACCENT_BAR',
+            'accentCallout2': 'LINE_CALLOUT_2_ACCENT_BAR',
+            'accentCallout3': 'LINE_CALLOUT_3_ACCENT_BAR',
+            'callout90': 'LINE_CALLOUT_4',
+            'accentCallout90': 'LINE_CALLOUT_4_ACCENT_BAR',
+            'borderCallout90': 'LINE_CALLOUT_4_BORDER_AND_ACCENT_BAR',
+        }
+        
+        return geometry_mapping.get(geom_name, geom_name.upper())
+
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
@@ -117,7 +264,7 @@ class PPTExtractor:
                     'shape_index': shape_idx,
                     'shape_id': shape.shape_id,
                     'name': shape.name,
-                    'shape_type': str(shape.shape_type),
+                    'shape_type': self.get_auto_shape_type(shape),
                     'left': shape.left,
                     'top': shape.top,
                     'width': shape.width,
