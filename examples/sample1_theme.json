@@ -1,0 +1,13 @@
+{
+  "slide_master": {
+    "name": "simple-light-2",
+    "background": "SOLID (1)"
+  },
+  "color_scheme": {
+    "error": "Could not extract color scheme"
+  },
+  "font_scheme": {
+    "error": "Could not extract font scheme"
+  },
+  "theme_name": "Default Theme"
+}
