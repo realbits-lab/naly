@@ -131,7 +131,7 @@ out/
 
 # Python
 # Python bytecode cache
-__pycache__/
+**/__pycache__/
 # Python compiled bytecode files
 *.py[cod]
 # Python class files
