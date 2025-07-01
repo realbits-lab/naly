@@ -83,3 +83,6 @@ out/
 
 # vscode
 .vscode/
+
+# mcp
+.mcp.json
