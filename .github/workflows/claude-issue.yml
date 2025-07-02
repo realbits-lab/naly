@@ -47,7 +47,22 @@ jobs:
           # assignee_trigger: "claude-bot"
 
           # Optional: Allow Claude to run specific commands
-          allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+          allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*),mcp__code-graph-mcp__*,mcp__deepwiki-mcp__*"
+
+          # Optional: MCP Server Configuration
+          mcp_config: |
+            {
+              "mcpServers": {
+                "code-graph-mcp": {
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-code-graph"]
+                },
+                "deepwiki-mcp": {
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-deepwiki"]
+                }
+              }
+            }
 
           # Optional: Add custom instructions for Claude to customize its behavior for your project
           custom_instructions: |
