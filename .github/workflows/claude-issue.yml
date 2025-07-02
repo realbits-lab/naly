@@ -47,7 +47,7 @@ jobs:
           # assignee_trigger: "claude-bot"
 
           # Optional: Allow Claude to run specific commands
-          allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*),mcp__code-graph-mcp__*,mcp__deepwiki-mcp__*"
+          allowed_tools: "*"
 
           # Optional: MCP Server Configuration
           mcp_config: |
