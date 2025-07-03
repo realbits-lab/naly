@@ -299,8 +299,9 @@ class EnhancedPPTGenerator:
             'SURFACE_TOP_VIEW_WIREFRAME': XL_CHART_TYPE.SURFACE_TOP_VIEW_WIREFRAME,
         }
     
-    def load_json_files(self, shapes_file: str, layouts_file: str, theme_file: str):
-        """Load data from JSON files"""
+    def load_json_files(self, shapes_file: str, layouts_file: str, theme_file: str, 
+                        media_file: Optional[str] = None, properties_file: Optional[str] = None):
+        """Load data from JSON files including optional enhanced extractor files"""
         try:
             with open(shapes_file, 'r', encoding='utf-8') as f:
                 self.shapes_data = json.load(f)
@@ -310,11 +311,30 @@ class EnhancedPPTGenerator:
                 
             with open(theme_file, 'r', encoding='utf-8') as f:
                 self.theme_data = json.load(f)
+            
+            # Load media file if provided
+            if media_file and Path(media_file).exists():
+                with open(media_file, 'r', encoding='utf-8') as f:
+                    media_data = json.load(f)
+                    # Cache media files for later use
+                    for category in ['images', 'audio', 'video', 'embedded_objects']:
+                        if category in media_data:
+                            self.media_cache.update(media_data[category])
+            
+            # Load properties file if provided  
+            self.document_properties = {}
+            if properties_file and Path(properties_file).exists():
+                with open(properties_file, 'r', encoding='utf-8') as f:
+                    self.document_properties = json.load(f)
                 
             print(f"Loaded {len(self.shapes_data)} slide(s) with shapes")
             print(f"Loaded {len(self.layouts_data)} layout(s)")
             print(f"Loaded theme: {self.theme_data.get('theme_name', 'Unknown')}")
-            
+            if self.media_cache:
+                print(f"Loaded {len(self.media_cache)} media file(s)")
+            if self.document_properties:
+                print(f"Loaded document properties")
+                
         except Exception as e:
             raise Exception(f"Error loading JSON files: {str(e)}")
     
@@ -337,11 +357,218 @@ class EnhancedPPTGenerator:
             # Apply font scheme if available
             if 'font_scheme' in self.theme_data:
                 self.theme_fonts = self.theme_data['font_scheme']
+            
+            # Apply document properties from enhanced extractor
+            self.apply_document_properties()
                 
             print("Applied enhanced theme settings")
             
         except Exception as e:
             print(f"Warning: Could not apply full theme: {str(e)}")
+    
+    def apply_document_properties(self):
+        """Apply document properties and metadata from enhanced extractor"""
+        if not hasattr(self, 'document_properties') or not self.document_properties:
+            return
+            
+        try:
+            core_props = self.presentation.core_properties
+            doc_props = self.document_properties
+            
+            # Apply core document properties
+            if 'title' in doc_props and doc_props['title']:
+                core_props.title = doc_props['title']
+            
+            if 'author' in doc_props and doc_props['author']:
+                core_props.author = doc_props['author']
+            
+            if 'subject' in doc_props and doc_props['subject']:
+                core_props.subject = doc_props['subject']
+            
+            if 'comments' in doc_props and doc_props['comments']:
+                core_props.comments = doc_props['comments']
+            
+            if 'keywords' in doc_props and doc_props['keywords']:
+                core_props.keywords = doc_props['keywords']
+            
+            if 'category' in doc_props and doc_props['category']:
+                core_props.category = doc_props['category']
+            
+            # Apply creation/modification dates if available
+            if 'created' in doc_props and doc_props['created']:
+                try:
+                    from datetime import datetime
+                    if isinstance(doc_props['created'], str):
+                        # Try to parse ISO format
+                        created_date = datetime.fromisoformat(doc_props['created'].replace('Z', '+00:00'))
+                        core_props.created = created_date
+                except:
+                    pass
+            
+            if 'modified' in doc_props and doc_props['modified']:
+                try:
+                    from datetime import datetime
+                    if isinstance(doc_props['modified'], str):
+                        # Try to parse ISO format
+                        modified_date = datetime.fromisoformat(doc_props['modified'].replace('Z', '+00:00'))
+                        core_props.modified = modified_date
+                except:
+                    pass
+                    
+            print("Applied document properties")
+            
+        except Exception as e:
+            print(f"Warning: Could not apply document properties: {str(e)}")
+            
+    def apply_text_formatting(self, text_frame, text_formatting: Dict[str, Any]):
+        """Apply comprehensive text formatting from enhanced extractor data"""
+        if not text_formatting:
+            return
+            
+        try:
+            # Apply text frame properties
+            if 'margin_left' in text_formatting and text_formatting['margin_left'] is not None:
+                text_frame.margin_left = Emu(text_formatting['margin_left'])
+            if 'margin_right' in text_formatting and text_formatting['margin_right'] is not None:
+                text_frame.margin_right = Emu(text_formatting['margin_right'])
+            if 'margin_top' in text_formatting and text_formatting['margin_top'] is not None:
+                text_frame.margin_top = Emu(text_formatting['margin_top'])
+            if 'margin_bottom' in text_formatting and text_formatting['margin_bottom'] is not None:
+                text_frame.margin_bottom = Emu(text_formatting['margin_bottom'])
+                
+            # Apply word wrap setting
+            if 'word_wrap' in text_formatting and text_formatting['word_wrap'] is not None:
+                text_frame.word_wrap = text_formatting['word_wrap']
+                
+            # Apply auto size setting
+            if 'auto_size' in text_formatting:
+                auto_size_str = text_formatting['auto_size']
+                if 'SHAPE_TO_FIT_TEXT' in auto_size_str:
+                    from pptx.enum.text import MSO_AUTO_SIZE
+                    text_frame.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
+                elif 'TEXT_TO_FIT_SHAPE' in auto_size_str:
+                    from pptx.enum.text import MSO_AUTO_SIZE
+                    text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+                    
+            # Apply vertical anchor
+            if 'vertical_anchor' in text_formatting:
+                anchor_str = text_formatting['vertical_anchor']
+                if 'MIDDLE' in anchor_str:
+                    text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+                elif 'TOP' in anchor_str:
+                    text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
+                elif 'BOTTOM' in anchor_str:
+                    text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.BOTTOM
+                    
+            # Apply paragraph-level formatting
+            paragraphs_data = text_formatting.get('paragraphs', [])
+            if paragraphs_data and len(text_frame.paragraphs) > 0:
+                self.apply_paragraph_formatting(text_frame, paragraphs_data)
+                    
+        except Exception as e:
+            print(f"Warning: Could not apply text frame properties: {str(e)}")
+            
+    def apply_paragraph_formatting(self, text_frame, paragraphs_data: List[Dict[str, Any]]):
+        """Apply paragraph-level formatting from enhanced extractor data"""
+        try:
+            # Clear existing content to rebuild with formatting
+            text_frame.clear()
+            
+            for para_data in paragraphs_data:
+                # Add paragraph
+                if text_frame.paragraphs:
+                    p = text_frame.add_paragraph()
+                else:
+                    p = text_frame.paragraphs[0]
+                    
+                # Apply paragraph properties
+                if 'alignment' in para_data and para_data['alignment']:
+                    alignment_str = para_data['alignment']
+                    if 'CENTER' in alignment_str:
+                        p.alignment = PP_ALIGN.CENTER
+                    elif 'LEFT' in alignment_str:
+                        p.alignment = PP_ALIGN.LEFT
+                    elif 'RIGHT' in alignment_str:
+                        p.alignment = PP_ALIGN.RIGHT
+                    elif 'JUSTIFY' in alignment_str:
+                        p.alignment = PP_ALIGN.JUSTIFY
+                        
+                # Apply paragraph level
+                if 'level' in para_data and para_data['level'] is not None:
+                    p.level = para_data['level']
+                    
+                # Apply spacing
+                if 'space_before' in para_data and para_data['space_before'] is not None:
+                    p.space_before = Pt(para_data['space_before'] / 12700)  # Convert EMU to points
+                if 'space_after' in para_data and para_data['space_after'] is not None:
+                    p.space_after = Pt(para_data['space_after'] / 12700)
+                if 'line_spacing' in para_data and para_data['line_spacing'] is not None:
+                    p.line_spacing = para_data['line_spacing']
+                    
+                # Apply run-level formatting
+                runs_data = para_data.get('runs', [])
+                if runs_data:
+                    self.apply_run_formatting(p, runs_data)
+                else:
+                    # Add paragraph text if no runs data
+                    para_text = para_data.get('text', '')
+                    if para_text:
+                        run = p.runs[0] if p.runs else p.add_run()
+                        run.text = para_text
+                        
+        except Exception as e:
+            print(f"Warning: Could not apply paragraph formatting: {str(e)}")
+            
+    def apply_run_formatting(self, paragraph, runs_data: List[Dict[str, Any]]):
+        """Apply run-level formatting from enhanced extractor data"""
+        try:
+            for run_data in runs_data:
+                run_text = run_data.get('text', '')
+                if not run_text:
+                    continue
+                    
+                # Add run to paragraph
+                run = paragraph.add_run()
+                run.text = run_text
+                
+                # Apply font name
+                font_name = run_data.get('font_name')
+                if font_name:
+                    run.font.name = font_name
+                    
+                # Apply font size
+                font_size = run_data.get('font_size')
+                if font_size:
+                    if hasattr(font_size, 'pt'):  # If it's already a Pt object
+                        run.font.size = font_size
+                    else:  # Convert from EMU to points
+                        run.font.size = Pt(font_size / 12700)
+                        
+                # Apply bold
+                if 'bold' in run_data and run_data['bold'] is not None:
+                    run.font.bold = run_data['bold']
+                    
+                # Apply italic
+                if 'italic' in run_data and run_data['italic'] is not None:
+                    run.font.italic = run_data['italic']
+                    
+                # Apply underline
+                if 'underline' in run_data and run_data['underline']:
+                    underline_str = run_data['underline']
+                    if 'SINGLE' in underline_str:
+                        from pptx.enum.text import MSO_UNDERLINE
+                        run.font.underline = MSO_UNDERLINE.SINGLE_LINE
+                    elif 'DOUBLE' in underline_str:
+                        from pptx.enum.text import MSO_UNDERLINE
+                        run.font.underline = MSO_UNDERLINE.DOUBLE_LINE
+                        
+                # Apply font color
+                color_data = run_data.get('color')
+                if color_data:
+                    self.apply_color_properties(run.font.color, color_data)
+                    
+        except Exception as e:
+            print(f"Warning: Could not apply run formatting: {str(e)}")
     
     def get_shape_type_enum(self, shape_type_str: str) -> Optional[MSO_SHAPE]:
         """Get MSO_SHAPE enum from shape type string with enhanced mapping"""
@@ -390,7 +617,7 @@ class EnhancedPPTGenerator:
         elif type_number == 19 or 'TABLE' in shape_type_str:  # Table
             return self.create_enhanced_table(slide, shape_info)
         elif type_number == 13 or 'PICTURE' in shape_type_str:  # Picture
-            return self.create_picture_placeholder(slide, shape_info)
+            return self.create_enhanced_picture(slide, shape_info)
         elif type_number == 17 or 'TEXT_BOX' in shape_type_str:  # Text Box
             return self.create_enhanced_text_box(slide, shape_info)
         elif type_number == 14 or 'PLACEHOLDER' in shape_type_str:  # Placeholder
@@ -414,9 +641,19 @@ class EnhancedPPTGenerator:
             # Apply enhanced line properties
             self.apply_enhanced_line(shape, shape_info.get('line', {}))
             
+            # Apply rotation if specified
+            self.apply_rotation(shape, shape_info.get('rotation'))
+            
+            # Apply shadow properties if available
+            self.apply_shadow_properties(shape, shape_info.get('shadow', {}))
+            
             # Add text with enhanced formatting
             if shape_info.get('text'):
                 self.add_enhanced_text(shape, shape_info.get('text', ''), shape_info)
+            elif shape_info.get('text_formatting'):
+                # Apply enhanced text formatting from extractor
+                if hasattr(shape, 'text_frame') and shape.text_frame:
+                    self.apply_text_formatting(shape.text_frame, shape_info.get('text_formatting', {}))
             
             return shape
             
@@ -438,10 +675,15 @@ class EnhancedPPTGenerator:
                 self.apply_enhanced_color(shape.fill.fore_color, fill_info.get('fore_color', {}))
                 
             elif 'GRADIENT' in fill_type or fill_info.get('gradient'):
-                # Apply gradient fill (simplified - python-pptx has limited gradient support)
-                shape.fill.gradient()
-                if 'fore_color' in fill_info:
-                    self.apply_enhanced_color(shape.fill.fore_color, fill_info['fore_color'])
+                # Apply enhanced gradient fill
+                gradient_info = fill_info.get('gradient', {})
+                if gradient_info:
+                    self.apply_enhanced_gradient_fill(shape, gradient_info)
+                else:
+                    # Fallback gradient
+                    shape.fill.gradient()
+                    if 'fore_color' in fill_info:
+                        self.apply_enhanced_color(shape.fill.fore_color, fill_info['fore_color'])
                     
             elif 'PATTERN' in fill_type or fill_info.get('pattern'):
                 shape.fill.patterned()
@@ -479,6 +721,27 @@ class EnhancedPPTGenerator:
             color_info = line_info.get('color', {})
             if color_info:
                 self.apply_enhanced_color(line.color, color_info)
+            
+            # Apply line style properties from enhanced extractor
+            if 'style' in line_info:
+                # python-pptx has limited line style support
+                style_name = line_info['style']
+                if 'DASH' in style_name.upper():
+                    from pptx.enum.dml import MSO_LINE_DASH_STYLE
+                    try:
+                        line.dash_style = MSO_LINE_DASH_STYLE.DASH
+                    except:
+                        pass
+            
+            # Apply line transparency
+            if 'transparency' in line_info and line_info['transparency'] is not None:
+                try:
+                    # Convert to alpha value (0.0 = opaque, 1.0 = transparent)
+                    alpha = 1.0 - (line_info['transparency'] / 100.0)
+                    if hasattr(line.color, 'alpha'):
+                        line.color.alpha = alpha
+                except:
+                    pass
             
             # Apply line fill if available
             fill_info = line_info.get('fill', {})
@@ -878,6 +1141,176 @@ class EnhancedPPTGenerator:
             
             print(f"  Created {len(shapes)} shapes on slide {slide_index + 1}")
     
+    def apply_rotation(self, shape, rotation_value):
+        """Apply rotation to a shape from enhanced extractor data"""
+        if rotation_value is None:
+            return
+            
+        try:
+            # Convert rotation value to float if it's not already
+            if isinstance(rotation_value, (int, float)):
+                # python-pptx expects rotation in degrees
+                shape.rotation = float(rotation_value)
+            elif isinstance(rotation_value, str):
+                # Try to parse string rotation value
+                rotation_degrees = float(rotation_value)
+                shape.rotation = rotation_degrees
+                
+        except Exception as e:
+            print(f"Warning: Could not apply rotation {rotation_value}: {str(e)}")
+            
+    def apply_shadow_properties(self, shape, shadow_info: Dict[str, Any]):
+        """Apply shadow properties from enhanced extractor data"""
+        if not shadow_info:
+            return
+            
+        try:
+            # python-pptx has limited shadow support, but we can apply what's available
+            if hasattr(shape, 'shadow'):
+                shadow = shape.shadow
+                
+                # Apply shadow visibility
+                if 'visible' in shadow_info and shadow_info['visible'] is not None:
+                    shadow.inherit = not shadow_info['visible']
+                    
+                # Apply shadow style if available
+                if 'style' in shadow_info and hasattr(shadow, 'style'):
+                    # Map shadow style strings to enums
+                    style_str = shadow_info['style'].upper()
+                    if 'OUTER' in style_str and hasattr(shadow, 'style'):
+                        from pptx.enum.dml import MSO_SHADOW_TYPE
+                        try:
+                            shadow.style = MSO_SHADOW_TYPE.OUTER
+                        except:
+                            pass
+                    
+                # Apply blur radius if available
+                if 'blur_radius' in shadow_info and hasattr(shadow, 'blur_radius'):
+                    try:
+                        blur_value = shadow_info['blur_radius']
+                        if isinstance(blur_value, (int, float)):
+                            shadow.blur_radius = Emu(int(blur_value))
+                    except:
+                        pass
+                        
+                # Apply distance if available  
+                if 'distance' in shadow_info and hasattr(shadow, 'distance'):
+                    try:
+                        distance_value = shadow_info['distance']
+                        if isinstance(distance_value, (int, float)):
+                            shadow.distance = Emu(int(distance_value))
+                    except:
+                        pass
+                        
+                # Apply direction/angle if available
+                if 'direction' in shadow_info and hasattr(shadow, 'direction'):
+                    try:
+                        direction_value = shadow_info['direction']
+                        if isinstance(direction_value, (int, float)):
+                            shadow.direction = float(direction_value)
+                    except:
+                        pass
+                
+                # Apply shadow color if available
+                if 'color' in shadow_info and hasattr(shadow, 'color'):
+                    try:
+                        color_info = shadow_info['color']
+                        self.apply_enhanced_color(shadow.color, color_info)
+                    except:
+                        pass
+                
+                # Apply transparency/alpha if available
+                if 'transparency' in shadow_info and hasattr(shadow, 'transparency'):
+                    try:
+                        transparency_value = shadow_info['transparency']
+                        if isinstance(transparency_value, (int, float)):
+                            # Convert percentage to decimal (0-100% -> 0.0-1.0)
+                            shadow.transparency = transparency_value / 100.0
+                    except:
+                        pass
+                        
+        except Exception as e:
+            print(f"Warning: Could not apply shadow properties: {str(e)}")
+            
+    def create_enhanced_picture(self, slide, shape_info: Dict[str, Any]):
+        """Create picture shape with actual image embedding from enhanced extractor data"""
+        left = Inches(self.emu_to_inches(shape_info['left']))
+        top = Inches(self.emu_to_inches(shape_info['top']))
+        width = Inches(self.emu_to_inches(shape_info['width']))
+        height = Inches(self.emu_to_inches(shape_info['height']))
+        
+        try:
+            # Try to get image data from enhanced extractor
+            image_properties = shape_info.get('image_properties', {})
+            media_key = image_properties.get('media_key') or image_properties.get('filename')
+            
+            if media_key and media_key in self.media_cache:
+                # Get image data from cache
+                media_info = self.media_cache[media_key]
+                image_data_b64 = media_info.get('data')
+                
+                if image_data_b64:
+                    # Decode base64 image data
+                    image_data = base64.b64decode(image_data_b64)
+                    
+                    # Create BytesIO stream for python-pptx
+                    image_stream = io.BytesIO(image_data)
+                    
+                    # Add picture to slide
+                    picture = slide.shapes.add_picture(image_stream, left, top, width, height)
+                    
+                    # Apply rotation if specified
+                    self.apply_rotation(picture, shape_info.get('rotation'))
+                    
+                    print(f"Successfully embedded image: {media_key}")
+                    return picture
+                    
+            # Fallback: create placeholder if no image data available
+            return self.create_picture_placeholder(slide, shape_info)
+            
+        except Exception as e:
+            print(f"Warning: Could not embed image {media_key}: {str(e)}")
+            # Fallback to placeholder
+            return self.create_picture_placeholder(slide, shape_info)
+            
+    def apply_enhanced_gradient_fill(self, shape, gradient_info: Dict[str, Any]):
+        """Apply enhanced gradient fill properties from enhanced extractor data"""
+        if not gradient_info:
+            return
+            
+        try:
+            # python-pptx has limited gradient support, but we can apply basic gradients
+            shape.fill.gradient()
+            
+            # Apply gradient stops if available
+            gradient_stops = gradient_info.get('gradient_stops', [])
+            if gradient_stops and hasattr(shape.fill, 'gradient_stops'):
+                # Clear existing stops and add new ones
+                stops = shape.fill.gradient_stops
+                stops.clear()
+                
+                for stop_info in gradient_stops:
+                    position = stop_info.get('position', 0.0)
+                    color_info = stop_info.get('color', {})
+                    
+                    # Add gradient stop
+                    stop = stops.add_gradient_stop(position)
+                    if color_info:
+                        self.apply_enhanced_color(stop.color, color_info)
+                        
+            # Apply gradient angle if available
+            gradient_angle = gradient_info.get('gradient_angle')
+            if gradient_angle is not None and hasattr(shape.fill, 'gradient_angle'):
+                try:
+                    shape.fill.gradient_angle = gradient_angle
+                except:
+                    pass
+                    
+        except Exception as e:
+            print(f"Warning: Could not apply enhanced gradient: {str(e)}")
+            # Fallback to solid fill
+            shape.fill.solid()
+    
     def save_presentation(self, output_file: str):
         """Save the presentation to file"""
         self.presentation.save(output_file)
@@ -892,24 +1325,41 @@ def main():
     parser.add_argument('shapes_file', help='Path to shapes JSON file')
     parser.add_argument('layouts_file', help='Path to layouts JSON file')
     parser.add_argument('theme_file', help='Path to theme JSON file')
+    parser.add_argument('--media-file', help='Path to media JSON file (optional)')
+    parser.add_argument('--properties-file', help='Path to properties JSON file (optional)')
     parser.add_argument('--output', '-o', default='enhanced_presentation.pptx', 
                        help='Output PowerPoint file name (default: enhanced_presentation.pptx)')
     
     args = parser.parse_args()
     
-    # Validate input files
+    # Validate required input files
     for file_path in [args.shapes_file, args.layouts_file, args.theme_file]:
         if not Path(file_path).exists():
             print(f"Error: File '{file_path}' does not exist.")
             sys.exit(1)
     
+    # Validate optional files if provided
+    if args.media_file and not Path(args.media_file).exists():
+        print(f"Warning: Media file '{args.media_file}' does not exist, skipping media integration.")
+        args.media_file = None
+        
+    if args.properties_file and not Path(args.properties_file).exists():
+        print(f"Warning: Properties file '{args.properties_file}' does not exist, skipping properties integration.")
+        args.properties_file = None
+    
     try:
         # Initialize enhanced generator
         generator = EnhancedPPTGenerator()
         
-        # Load JSON data
+        # Load JSON data including optional enhanced files
         print("Loading JSON files...")
-        generator.load_json_files(args.shapes_file, args.layouts_file, args.theme_file)
+        generator.load_json_files(
+            args.shapes_file, 
+            args.layouts_file, 
+            args.theme_file,
+            media_file=args.media_file,
+            properties_file=args.properties_file
+        )
         
         # Generate slides with enhanced fidelity
         print("\nGenerating enhanced presentation...")
@@ -926,6 +1376,10 @@ def main():
         print(f"  - Improved chart type support")
         print(f"  - Better table formatting")
         print(f"  - Intelligent layout selection")
+        if args.media_file:
+            print(f"  - Real image embedding from media data")
+        if args.properties_file:
+            print(f"  - Document properties integration")
         
     except Exception as e:
         print(f"Error generating enhanced presentation: {str(e)}")
