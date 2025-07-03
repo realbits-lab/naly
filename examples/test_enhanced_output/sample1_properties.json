@@ -1,0 +1,19 @@
+{
+  "core_properties": {
+    "title": "PowerPoint Presentation",
+    "author": "",
+    "subject": "",
+    "keywords": "",
+    "comments": "",
+    "category": "",
+    "created": null,
+    "modified": "2025-07-03 08:51:35",
+    "last_modified_by": "python-pptx",
+    "revision": 1,
+    "version": ""
+  },
+  "slide_size": {
+    "width": 9144000,
+    "height": 5143500
+  }
+}
