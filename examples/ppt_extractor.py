@@ -3,20 +3,26 @@
 import sys
 import json
 import argparse
+import base64
+import zipfile
+import shutil
 from pathlib import Path
 from pptx import Presentation
 from pptx.shapes.base import BaseShape
 from pptx.slide import Slide, SlideLayout
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
 class PPTExtractor:
     def __init__(self, file_path: str):
         self.file_path = file_path
         self.presentation = Presentation(file_path)
+        self.media_files = {}
+        self.document_properties = {}
+        self.relationships = {}
         
     def extract_fill_properties(self, fill) -> Dict[str, Any]:
-        """Extract detailed fill properties including colors"""
+        """Extract detailed fill properties including colors, gradients, and patterns"""
         fill_info = {
             'type': str(fill.type) if fill.type else None
         }
@@ -33,12 +39,21 @@ class PPTExtractor:
                 fill_info['pattern'] = True
                 fill_info['fore_color'] = self.extract_color_properties(fill.fore_color)
                 fill_info['back_color'] = self.extract_color_properties(fill.back_color)
+                # Extract pattern type if available
+                if hasattr(fill, 'pattern'):
+                    fill_info['pattern_type'] = str(fill.pattern)
                 
             elif fill.type == MSO_FILL_TYPE.GRADIENT:
                 fill_info['gradient'] = True
+                # Extract gradient stops and direction
+                gradient_info = self.extract_gradient_properties(fill)
+                fill_info.update(gradient_info)
                 
             elif fill.type == MSO_FILL_TYPE.PICTURE:
                 fill_info['picture'] = True
+                # Extract picture fill information
+                picture_info = self.extract_picture_fill_properties(fill)
+                fill_info.update(picture_info)
                 
             elif fill.type == MSO_FILL_TYPE.BACKGROUND:
                 fill_info['background'] = True
@@ -48,8 +63,61 @@ class PPTExtractor:
             
         return fill_info
     
+    def extract_gradient_properties(self, fill) -> Dict[str, Any]:
+        """Extract gradient fill properties"""
+        gradient_info = {}
+        
+        try:
+            # Extract gradient stops
+            if hasattr(fill, 'gradient_stops'):
+                stops = []
+                for stop in fill.gradient_stops:
+                    stop_info = {
+                        'position': stop.position if hasattr(stop, 'position') else None,
+                        'color': self.extract_color_properties(stop.color) if hasattr(stop, 'color') else None
+                    }
+                    stops.append(stop_info)
+                gradient_info['gradient_stops'] = stops
+                
+            # Extract gradient angle and direction
+            if hasattr(fill, 'gradient_angle'):
+                gradient_info['gradient_angle'] = fill.gradient_angle
+                
+        except Exception as e:
+            gradient_info['gradient_error'] = f"Could not extract gradient properties: {str(e)}"
+            
+        return gradient_info
+    
+    def extract_picture_fill_properties(self, fill) -> Dict[str, Any]:
+        """Extract picture fill properties"""
+        picture_info = {}
+        
+        try:
+            # Extract picture data if available
+            if hasattr(fill, 'picture'):
+                picture = fill.picture
+                if hasattr(picture, 'image'):
+                    image_info = {
+                        'filename': picture.image.filename if hasattr(picture.image, 'filename') else None,
+                        'content_type': picture.image.content_type if hasattr(picture.image, 'content_type') else None,
+                        'size': len(picture.image.blob) if hasattr(picture.image, 'blob') else None
+                    }
+                    picture_info['image'] = image_info
+                    
+                    # Store image data for media extraction
+                    if hasattr(picture.image, 'blob') and hasattr(picture.image, 'filename'):
+                        self.media_files[picture.image.filename] = {
+                            'data': base64.b64encode(picture.image.blob).decode('utf-8'),
+                            'content_type': picture.image.content_type
+                        }
+                        
+        except Exception as e:
+            picture_info['picture_error'] = f"Could not extract picture properties: {str(e)}"
+            
+        return picture_info
+    
     def extract_color_properties(self, color) -> Dict[str, Any]:
-        """Extract color properties including RGB values"""
+        """Extract color properties including RGB values, theme colors, and adjustments"""
         color_info = {
             'type': str(color.type) if hasattr(color, 'type') and color.type else None
         }
@@ -71,9 +139,12 @@ class PPTExtractor:
                 if hasattr(color, 'theme_color'):
                     color_info['theme_color'] = str(color.theme_color)
                     
-            # Extract brightness if available
+            # Extract brightness and tint if available
             if hasattr(color, 'brightness') and color.brightness is not None:
                 color_info['brightness'] = color.brightness
+                
+            if hasattr(color, 'tint_and_shade') and color.tint_and_shade is not None:
+                color_info['tint_and_shade'] = color.tint_and_shade
                 
         except Exception as e:
             color_info['error'] = f"Could not extract color properties: {str(e)}"
@@ -359,6 +430,190 @@ class PPTExtractor:
             
         return placeholder_info
     
+    def extract_text_formatting(self, text_frame) -> Dict[str, Any]:
+        """Extract comprehensive text formatting information"""
+        text_info = {
+            'margin_left': text_frame.margin_left if hasattr(text_frame, 'margin_left') else None,
+            'margin_right': text_frame.margin_right if hasattr(text_frame, 'margin_right') else None,
+            'margin_top': text_frame.margin_top if hasattr(text_frame, 'margin_top') else None,
+            'margin_bottom': text_frame.margin_bottom if hasattr(text_frame, 'margin_bottom') else None,
+            'word_wrap': text_frame.word_wrap if hasattr(text_frame, 'word_wrap') else None,
+            'auto_size': str(text_frame.auto_size) if hasattr(text_frame, 'auto_size') else None,
+            'vertical_anchor': str(text_frame.vertical_anchor) if hasattr(text_frame, 'vertical_anchor') else None,
+            'paragraphs': []
+        }
+        
+        try:
+            # Extract paragraph-level formatting
+            for para_idx, paragraph in enumerate(text_frame.paragraphs):
+                para_info = {
+                    'text': paragraph.text,
+                    'alignment': str(paragraph.alignment) if hasattr(paragraph, 'alignment') and paragraph.alignment else None,
+                    'level': paragraph.level if hasattr(paragraph, 'level') else None,
+                    'space_before': paragraph.space_before if hasattr(paragraph, 'space_before') else None,
+                    'space_after': paragraph.space_after if hasattr(paragraph, 'space_after') else None,
+                    'line_spacing': paragraph.line_spacing if hasattr(paragraph, 'line_spacing') else None,
+                    'runs': []
+                }
+                
+                # Extract run-level formatting
+                for run_idx, run in enumerate(paragraph.runs):
+                    run_info = {
+                        'text': run.text,
+                        'font_name': run.font.name if hasattr(run.font, 'name') and run.font.name else None,
+                        'font_size': run.font.size if hasattr(run.font, 'size') and run.font.size else None,
+                        'bold': run.font.bold if hasattr(run.font, 'bold') else None,
+                        'italic': run.font.italic if hasattr(run.font, 'italic') else None,
+                        'underline': str(run.font.underline) if hasattr(run.font, 'underline') and run.font.underline else None,
+                        'color': self.extract_color_properties(run.font.color) if hasattr(run.font, 'color') else None
+                    }
+                    para_info['runs'].append(run_info)
+                    
+                text_info['paragraphs'].append(para_info)
+                
+        except Exception as e:
+            text_info['error'] = f"Could not extract text formatting: {str(e)}"
+            
+        return text_info
+    
+    def extract_media_files(self) -> Dict[str, Any]:
+        """Extract media files from the PowerPoint presentation"""
+        media_info = {
+            'images': {},
+            'audio': {},
+            'video': {},
+            'embedded_objects': {}
+        }
+        
+        try:
+            # Extract media from ZIP structure
+            with zipfile.ZipFile(self.file_path, 'r') as zip_ref:
+                for file_info in zip_ref.filelist:
+                    if file_info.filename.startswith('ppt/media/'):
+                        media_data = zip_ref.read(file_info.filename)
+                        file_ext = Path(file_info.filename).suffix.lower()
+                        
+                        media_entry = {
+                            'filename': file_info.filename,
+                            'size': len(media_data),
+                            'data': base64.b64encode(media_data).decode('utf-8')
+                        }
+                        
+                        # Categorize by file type
+                        if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']:
+                            media_info['images'][file_info.filename] = media_entry
+                        elif file_ext in ['.mp3', '.wav', '.wma', '.m4a', '.aac']:
+                            media_info['audio'][file_info.filename] = media_entry
+                        elif file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+                            media_info['video'][file_info.filename] = media_entry
+                        else:
+                            media_info['embedded_objects'][file_info.filename] = media_entry
+                            
+        except Exception as e:
+            media_info['error'] = f"Could not extract media files: {str(e)}"
+            
+        return media_info
+    
+    def extract_document_properties(self) -> Dict[str, Any]:
+        """Extract document properties and metadata"""
+        doc_props = {}
+        
+        try:
+            # Extract core properties
+            if hasattr(self.presentation, 'core_properties'):
+                core_props = self.presentation.core_properties
+                doc_props['core_properties'] = {
+                    'title': core_props.title if hasattr(core_props, 'title') else None,
+                    'author': core_props.author if hasattr(core_props, 'author') else None,
+                    'subject': core_props.subject if hasattr(core_props, 'subject') else None,
+                    'keywords': core_props.keywords if hasattr(core_props, 'keywords') else None,
+                    'comments': core_props.comments if hasattr(core_props, 'comments') else None,
+                    'category': core_props.category if hasattr(core_props, 'category') else None,
+                    'created': str(core_props.created) if hasattr(core_props, 'created') and core_props.created else None,
+                    'modified': str(core_props.modified) if hasattr(core_props, 'modified') and core_props.modified else None,
+                    'last_modified_by': core_props.last_modified_by if hasattr(core_props, 'last_modified_by') else None,
+                    'revision': core_props.revision if hasattr(core_props, 'revision') else None,
+                    'version': core_props.version if hasattr(core_props, 'version') else None
+                }
+                
+            # Extract slide size and orientation
+            if hasattr(self.presentation, 'slide_width') and hasattr(self.presentation, 'slide_height'):
+                doc_props['slide_size'] = {
+                    'width': self.presentation.slide_width,
+                    'height': self.presentation.slide_height
+                }
+                
+        except Exception as e:
+            doc_props['error'] = f"Could not extract document properties: {str(e)}"
+            
+        return doc_props
+    
+    def extract_shadow_properties(self, shadow) -> Dict[str, Any]:
+        """Extract shadow properties"""
+        shadow_info = {}
+        
+        try:
+            if hasattr(shadow, 'inherit'):
+                shadow_info['inherit'] = shadow.inherit
+            if hasattr(shadow, 'visible'):
+                shadow_info['visible'] = shadow.visible
+            if hasattr(shadow, 'style'):
+                shadow_info['style'] = str(shadow.style)
+            if hasattr(shadow, 'blur_radius'):
+                shadow_info['blur_radius'] = shadow.blur_radius
+            if hasattr(shadow, 'distance'):
+                shadow_info['distance'] = shadow.distance
+            if hasattr(shadow, 'direction'):
+                shadow_info['direction'] = shadow.direction
+                
+        except Exception as e:
+            shadow_info['error'] = f"Could not extract shadow properties: {str(e)}"
+            
+        return shadow_info
+    
+    def extract_3d_properties(self, three_d) -> Dict[str, Any]:
+        """Extract 3D properties"""
+        three_d_info = {}
+        
+        try:
+            if hasattr(three_d, 'bevel_top'):
+                three_d_info['bevel_top'] = str(three_d.bevel_top)
+            if hasattr(three_d, 'bevel_bottom'):
+                three_d_info['bevel_bottom'] = str(three_d.bevel_bottom)
+            if hasattr(three_d, 'extrusion_height'):
+                three_d_info['extrusion_height'] = three_d.extrusion_height
+            if hasattr(three_d, 'extrusion_color'):
+                three_d_info['extrusion_color'] = self.extract_color_properties(three_d.extrusion_color)
+                
+        except Exception as e:
+            three_d_info['error'] = f"Could not extract 3D properties: {str(e)}"
+            
+        return three_d_info
+    
+    def extract_image_properties(self, image) -> Dict[str, Any]:
+        """Extract image properties for picture shapes"""
+        image_info = {}
+        
+        try:
+            if hasattr(image, 'filename'):
+                image_info['filename'] = image.filename
+            if hasattr(image, 'content_type'):
+                image_info['content_type'] = image.content_type
+            if hasattr(image, 'blob'):
+                image_info['size'] = len(image.blob)
+                # Store image data for media extraction
+                filename = image.filename if hasattr(image, 'filename') else f"image_{len(self.media_files)}"
+                self.media_files[filename] = {
+                    'data': base64.b64encode(image.blob).decode('utf-8'),
+                    'content_type': image.content_type if hasattr(image, 'content_type') else 'image/unknown'
+                }
+                image_info['media_key'] = filename
+                
+        except Exception as e:
+            image_info['error'] = f"Could not extract image properties: {str(e)}"
+            
+        return image_info
+    
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
@@ -379,9 +634,11 @@ class PPTExtractor:
                     'height': shape.height,
                 }
                 
-                # Add text content if available
+                # Add comprehensive text content and formatting if available
                 if hasattr(shape, 'text_frame') and shape.text_frame:
+                    text_info = self.extract_text_formatting(shape.text_frame)
                     shape_info['text'] = shape.text_frame.text
+                    shape_info['text_formatting'] = text_info
                 
                 # Extract chart data for chart shapes
                 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -409,6 +666,25 @@ class PPTExtractor:
                     shape_info['has_line'] = True
                     line_info = self.extract_line_properties(shape.line)
                     shape_info['line'] = line_info
+                
+                # Add rotation and transformation properties
+                if hasattr(shape, 'rotation'):
+                    shape_info['rotation'] = shape.rotation
+                    
+                # Add shadow properties if available
+                if hasattr(shape, 'shadow'):
+                    shape_info['shadow'] = self.extract_shadow_properties(shape.shadow)
+                    
+                # Add 3D properties if available
+                if hasattr(shape, 'three_d'):
+                    shape_info['three_d'] = self.extract_3d_properties(shape.three_d)
+                    
+                # Extract image properties for picture shapes
+                from pptx.enum.shapes import MSO_SHAPE_TYPE
+                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                    if hasattr(shape, 'image'):
+                        image_info = self.extract_image_properties(shape.image)
+                        shape_info['image_properties'] = image_info
                 
                 slide_shapes.append(shape_info)
             
@@ -447,21 +723,44 @@ class PPTExtractor:
         return layouts_data
     
     def extract_theme(self) -> Dict[str, Any]:
-        """Extract theme information from the presentation"""
+        """Extract comprehensive theme information from the presentation"""
         theme_data = {
             'slide_master': {},
             'color_scheme': {},
-            'font_scheme': {}
+            'font_scheme': {},
+            'theme_name': 'Default Theme',
+            'slide_masters': [],
+            'layout_masters': []
         }
         
         # Extract slide master information
         slide_master = self.presentation.slide_master
-        theme_data['slide_master'] = {
+        master_info = {
             'name': slide_master.name if hasattr(slide_master, 'name') else 'Unknown',
-            'background': str(slide_master.background.fill.type) if slide_master.background.fill else None,
+            'width': slide_master.width if hasattr(slide_master, 'width') else None,
+            'height': slide_master.height if hasattr(slide_master, 'height') else None,
+            'background': self.extract_background_properties(slide_master.background) if hasattr(slide_master, 'background') else None,
+            'placeholders': []
         }
         
-        # Extract theme colors
+        # Extract master placeholders
+        try:
+            for placeholder in slide_master.placeholders:
+                placeholder_info = {
+                    'placeholder_type': str(placeholder.placeholder_format.type) if hasattr(placeholder, 'placeholder_format') else None,
+                    'name': placeholder.name if hasattr(placeholder, 'name') else None,
+                    'left': placeholder.left if hasattr(placeholder, 'left') else None,
+                    'top': placeholder.top if hasattr(placeholder, 'top') else None,
+                    'width': placeholder.width if hasattr(placeholder, 'width') else None,
+                    'height': placeholder.height if hasattr(placeholder, 'height') else None,
+                }
+                master_info['placeholders'].append(placeholder_info)
+        except Exception as e:
+            master_info['placeholders_error'] = f"Could not extract placeholders: {str(e)}"
+            
+        theme_data['slide_master'] = master_info
+        
+        # Extract theme colors with proper mapping
         try:
             theme_part = self.presentation.part.theme_part
             if theme_part:
@@ -469,20 +768,28 @@ class PPTExtractor:
         except:
             theme_data['theme_name'] = 'Default Theme'
         
-        # Extract color scheme information
+        # Extract comprehensive color scheme information
         try:
             color_scheme = slide_master.theme.color_scheme
             theme_colors = {}
+            
+            # Define theme color names for better mapping
+            color_names = [
+                'lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 
+                'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'
+            ]
+            
             for i, color in enumerate(color_scheme):
-                theme_colors[f'color_{i}'] = {
-                    'rgb': str(color.rgb) if hasattr(color, 'rgb') else None,
+                color_name = color_names[i] if i < len(color_names) else f'color_{i}'
+                theme_colors[color_name] = {
+                    'rgb': str(color.rgb) if hasattr(color, 'rgb') and color.rgb else None,
                     'type': str(color.color_type) if hasattr(color, 'color_type') else None
                 }
             theme_data['color_scheme'] = theme_colors
-        except:
-            theme_data['color_scheme'] = {'error': 'Could not extract color scheme'}
+        except Exception as e:
+            theme_data['color_scheme'] = {'error': f'Could not extract color scheme: {str(e)}'}
         
-        # Extract font scheme information
+        # Extract comprehensive font scheme information
         try:
             font_scheme = slide_master.theme.font_scheme
             theme_data['font_scheme'] = {
@@ -497,10 +804,32 @@ class PPTExtractor:
                     'cs': font_scheme.minor_font.cs if hasattr(font_scheme.minor_font, 'cs') else None,
                 }
             }
-        except:
-            theme_data['font_scheme'] = {'error': 'Could not extract font scheme'}
+        except Exception as e:
+            theme_data['font_scheme'] = {'error': f'Could not extract font scheme: {str(e)}'}
+        
+        # Extract effect scheme if available
+        try:
+            if hasattr(slide_master.theme, 'effect_scheme'):
+                theme_data['effect_scheme'] = str(slide_master.theme.effect_scheme)
+        except Exception as e:
+            theme_data['effect_scheme'] = {'error': f'Could not extract effect scheme: {str(e)}'}
         
         return theme_data
+    
+    def extract_background_properties(self, background) -> Dict[str, Any]:
+        """Extract background properties from slide master or slide"""
+        bg_info = {}
+        
+        try:
+            if hasattr(background, 'fill') and background.fill:
+                bg_info['fill'] = self.extract_fill_properties(background.fill)
+            if hasattr(background, 'graphics'):
+                bg_info['has_graphics'] = True
+                
+        except Exception as e:
+            bg_info['error'] = f"Could not extract background properties: {str(e)}"
+            
+        return bg_info
     
     def save_to_json(self, data: Any, output_file: str):
         """Save data to JSON file"""
@@ -510,9 +839,12 @@ class PPTExtractor:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extract shapes, layouts, and theme from PowerPoint files')
+    parser = argparse.ArgumentParser(description='Enhanced PowerPoint extractor with comprehensive shape, layout, theme, media, and formatting extraction')
     parser.add_argument('input_file', help='Path to the PowerPoint file (.ppt or .pptx)')
     parser.add_argument('--output-dir', default='.', help='Output directory for JSON files (default: current directory)')
+    parser.add_argument('--extract-media', action='store_true', help='Extract and embed media files as base64 data')
+    parser.add_argument('--detailed-text', action='store_true', help='Extract detailed text formatting information')
+    parser.add_argument('--include-properties', action='store_true', help='Extract document properties and metadata')
     
     args = parser.parse_args()
     
@@ -555,8 +887,54 @@ def main():
         theme_output = output_dir / f"{base_name}_theme.json"
         extractor.save_to_json(theme_data, theme_output)
         
+        # Extract media files
+        print("Extracting media files...")
+        media_data = extractor.extract_media_files()
+        media_output = output_dir / f"{base_name}_media.json"
+        extractor.save_to_json(media_data, media_output)
+        
+        # Extract document properties
+        print("Extracting document properties...")
+        doc_props = extractor.extract_document_properties()
+        doc_props_output = output_dir / f"{base_name}_properties.json"
+        extractor.save_to_json(doc_props, doc_props_output)
+        
+        # Create summary with all extracted data
+        summary_data = {
+            'file_path': str(input_path),
+            'base_name': base_name,
+            'extraction_files': {
+                'shapes': str(shapes_output),
+                'layouts': str(layouts_output),
+                'theme': str(theme_output),
+                'media': str(media_output),
+                'properties': str(doc_props_output)
+            },
+            'statistics': {
+                'slide_count': len(extractor.presentation.slides),
+                'layout_count': len(extractor.presentation.slide_layouts),
+                'media_file_count': len(extractor.media_files),
+                'total_shapes': sum(len(slide_data['shapes']) for slide_data in shapes_data)
+            }
+        }
+        
+        summary_output = output_dir / f"{base_name}_summary.json"
+        extractor.save_to_json(summary_data, summary_output)
+        
         print(f"\nExtraction completed successfully!")
         print(f"Output files created in: {output_dir}")
+        print(f"Files generated:")
+        print(f"  - Shapes: {shapes_output}")
+        print(f"  - Layouts: {layouts_output}")
+        print(f"  - Theme: {theme_output}")
+        print(f"  - Media: {media_output}")
+        print(f"  - Properties: {doc_props_output}")
+        print(f"  - Summary: {summary_output}")
+        print(f"\nStatistics:")
+        print(f"  - Slides: {summary_data['statistics']['slide_count']}")
+        print(f"  - Layouts: {summary_data['statistics']['layout_count']}")
+        print(f"  - Media files: {summary_data['statistics']['media_file_count']}")
+        print(f"  - Total shapes: {summary_data['statistics']['total_shapes']}")
         
     except Exception as e:
         print(f"Error processing PowerPoint file: {str(e)}")
