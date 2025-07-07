@@ -1,0 +1,17 @@
+{
+  "file_path": "sample1.pptx",
+  "base_name": "sample1",
+  "extraction_files": {
+    "shapes": "sample1_shapes.json",
+    "layouts": "sample1_layouts.json",
+    "theme": "sample1_theme.json",
+    "media": "sample1_media.json",
+    "properties": "sample1_properties.json"
+  },
+  "statistics": {
+    "slide_count": 34,
+    "layout_count": 11,
+    "media_file_count": 1,
+    "total_shapes": 670
+  }
+}
