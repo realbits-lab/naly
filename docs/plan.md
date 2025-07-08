@@ -28,6 +28,7 @@
 3. **For Each Slide Content:**
    - a. **Search for Similar Slides**
       - Query the vector database using the generated slide content to find the most similar existing slide template.
+      - Select the top 1 (or user selected) slide template.
    - b. **Prepare Generation Input**
       - Combine the user’s prompt and the retrieved slide’s XML data as input for generation.
    - c. **Generate Slide**
