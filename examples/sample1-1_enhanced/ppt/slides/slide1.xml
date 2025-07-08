@@ -1,2 +1,634 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="ctrTitle"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Subtitle 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="subTitle" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="4" name="Rounded Rectangle 3"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="457198" y="411475"/><a:ext cx="4305240" cy="5400478"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="EFEFEF"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr/></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="5" name="TextBox 4"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="5032425" y="3493438"/><a:ext cx="3654300" cy="405600"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:solidFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p/><a:p><a:r><a:rPr sz="1400"/><a:t>Here is where this template begins</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="6" name="TextBox 5"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="5032550" y="1244463"/><a:ext cx="3654300" cy="2172900"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:solidFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p/><a:p><a:r><a:rPr sz="1400"/><a:t>Design Elements Infographics</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="7" name="Rounded Rectangle 6"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="457198" y="411475"/><a:ext cx="726493" cy="726493"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr/></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="8" name="Rounded Rectangle 7"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1695000" y="992700"/><a:ext cx="917712" cy="917697"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="9" name="Rounded Rectangle 8"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="2606911" y="992700"/><a:ext cx="917697" cy="917697"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent4"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="10" name="Rounded Rectangle 9"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1695000" y="1904592"/><a:ext cx="917712" cy="916167"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent2"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="11" name="Rounded Rectangle 10"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="2606911" y="1904592"/><a:ext cx="917697" cy="916167"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent3"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="12" name="Rounded Rectangle 11"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="3189187" y="3454202"/><a:ext cx="335413" cy="980442"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent5"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="13" name="Rounded Rectangle 12"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="2691115" y="3150352"/><a:ext cx="335415" cy="1284290"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent4"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="14" name="Rounded Rectangle 13"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="2193061" y="3814798"/><a:ext cx="335415" cy="617364"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent2"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="15" name="Rounded Rectangle 14"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1695000" y="3559980"/><a:ext cx="335415" cy="874591"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"/></a:solidFill><a:ln><a:solidFill/></a:ln></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style><p:txBody><a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/><a:lstStyle/><a:p><a:pPr algn="ctr"/></a:p><a:p><a:pPr algn="l"><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft></a:pPr></a:p></p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+    xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <p:cSld>
+        <p:spTree>
+            <p:nvGrpSpPr>
+                <p:cNvPr id="1" name=""/>
+                <p:cNvGrpSpPr/>
+                <p:nvPr/>
+            </p:nvGrpSpPr>
+            <p:grpSpPr/>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="2" name="Title 1"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="ctrTitle"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr/>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p/>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="3" name="Subtitle 2"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="subTitle" idx="1"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr/>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p/>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="4" name="Rounded Rectangle 3"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="457198" y="411475"/>
+                        <a:ext cx="4305240" cy="5400478"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:srgbClr val="EFEFEF"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="5" name="TextBox 4"/>
+                    <p:cNvSpPr txBox="1"/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="5032425" y="3493438"/>
+                        <a:ext cx="3654300" cy="405600"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:noFill/>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr wrap="square">
+                        <a:spAutoFit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr sz="1400"/>
+                            <a:t>Here is where this template begins</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="6" name="TextBox 5"/>
+                    <p:cNvSpPr txBox="1"/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="5032550" y="1244463"/>
+                        <a:ext cx="3654300" cy="2172900"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:noFill/>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr wrap="square">
+                        <a:spAutoFit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr sz="1400"/>
+                            <a:t>Design Elements Infographics</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="7" name="Rounded Rectangle 6"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="457198" y="411475"/>
+                        <a:ext cx="726493" cy="726493"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:srgbClr val="D9D9D9"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="8" name="Rounded Rectangle 7"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1695000" y="992700"/>
+                        <a:ext cx="917712" cy="917697"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent1"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="9" name="Rounded Rectangle 8"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2606911" y="992700"/>
+                        <a:ext cx="917697" cy="917697"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent4"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="10" name="Rounded Rectangle 9"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1695000" y="1904592"/>
+                        <a:ext cx="917712" cy="916167"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent2"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="11" name="Rounded Rectangle 10"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2606911" y="1904592"/>
+                        <a:ext cx="917697" cy="916167"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent3"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="12" name="Rounded Rectangle 11"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="3189187" y="3454202"/>
+                        <a:ext cx="335413" cy="980442"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent5"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="13" name="Rounded Rectangle 12"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2691115" y="3150352"/>
+                        <a:ext cx="335415" cy="1284290"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent4"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="14" name="Rounded Rectangle 13"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2193061" y="3814798"/>
+                        <a:ext cx="335415" cy="617364"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent2"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="15" name="Rounded Rectangle 14"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1695000" y="3559980"/>
+                        <a:ext cx="335415" cy="874591"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="roundRect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent1"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:solidFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:style>
+                    <a:lnRef idx="1">
+                        <a:schemeClr val="accent1"/>
+                    </a:lnRef>
+                    <a:fillRef idx="3">
+                        <a:schemeClr val="accent1"/>
+                    </a:fillRef>
+                    <a:effectRef idx="2">
+                        <a:schemeClr val="accent1"/>
+                    </a:effectRef>
+                    <a:fontRef idx="minor">
+                        <a:schemeClr val="lt1"/>
+                    </a:fontRef>
+                </p:style>
+                <p:txBody>
+                    <a:bodyPr rtlCol="0" anchor="ctr" lIns="91425" rIns="91425" tIns="91425" bIns="91425" wrap="square"/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                    </a:p>
+                    <a:p>
+                        <a:pPr algn="l">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                        </a:pPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+        </p:spTree>
+    </p:cSld>
+    <p:clrMapOvr>
+        <a:masterClrMapping/>
+    </p:clrMapOvr>
+</p:sld>

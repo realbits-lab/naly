@@ -6,6 +6,7 @@ import argparse
 import base64
 import zipfile
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from pptx import Presentation
 from pptx.shapes.base import BaseShape
