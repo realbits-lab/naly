@@ -70,6 +70,9 @@ docs/new-architecture.md  # Digital marketplace architecture (separate feature)
 - `python-pptx>=0.6.21` (primary PowerPoint manipulation library)
 - Standard Python libraries for XML, JSON, and file handling
 
+### Documentation References
+- `docs/python-pptx.md` - Complete python-pptx library documentation and API reference
+
 ### Development Workflow
 1. Run fidelity tests to measure impact
 2. Analyze XML differences for specific issues
