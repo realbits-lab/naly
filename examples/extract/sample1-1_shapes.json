@@ -12,8 +12,48 @@
         "top": 992700,
         "width": 917712,
         "height": 917697,
+        "adjustments": null,
+        "auto_shape_type": null,
+        "click_action": "<pptx.action.ActionSetting object at 0x107410bf0>",
+        "element": "<CT_Shape '<p:sp>' at 0x10740ce10>",
+        "fill": {
+          "type": "SOLID (1)",
+          "solid": true,
+          "fore_color": {
+            "type": "SCHEME (2)",
+            "theme_color": "ACCENT_1 (5)",
+            "brightness": 0
+          }
+        },
+        "get_or_add_ln": "<bound method Shape.get_or_add_ln of <pptx.shapes.autoshape.Shape object at 0x1073b5df0>>",
+        "has_chart": false,
+        "has_table": false,
+        "has_text_frame": true,
+        "is_placeholder": false,
+        "line": {
+          "width": 0,
+          "color": {
+            "type": null
+          },
+          "fill": {
+            "type": "SOLID (1)",
+            "solid": true,
+            "fore_color": {
+              "type": null
+            }
+          }
+        },
+        "ln": "<CT_LineProperties '<a:ln>' at 0x10740ceb0>",
+        "part": "<pptx.parts.slide.SlidePart object at 0x1073dea80>",
+        "placeholder_format": {
+          "error": "Could not extract placeholder info: shape is not a placeholder"
+        },
+        "rotation": 0.0,
+        "shadow": {
+          "inherit": true
+        },
         "text": "",
-        "text_formatting": {
+        "text_frame": {
           "margin_left": 91425,
           "margin_right": 91425,
           "margin_top": 91425,
@@ -32,34 +72,6 @@
               "runs": []
             }
           ]
-        },
-        "has_fill": true,
-        "fill": {
-          "type": "SOLID (1)",
-          "solid": true,
-          "fore_color": {
-            "type": "SCHEME (2)",
-            "theme_color": "ACCENT_1 (5)",
-            "brightness": 0
-          }
-        },
-        "has_line": true,
-        "line": {
-          "width": 0,
-          "color": {
-            "type": null
-          },
-          "fill": {
-            "type": "SOLID (1)",
-            "solid": true,
-            "fore_color": {
-              "type": null
-            }
-          }
-        },
-        "rotation": 0.0,
-        "shadow": {
-          "inherit": true
         }
       }
     ]

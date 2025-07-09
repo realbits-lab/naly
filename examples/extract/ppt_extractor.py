@@ -645,10 +645,15 @@ class PPTExtractor:
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
-        
+
         from pptx.enum.shapes import MSO_SHAPE_TYPE
 
         for slide_idx, slide in enumerate(self.presentation.slides):
+            # Print all attributes of slide
+            print(f"Slide {slide_idx} attributes:")
+            for attr in dir(slide):
+                print(f"attr: {attr}")
+
             slide_shapes = []
 
             for shape_idx, shape in enumerate(slide.shapes):
@@ -685,17 +690,20 @@ class PPTExtractor:
                 # Extract chart data for chart shapes
                 if shape.shape_type == MSO_SHAPE_TYPE.CHART:
                     if hasattr(shape, 'chart'):
-                        shape_info['chart_data'] = self.extract_chart_data(shape.chart)
+                        shape_info['chart_data'] = self.extract_chart_data(
+                            shape.chart)
 
                 # Extract table data for table shapes
                 elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
                     if hasattr(shape, 'table'):
-                        shape_info['table_data'] = self.extract_table_data(shape.table)
+                        shape_info['table_data'] = self.extract_table_data(
+                            shape.table)
 
                 # Extract image properties for picture shapes
                 elif shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     if hasattr(shape, 'image'):
-                        shape_info['image_properties'] = self.extract_image_properties(shape.image)
+                        shape_info['image_properties'] = self.extract_image_properties(
+                            shape.image)
 
                 slide_shapes.append(shape_info)
 
