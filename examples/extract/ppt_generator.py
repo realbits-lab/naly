@@ -677,9 +677,7 @@ class PPTGenerator:
             return slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
 
     def create_custom_geometry_shape(self, slide, shape_info: Dict[str, Any]):
-        """Create shape with custom geometry (fallback to appropriate shape)"""
-        # For now, create a rounded rectangle as fallback for custom geometry
-        # Future enhancement: implement actual custom geometry path creation
+        """Create shape with custom geometry using FreeformBuilder"""
         custom_geom = shape_info.get('custom_geometry', {})
         
         left = Inches(self.emu_to_inches(shape_info['left']))
@@ -687,8 +685,18 @@ class PPTGenerator:
         width = Inches(self.emu_to_inches(shape_info['width']))
         height = Inches(self.emu_to_inches(shape_info['height']))
 
-        # Create a rounded rectangle as fallback
-        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
+        # Check if we have valid custom geometry data
+        if not custom_geom.get('has_custom_geometry') or not custom_geom.get('paths'):
+            # Fallback to rounded rectangle
+            shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
+        else:
+            # Create freeform shape using FreeformBuilder
+            try:
+                shape = self.create_freeform_from_custom_geometry(slide, shape_info, custom_geom)
+            except Exception as e:
+                print(f"Warning: Could not create freeform shape: {str(e)}")
+                # Fallback to rounded rectangle
+                shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
 
         # Apply enhanced fill properties
         self.apply_enhanced_fill(shape, shape_info.get('fill', {}))
@@ -703,8 +711,132 @@ class PPTGenerator:
         if shape_info.get('text'):
             self.add_enhanced_text(shape, shape_info.get('text', ''), shape_info)
 
-        print(f"Created custom geometry fallback shape: {shape_info.get('name', 'Unknown')}")
+        print(f"Created custom geometry shape: {shape_info.get('name', 'Unknown')}")
         return shape
+
+    def create_freeform_from_custom_geometry(self, slide, shape_info: Dict[str, Any], custom_geom: Dict[str, Any]):
+        """Create freeform shape using FreeformBuilder from custom geometry data"""
+        
+        # Get shape dimensions
+        left = Inches(self.emu_to_inches(shape_info['left']))
+        top = Inches(self.emu_to_inches(shape_info['top']))
+        width = Inches(self.emu_to_inches(shape_info['width']))
+        height = Inches(self.emu_to_inches(shape_info['height']))
+        
+        # Process each path in the custom geometry
+        paths = custom_geom.get('paths', [])
+        if not paths:
+            raise ValueError("No paths found in custom geometry")
+        
+        # Use the first path (most shapes have only one path)
+        path = paths[0]
+        commands = path.get('commands', [])
+        
+        if not commands:
+            raise ValueError("No commands found in path")
+        
+        # Get path dimensions for scaling
+        path_width = float(path.get('width', 1))
+        path_height = float(path.get('height', 1))
+        
+        # Calculate scaling factors to fit the shape bounds
+        scale_x = width.inches / (path_width / 914400.0) if path_width > 0 else 1.0
+        scale_y = height.inches / (path_height / 914400.0) if path_height > 0 else 1.0
+        
+        # Convert custom geometry commands to vertex list for FreeformBuilder
+        vertices = []
+        current_x, current_y = 0, 0
+        
+        # Process commands to build vertex list
+        for i, command in enumerate(commands):
+            cmd_type = command.get('command')
+            
+            if cmd_type == 'moveTo':
+                # Move to point
+                x = self.scale_coordinate(float(command.get('x', 0)), scale_x)
+                y = self.scale_coordinate(float(command.get('y', 0)), scale_y)
+                current_x, current_y = x, y
+                vertices.append((Inches(x), Inches(y)))
+                
+            elif cmd_type == 'lnTo':
+                # Line to point
+                x = self.scale_coordinate(float(command.get('x', 0)), scale_x)
+                y = self.scale_coordinate(float(command.get('y', 0)), scale_y)
+                current_x, current_y = x, y
+                vertices.append((Inches(x), Inches(y)))
+                
+            elif cmd_type == 'cubicBezTo':
+                # Cubic Bezier curve - approximate with line segments
+                points = command.get('points', [])
+                if len(points) >= 3:
+                    # Get end point
+                    x3 = self.scale_coordinate(float(points[2].get('x', 0)), scale_x)
+                    y3 = self.scale_coordinate(float(points[2].get('y', 0)), scale_y)
+                    
+                    # Approximate curve with intermediate points
+                    num_segments = 5  # Number of line segments to approximate curve
+                    for j in range(1, num_segments + 1):
+                        t = j / num_segments
+                        # Simple linear interpolation for approximation
+                        x = current_x + t * (x3 - current_x)
+                        y = current_y + t * (y3 - current_y)
+                        vertices.append((Inches(x), Inches(y)))
+                    
+                    current_x, current_y = x3, y3
+                    
+            elif cmd_type == 'quadBezTo':
+                # Quadratic Bezier curve - approximate with line segments
+                points = command.get('points', [])
+                if len(points) >= 2:
+                    # Get end point
+                    x2 = self.scale_coordinate(float(points[1].get('x', 0)), scale_x)
+                    y2 = self.scale_coordinate(float(points[1].get('y', 0)), scale_y)
+                    
+                    # Approximate curve with intermediate points
+                    num_segments = 3
+                    for j in range(1, num_segments + 1):
+                        t = j / num_segments
+                        x = current_x + t * (x2 - current_x)
+                        y = current_y + t * (y2 - current_y)
+                        vertices.append((Inches(x), Inches(y)))
+                    
+                    current_x, current_y = x2, y2
+                    
+            elif cmd_type == 'arcTo':
+                # Arc - approximate with line segments
+                points = command.get('points', [])
+                if len(points) >= 1:
+                    x = self.scale_coordinate(float(points[0].get('x', 0)), scale_x)
+                    y = self.scale_coordinate(float(points[0].get('y', 0)), scale_y)
+                    current_x, current_y = x, y
+                    vertices.append((Inches(x), Inches(y)))
+                    
+            elif cmd_type == 'close':
+                # Close the path - will be handled by close parameter
+                pass
+        
+        # Create freeform shape using proper python-pptx API
+        if len(vertices) < 2:
+            raise ValueError("Not enough vertices to create freeform shape")
+        
+        # Create the freeform builder
+        builder = slide.shapes.build_freeform(start_x=vertices[0][0], start_y=vertices[0][1], scale=1.0)
+        
+        # Add line segments
+        if len(vertices) > 1:
+            builder.add_line_segments(vertices[1:], close=True)
+        
+        # Convert to shape and position it
+        freeform = builder.convert_to_shape(origin_x=left, origin_y=top)
+        
+        return freeform
+
+    def scale_coordinate(self, coord_value: float, scale_factor: float) -> float:
+        """Scale coordinate value from path units to inches"""
+        # Convert from path coordinate to EMU, then to inches, then apply scaling
+        coord_emu = coord_value * 914400.0 / 60000.0  # Approximate conversion
+        coord_inches = coord_emu / 914400.0
+        return coord_inches * scale_factor
 
     def apply_enhanced_fill(self, shape, fill_info: Dict[str, Any]):
         """Apply enhanced fill properties including gradients and patterns"""
