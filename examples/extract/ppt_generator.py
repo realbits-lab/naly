@@ -1390,26 +1390,142 @@ class PPTGenerator:
             print(
                 f"Creating slide {slide_index + 1} with {len(shapes)} shapes...")
 
-            # Get optimal layout based on content
-            layout = self.get_optimal_layout(shapes)
-            slide = self.presentation.slides.add_slide(layout)
+            # Use blank layout to avoid automatic placeholders
+            blank_layout = self.presentation.slide_layouts[-1]  # Usually blank layout
+            slide = self.presentation.slides.add_slide(blank_layout)
 
-            # Sort shapes by z-order (shape_index)
-            shapes_sorted = sorted(
-                shapes, key=lambda x: x.get('shape_index', 0))
+            # Generate slide with exact XML structure
+            self.recreate_slide_xml_structure(slide, shapes)
 
-            # Fix slide structure to match original
-            self.fix_slide_structure(slide)
+            print(f"  Created {len(shapes)} shapes on slide {slide_index + 1}")
+
+    def recreate_slide_xml_structure(self, slide, shapes):
+        """Recreate slide XML structure exactly matching original"""
+        try:
+            import xml.etree.ElementTree as ET
+            from lxml import etree
             
-            # Add shapes to slide
-            for shape_info in shapes_sorted:
+            # Get slide element
+            slide_element = slide.element
+            
+            # Clear all existing shapes except the group container
+            spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+            if spTree is not None:
+                # Keep only nvGrpSpPr and grpSpPr, remove all shapes
+                to_remove = []
+                for child in spTree:
+                    if child.tag not in [
+                        '{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr',
+                        '{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr'
+                    ]:
+                        to_remove.append(child)
+                for child in to_remove:
+                    spTree.remove(child)
+                
+                # Fix group shape ID to match original
+                nvGrpSpPr = spTree.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
+                if nvGrpSpPr is not None:
+                    cNvPr = nvGrpSpPr.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
+                    if cNvPr is not None and shapes:
+                        # Set group ID based on first shape ID - 1
+                        first_shape = min(shapes, key=lambda x: x.get('shape_id', 999))
+                        group_id = first_shape.get('shape_id', 54) - 1
+                        cNvPr.set('id', str(group_id))
+                        cNvPr.set('name', f'Shape {group_id}')
+                
+                # Add shapes directly from XML
+                for shape_info in sorted(shapes, key=lambda x: x.get('shape_index', 0)):
+                    self.add_shape_from_xml(spTree, shape_info)
+                
+                # Add all required namespaces to slide element
+                self.add_original_namespaces(slide_element)
+            
+        except Exception as e:
+            print(f"Warning: Could not recreate XML structure: {str(e)}")
+            # Fallback to original method
+            self.fix_slide_structure(slide)
+            for shape_info in shapes:
                 try:
                     self.create_enhanced_shape(slide, shape_info)
                 except Exception as e:
-                    print(
-                        f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
+                    print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
 
-            print(f"  Created {len(shapes)} shapes on slide {slide_index + 1}")
+    def add_original_namespaces(self, slide_element):
+        """Add all original namespaces to match source file"""
+        try:
+            # Set namespaces using proper ElementTree method
+            import xml.etree.ElementTree as ET
+            
+            # Register namespaces
+            namespaces = {
+                'a': "http://schemas.openxmlformats.org/drawingml/2006/main",
+                'r': "http://schemas.openxmlformats.org/officeDocument/2006/relationships", 
+                'mc': "http://schemas.openxmlformats.org/markup-compatibility/2006",
+                'mv': "urn:schemas-microsoft-com:mac:vml",
+                'p': "http://schemas.openxmlformats.org/presentationml/2006/main",
+                'c': "http://schemas.openxmlformats.org/drawingml/2006/chart",
+                'dgm': "http://schemas.openxmlformats.org/drawingml/2006/diagram",
+                'o': "urn:schemas-microsoft-com:office:office",
+                'v': "urn:schemas-microsoft-com:vml",
+                'pvml': "urn:schemas-microsoft-com:office:powerpoint",
+                'com': "http://schemas.openxmlformats.org/drawingml/2006/compatibility",
+                'p14': "http://schemas.microsoft.com/office/powerpoint/2010/main",
+                'p15': "http://schemas.microsoft.com/office/powerpoint/2012/main",
+                'ahyp': "http://schemas.microsoft.com/office/drawing/2018/hyperlinkcolor"
+            }
+            
+            # Register namespaces with ElementTree
+            for prefix, uri in namespaces.items():
+                ET.register_namespace(prefix, uri)
+            
+        except Exception as e:
+            print(f"Warning: Could not set namespaces: {str(e)}")
+
+    def add_shape_from_xml(self, spTree, shape_info):
+        """Add shape directly from XML string to preserve exact structure"""
+        try:
+            import xml.etree.ElementTree as ET
+            
+            # Get the original XML string from element data
+            element_data = shape_info.get('element', {})
+            xml_string = element_data.get('xml_string', '')
+            
+            if xml_string:
+                # Parse the original XML
+                try:
+                    # Clean up the XML string and ensure it's properly formatted
+                    xml_string = xml_string.strip()
+                    if not xml_string.startswith('<'):
+                        return
+                    
+                    # Remove invalid characters that might cause parsing issues
+                    import re
+                    # Remove control characters except tab, newline, carriage return
+                    xml_string = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_string)
+                    
+                    # Parse using ElementTree directly
+                    shape_element = ET.fromstring(xml_string)
+                    
+                    # Append to spTree
+                    spTree.append(shape_element)
+                    
+                    print(f"Added shape from XML: {shape_info.get('name', 'Unknown')}")
+                    
+                except Exception as e:
+                    print(f"Warning: Could not parse XML for shape {shape_info.get('name', 'Unknown')}: {str(e)}")
+                    # Fallback to enhanced shape creation
+                    slide = self.presentation.slides[-1]  # Get current slide
+                    self.create_enhanced_shape(slide, shape_info)
+            else:
+                # Fallback if no XML string available
+                slide = self.presentation.slides[-1]  # Get current slide  
+                self.create_enhanced_shape(slide, shape_info)
+                
+        except Exception as e:
+            print(f"Warning: Could not add shape from XML: {str(e)}")
+            # Fallback to enhanced shape creation
+            slide = self.presentation.slides[-1]  # Get current slide
+            self.create_enhanced_shape(slide, shape_info)
 
     def fix_slide_structure(self, slide):
         """Fix slide structure to match original XML format"""
@@ -1635,8 +1751,79 @@ class PPTGenerator:
     def save_presentation(self, output_file: str):
         """Save the presentation to file"""
         self.presentation.save(output_file)
+        
+        # Post-process XML to match original format
+        self.post_process_xml_format(output_file)
+        
         print(f"\nPresentation saved to: {output_file}")
         print(f"Total slides: {len(self.presentation.slides)}")
+
+    def post_process_xml_format(self, pptx_file: str):
+        """Post-process the PPTX file to ensure XML matches original format"""
+        try:
+            import zipfile
+            import tempfile
+            import shutil
+            import os
+            
+            # Extract PPTX to temp directory
+            temp_dir = tempfile.mkdtemp()
+            extract_dir = os.path.join(temp_dir, 'pptx_contents')
+            
+            with zipfile.ZipFile(pptx_file, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+            
+            # Process all slide XML files
+            slides_dir = os.path.join(extract_dir, 'ppt', 'slides')
+            if os.path.exists(slides_dir):
+                for slide_file in os.listdir(slides_dir):
+                    if slide_file.endswith('.xml'):
+                        slide_path = os.path.join(slides_dir, slide_file)
+                        self.format_xml_as_single_line(slide_path)
+            
+            # Recreate PPTX file
+            new_pptx_path = pptx_file + '.tmp'
+            with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
+                for root, dirs, files in os.walk(extract_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, extract_dir)
+                        zip_out.write(file_path, arcname)
+            
+            # Replace original file
+            shutil.move(new_pptx_path, pptx_file)
+            
+            # Cleanup
+            shutil.rmtree(temp_dir)
+            
+        except Exception as e:
+            print(f"Warning: Could not post-process XML format: {str(e)}")
+
+    def format_xml_as_single_line(self, xml_file_path: str):
+        """Format XML file as single line to match original"""
+        try:
+            with open(xml_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Remove all newlines and extra whitespace between tags
+            import re
+            
+            # Remove newlines and extra spaces between tags
+            content = re.sub(r'>\s+<', '><', content)
+            content = re.sub(r'\n\s*', '', content)
+            content = re.sub(r'\s+', ' ', content)
+            content = re.sub(r'> <', '><', content)
+            
+            # Ensure proper XML declaration format
+            if content.startswith("<?xml version='1.0'"):
+                content = content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes'?>", 
+                                        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
+            
+            with open(xml_file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+                
+        except Exception as e:
+            print(f"Warning: Could not format XML file {xml_file_path}: {str(e)}")
 
 
 def main():

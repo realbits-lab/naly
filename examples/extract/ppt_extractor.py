@@ -189,6 +189,20 @@ class PPTExtractor:
             pass
         return None
 
+    def _safe_get_click_action(self, shape) -> str:
+        """Safely get click action, avoiding group shape error"""
+        try:
+            # Check if shape is a group shape - they don't have click actions
+            from pptx.enum.shapes import MSO_SHAPE_TYPE
+            if hasattr(shape, 'shape_type') and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                return None
+            
+            if hasattr(shape, 'click_action') and shape.click_action:
+                return str(shape.click_action)
+        except Exception:
+            pass
+        return None
+
     def get_auto_shape_type(self, shape) -> str:
         """Extract the specific auto shape type for MSO_SHAPE_TYPE.AUTO_SHAPE"""
         try:
@@ -664,7 +678,7 @@ class PPTExtractor:
                     'height': shape.height if hasattr(shape, 'height') else None,
                     'adjustments': list(shape.adjustments) if hasattr(shape, 'adjustments') and shape.adjustments else None,
                     'auto_shape_type': self._safe_get_auto_shape_type(shape),
-                    'click_action': str(shape.click_action) if hasattr(shape, 'click_action') and shape.click_action else None,
+                    'click_action': self._safe_get_click_action(shape),
                     'element': self.extract_element_attributes(shape.element) if hasattr(shape, 'element') else None,
                     'custom_geometry': self.extract_custom_geometry(shape.element) if hasattr(shape, 'element') else None,
                     'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
