@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate a default PowerPoint file and analyze the first layout attributes.
+Generate a PowerPoint file with custom slide using available layouts.
 """
 
 import os
@@ -12,44 +12,53 @@ from pptx.enum.shapes import PP_PLACEHOLDER
 
 def generate_default_powerpoint():
     """Generate a default PowerPoint presentation with python-pptx library."""
-    prs = Presentation("blank.pptx")
+    # Check if blank.pptx exists in the current directory
+    blank_path = os.path.join(os.path.dirname(__file__), "blank.pptx")
+    if os.path.exists(blank_path):
+        prs = Presentation(blank_path)
+    else:
+        # Create a blank presentation if blank.pptx doesn't exist
+        prs = Presentation()
 
-    # Add a new layout with title and graphic frame placeholders
+    # Add a slide using an existing layout with placeholders
     add_custom_layout(prs)
 
     return prs
 
 
 def add_custom_layout(prs):
-    """Add a custom layout with title and graphic frame placeholders."""
-    # Get the slide master
-    slide_master = prs.slide_masters[0]
+    """Add a slide using an existing layout and demonstrate adding content."""
+    # Get an existing layout that has title and content placeholders
+    # Most presentations have a title and content layout
+    layout = None
+    for slide_layout in prs.slide_layouts:
+        if len(slide_layout.placeholders) >= 2:
+            layout = slide_layout
+            break
 
-    # Create a new slide layout
-    custom_layout = slide_master.slide_layouts.add_slide_layout(
-        name="Custom Layout")
+    if layout is None:
+        # Fallback to first layout if no suitable layout found
+        layout = prs.slide_layouts[0]
 
-    # Add title placeholder
-    title_placeholder = custom_layout.placeholders.add_placeholder(
-        placeholder_type=PP_PLACEHOLDER.TITLE,
-        left=Inches(1),
-        top=Inches(0.5),
-        width=Inches(8),
-        height=Inches(1.5)
-    )
+    # Add a slide using this layout
+    slide = prs.slides.add_slide(layout)
 
-    # Add graphic frame placeholder (for charts, tables, etc.)
-    graphic_placeholder = custom_layout.placeholders.add_placeholder(
-        placeholder_type=PP_PLACEHOLDER.OBJECT,
-        left=Inches(1),
-        top=Inches(2.5),
-        width=Inches(8),
-        height=Inches(5)
-    )
+    # Try to populate placeholders if they exist
+    if len(layout.placeholders) > 0:
+        # Usually placeholder 0 is the title
+        title_placeholder = layout.placeholders[0]
+        if hasattr(title_placeholder, 'text'):
+            title_placeholder.text = "Custom Layout Example"
+
+    if len(layout.placeholders) > 1:
+        # Usually placeholder 1 is the content
+        content_placeholder = layout.placeholders[1]
+        if hasattr(content_placeholder, 'text'):
+            content_placeholder.text = "This demonstrates using existing layouts with placeholders."
 
     print(
-        f"Added custom layout with {len(custom_layout.placeholders)} placeholders")
-    return custom_layout
+        f"Added slide using layout with {len(layout.placeholders)} placeholders")
+    return layout
 
 
 def save_powerpoint(prs, filename="default_template.pptx"):
@@ -71,8 +80,8 @@ def save_powerpoint(prs, filename="default_template.pptx"):
 
 
 def main():
-    """Main function to generate PowerPoint and analyze layout."""
-    print("Generating default PowerPoint presentation...")
+    """Main function to generate PowerPoint with custom slide."""
+    print("Generating PowerPoint presentation...")
 
     # Generate the presentation
     prs = generate_default_powerpoint()
@@ -84,11 +93,11 @@ def main():
     print(f"Total slides: {len(prs.slides)}")
     print(f"Total slide layouts: {len(prs.slide_layouts)}")
 
-    # Show information about the custom layout
+    # Show information about the layouts
     if len(prs.slide_layouts) > 0:
-        custom_layout = prs.slide_layouts[-1]  # Last added layout
-        print(f"Custom layout name: {custom_layout.name}")
-        print(f"Custom layout placeholders: {len(custom_layout.placeholders)}")
+        layout = prs.slide_layouts[0]
+        print(f"First layout name: {layout.name}")
+        print(f"First layout placeholders: {len(layout.placeholders)}")
 
     print("Presentation created successfully!")
 
