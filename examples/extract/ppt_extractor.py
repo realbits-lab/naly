@@ -180,6 +180,15 @@ class PPTExtractor:
 
         return line_info
 
+    def _safe_get_auto_shape_type(self, shape) -> str:
+        """Safely get auto shape type string"""
+        try:
+            if hasattr(shape, 'auto_shape_type'):
+                return str(shape.auto_shape_type)
+        except Exception:
+            pass
+        return None
+
     def get_auto_shape_type(self, shape) -> str:
         """Extract the specific auto shape type for MSO_SHAPE_TYPE.AUTO_SHAPE"""
         try:
@@ -196,7 +205,10 @@ class PPTExtractor:
 
                 # If we can't determine the specific type, try to get it from shape properties
                 if hasattr(shape, 'auto_shape_type'):
-                    return str(shape.auto_shape_type)
+                    try:
+                        return str(shape.auto_shape_type)
+                    except Exception:
+                        pass
 
                 # Fallback: return the generic AUTO_SHAPE with number
                 return f"AUTO_SHAPE ({shape.shape_type.value})"
@@ -421,12 +433,19 @@ class PPTExtractor:
 
         return table_info
 
+    def _safe_extract_placeholder_info(self, shape) -> Dict[str, Any]:
+        """Safely extract placeholder information"""
+        try:
+            return self.extract_placeholder_info(shape)
+        except Exception as e:
+            return {'error': f"Could not extract placeholder info: {str(e)}"}
+
     def extract_placeholder_info(self, shape) -> Dict[str, Any]:
         """Extract placeholder-specific information"""
         placeholder_info = {}
 
         try:
-            if hasattr(shape, 'placeholder_format'):
+            if hasattr(shape, 'placeholder_format') and shape.placeholder_format:
                 placeholder_info['placeholder_type'] = str(
                     shape.placeholder_format.type)
                 placeholder_info['placeholder_idx'] = shape.placeholder_format.idx if hasattr(
@@ -626,18 +645,13 @@ class PPTExtractor:
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
+        
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
 
         for slide_idx, slide in enumerate(self.presentation.slides):
             slide_shapes = []
 
             for shape_idx, shape in enumerate(slide.shapes):
-                # Print all attributes of shape
-                print(f"Shape {shape_idx} attributes:")
-                for attr in dir(shape):
-                    print(f"attr: {attr}")
-                    # if not attr.startswith('_'):
-                    #     print(f"  {attr}: {getattr(shape, attr)}")
-
                 shape_info = {
                     'slide_index': slide_idx,
                     'shape_index': shape_idx,
@@ -648,82 +662,40 @@ class PPTExtractor:
                     'top': shape.top if hasattr(shape, 'top') else None,
                     'width': shape.width if hasattr(shape, 'width') else None,
                     'height': shape.height if hasattr(shape, 'height') else None,
-                    'adjustments': shape.adjustments if hasattr(shape, 'adjustments') else None,
-                    'auto_shape_type': shape.auto_shape_type if hasattr(shape, 'auto_shape_type') else None,
-                    'click_action': shape.click_action if hasattr(shape, 'click_action') else None,
-                    'element': shape.element if hasattr(shape, 'element') else None,
-                    'fill': shape.fill if hasattr(shape, 'fill') else None,
-                    'get_or_add_ln': shape.get_or_add_ln if hasattr(shape, 'get_or_add_ln') else None,
+                    'adjustments': list(shape.adjustments) if hasattr(shape, 'adjustments') and shape.adjustments else None,
+                    'auto_shape_type': self._safe_get_auto_shape_type(shape),
+                    'click_action': str(shape.click_action) if hasattr(shape, 'click_action') and shape.click_action else None,
+                    'element': str(shape.element) if hasattr(shape, 'element') else None,
+                    'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
+                    'get_or_add_ln': str(shape.get_or_add_ln) if hasattr(shape, 'get_or_add_ln') else None,
                     'has_chart': shape.has_chart if hasattr(shape, 'has_chart') else None,
                     'has_table': shape.has_table if hasattr(shape, 'has_table') else None,
                     'has_text_frame': shape.has_text_frame if hasattr(shape, 'has_text_frame') else None,
                     'is_placeholder': shape.is_placeholder if hasattr(shape, 'is_placeholder') else None,
-                    'line': shape.line if hasattr(shape, 'line') else None,
-                    'ln': shape.ln if hasattr(shape, 'ln') else None,
-                    'part': shape.part if hasattr(shape, 'part') else None,
-                    'placeholder_format': shape.placeholder_format if hasattr(shape, 'placeholder_format') else None,
+                    'line': self.extract_line_properties(shape.line) if hasattr(shape, 'line') else None,
+                    'ln': str(shape.ln) if hasattr(shape, 'ln') else None,
+                    'part': str(shape.part) if hasattr(shape, 'part') else None,
+                    'placeholder_format': self._safe_extract_placeholder_info(shape),
                     'rotation': shape.rotation if hasattr(shape, 'rotation') else None,
-                    'shadow': shape.shadow if hasattr(shape, 'shadow') else None,
+                    'shadow': self.extract_shadow_properties(shape.shadow) if hasattr(shape, 'shadow') else None,
                     'text': shape.text if hasattr(shape, 'text') else None,
-                    'text_frame': shape.text_frame if hasattr(shape, 'text_frame') else None,
+                    'text_frame': self.extract_text_formatting(shape.text_frame) if hasattr(shape, 'text_frame') and shape.text_frame else None,
                 }
 
-                # Add comprehensive text content and formatting if available
-                if hasattr(shape, 'text_frame') and shape.text_frame:
-                    text_info = self.extract_text_formatting(shape.text_frame)
-                    shape_info['text'] = shape.text_frame.text
-                    shape_info['text_formatting'] = text_info
-
                 # Extract chart data for chart shapes
-                from pptx.enum.shapes import MSO_SHAPE_TYPE
                 if shape.shape_type == MSO_SHAPE_TYPE.CHART:
                     if hasattr(shape, 'chart'):
-                        shape_info['chart_data'] = self.extract_chart_data(
-                            shape.chart)
+                        shape_info['chart_data'] = self.extract_chart_data(shape.chart)
 
                 # Extract table data for table shapes
                 elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
                     if hasattr(shape, 'table'):
-                        shape_info['table_data'] = self.extract_table_data(
-                            shape.table)
-
-                # Extract placeholder information
-                elif shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER:
-                    shape_info['placeholder_info'] = self.extract_placeholder_info(
-                        shape)
-
-                # Add detailed fill properties
-                if hasattr(shape, 'fill'):
-                    shape_info['has_fill'] = True
-                    fill_info = self.extract_fill_properties(shape.fill)
-                    shape_info['fill'] = fill_info
-
-                # Add detailed line properties
-                if hasattr(shape, 'line'):
-                    shape_info['has_line'] = True
-                    line_info = self.extract_line_properties(shape.line)
-                    shape_info['line'] = line_info
-
-                # Add rotation and transformation properties
-                if hasattr(shape, 'rotation'):
-                    shape_info['rotation'] = shape.rotation
-
-                # Add shadow properties if available
-                if hasattr(shape, 'shadow'):
-                    shape_info['shadow'] = self.extract_shadow_properties(
-                        shape.shadow)
-
-                # Add 3D properties if available
-                if hasattr(shape, 'three_d'):
-                    shape_info['three_d'] = self.extract_3d_properties(
-                        shape.three_d)
+                        shape_info['table_data'] = self.extract_table_data(shape.table)
 
                 # Extract image properties for picture shapes
-                from pptx.enum.shapes import MSO_SHAPE_TYPE
-                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                elif shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     if hasattr(shape, 'image'):
-                        image_info = self.extract_image_properties(shape.image)
-                        shape_info['image_properties'] = image_info
+                        shape_info['image_properties'] = self.extract_image_properties(shape.image)
 
                 slide_shapes.append(shape_info)
 
