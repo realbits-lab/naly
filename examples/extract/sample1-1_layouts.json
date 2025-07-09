@@ -1,0 +1,270 @@
+[
+  {
+    "layout_index": 0,
+    "name": "TITLE",
+    "placeholders": [
+      {
+        "placeholder_format": "CENTER_TITLE (3)",
+        "name": "Google Shape;9;p2",
+        "left": 457200,
+        "top": 411475,
+        "width": 4569000,
+        "height": 823500
+      },
+      {
+        "placeholder_format": "SUBTITLE (4)",
+        "name": "Google Shape;10;p2",
+        "left": 457200,
+        "top": 1234975,
+        "width": 2689200,
+        "height": 1051800
+      }
+    ]
+  },
+  {
+    "layout_index": 1,
+    "name": "SECTION_HEADER",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;12;p3",
+        "left": 311700,
+        "top": 2150850,
+        "width": 8520600,
+        "height": 841800
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;13;p3",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 2,
+    "name": "TITLE_AND_BODY",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;15;p4",
+        "left": 311700,
+        "top": 445025,
+        "width": 8520600,
+        "height": 572700
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;16;p4",
+        "left": 311700,
+        "top": 1152475,
+        "width": 8520600,
+        "height": 3416400
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;17;p4",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 3,
+    "name": "TITLE_AND_TWO_COLUMNS",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;19;p5",
+        "left": 311700,
+        "top": 445025,
+        "width": 8520600,
+        "height": 572700
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;20;p5",
+        "left": 311700,
+        "top": 1152475,
+        "width": 3999900,
+        "height": 3416400
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;21;p5",
+        "left": 4832400,
+        "top": 1152475,
+        "width": 3999900,
+        "height": 3416400
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;22;p5",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 4,
+    "name": "ONE_COLUMN_TEXT",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;26;p7",
+        "left": 311700,
+        "top": 555600,
+        "width": 2808000,
+        "height": 755700
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;27;p7",
+        "left": 311700,
+        "top": 1389600,
+        "width": 2808000,
+        "height": 3179400
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;28;p7",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 5,
+    "name": "MAIN_POINT",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;30;p8",
+        "left": 490250,
+        "top": 450150,
+        "width": 6367800,
+        "height": 4090800
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;31;p8",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 6,
+    "name": "SECTION_TITLE_AND_DESCRIPTION",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;34;p9",
+        "left": 265500,
+        "top": 1233175,
+        "width": 4045200,
+        "height": 1482300
+      },
+      {
+        "placeholder_format": "SUBTITLE (4)",
+        "name": "Google Shape;35;p9",
+        "left": 265500,
+        "top": 2803075,
+        "width": 4045200,
+        "height": 1235100
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;36;p9",
+        "left": 4939500,
+        "top": 724075,
+        "width": 3837000,
+        "height": 3695100
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;37;p9",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 7,
+    "name": "CAPTION_ONLY",
+    "placeholders": [
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;39;p10",
+        "left": 311700,
+        "top": 4230575,
+        "width": 5998800,
+        "height": 605100
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;40;p10",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 8,
+    "name": "BIG_NUMBER",
+    "placeholders": [
+      {
+        "placeholder_format": "TITLE (1)",
+        "name": "Google Shape;42;p11",
+        "left": 311700,
+        "top": 1106125,
+        "width": 8520600,
+        "height": 1963500
+      },
+      {
+        "placeholder_format": "BODY (2)",
+        "name": "Google Shape;43;p11",
+        "left": 311700,
+        "top": 3152225,
+        "width": 8520600,
+        "height": 1300800
+      },
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;44;p11",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  },
+  {
+    "layout_index": 9,
+    "name": "BLANK",
+    "placeholders": [
+      {
+        "placeholder_format": "SLIDE_NUMBER (13)",
+        "name": "Google Shape;46;p12",
+        "left": 8472458,
+        "top": 4663217,
+        "width": 548700,
+        "height": 393600
+      }
+    ]
+  }
+]

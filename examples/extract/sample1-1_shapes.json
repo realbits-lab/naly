@@ -1,0 +1,67 @@
+[
+  {
+    "slide_index": 0,
+    "shapes": [
+      {
+        "slide_index": 0,
+        "shape_index": 0,
+        "shape_id": 59,
+        "name": "Google Shape;59;p15",
+        "shape_type": "FREEFORM (5) (5)",
+        "left": 1695000,
+        "top": 992700,
+        "width": 917712,
+        "height": 917697,
+        "text": "",
+        "text_formatting": {
+          "margin_left": 91425,
+          "margin_right": 91425,
+          "margin_top": 91425,
+          "margin_bottom": 91425,
+          "word_wrap": true,
+          "auto_size": "NONE (0)",
+          "vertical_anchor": "MIDDLE (3)",
+          "paragraphs": [
+            {
+              "text": "",
+              "alignment": "LEFT (1)",
+              "level": 0,
+              "space_before": 0,
+              "space_after": 0,
+              "line_spacing": null,
+              "runs": []
+            }
+          ]
+        },
+        "has_fill": true,
+        "fill": {
+          "type": "SOLID (1)",
+          "solid": true,
+          "fore_color": {
+            "type": "SCHEME (2)",
+            "theme_color": "ACCENT_1 (5)",
+            "brightness": 0
+          }
+        },
+        "has_line": true,
+        "line": {
+          "width": 0,
+          "color": {
+            "type": null
+          },
+          "fill": {
+            "type": "SOLID (1)",
+            "solid": true,
+            "fore_color": {
+              "type": null
+            }
+          }
+        },
+        "rotation": 0.0,
+        "shadow": {
+          "inherit": true
+        }
+      }
+    ]
+  }
+]
