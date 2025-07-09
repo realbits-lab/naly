@@ -21,53 +21,55 @@ class PPTExtractor:
         self.media_files = {}
         self.document_properties = {}
         self.relationships = {}
-        
+
     def extract_fill_properties(self, fill) -> Dict[str, Any]:
         """Extract detailed fill properties including colors, gradients, and patterns"""
         fill_info = {
             'type': str(fill.type) if fill.type else None
         }
-        
+
         try:
             from pptx.enum.dml import MSO_FILL_TYPE, MSO_COLOR_TYPE
-            
+
             if fill.type == MSO_FILL_TYPE.SOLID:
                 fill_info['solid'] = True
                 color_info = self.extract_color_properties(fill.fore_color)
                 fill_info['fore_color'] = color_info
-                
+
             elif fill.type == MSO_FILL_TYPE.PATTERN:
                 fill_info['pattern'] = True
-                fill_info['fore_color'] = self.extract_color_properties(fill.fore_color)
-                fill_info['back_color'] = self.extract_color_properties(fill.back_color)
+                fill_info['fore_color'] = self.extract_color_properties(
+                    fill.fore_color)
+                fill_info['back_color'] = self.extract_color_properties(
+                    fill.back_color)
                 # Extract pattern type if available
                 if hasattr(fill, 'pattern'):
                     fill_info['pattern_type'] = str(fill.pattern)
-                
+
             elif fill.type == MSO_FILL_TYPE.GRADIENT:
                 fill_info['gradient'] = True
                 # Extract gradient stops and direction
                 gradient_info = self.extract_gradient_properties(fill)
                 fill_info.update(gradient_info)
-                
+
             elif fill.type == MSO_FILL_TYPE.PICTURE:
                 fill_info['picture'] = True
                 # Extract picture fill information
                 picture_info = self.extract_picture_fill_properties(fill)
                 fill_info.update(picture_info)
-                
+
             elif fill.type == MSO_FILL_TYPE.BACKGROUND:
                 fill_info['background'] = True
-                
+
         except Exception as e:
             fill_info['error'] = f"Could not extract fill properties: {str(e)}"
-            
+
         return fill_info
-    
+
     def extract_gradient_properties(self, fill) -> Dict[str, Any]:
         """Extract gradient fill properties"""
         gradient_info = {}
-        
+
         try:
             # Extract gradient stops
             if hasattr(fill, 'gradient_stops'):
@@ -79,20 +81,21 @@ class PPTExtractor:
                     }
                     stops.append(stop_info)
                 gradient_info['gradient_stops'] = stops
-                
+
             # Extract gradient angle and direction
             if hasattr(fill, 'gradient_angle'):
                 gradient_info['gradient_angle'] = fill.gradient_angle
-                
+
         except Exception as e:
-            gradient_info['gradient_error'] = f"Could not extract gradient properties: {str(e)}"
-            
+            gradient_info[
+                'gradient_error'] = f"Could not extract gradient properties: {str(e)}"
+
         return gradient_info
-    
+
     def extract_picture_fill_properties(self, fill) -> Dict[str, Any]:
         """Extract picture fill properties"""
         picture_info = {}
-        
+
         try:
             # Extract picture data if available
             if hasattr(fill, 'picture'):
@@ -104,28 +107,29 @@ class PPTExtractor:
                         'size': len(picture.image.blob) if hasattr(picture.image, 'blob') else None
                     }
                     picture_info['image'] = image_info
-                    
+
                     # Store image data for media extraction
                     if hasattr(picture.image, 'blob') and hasattr(picture.image, 'filename'):
                         self.media_files[picture.image.filename] = {
                             'data': base64.b64encode(picture.image.blob).decode('utf-8'),
                             'content_type': picture.image.content_type
                         }
-                        
+
         except Exception as e:
-            picture_info['picture_error'] = f"Could not extract picture properties: {str(e)}"
-            
+            picture_info[
+                'picture_error'] = f"Could not extract picture properties: {str(e)}"
+
         return picture_info
-    
+
     def extract_color_properties(self, color) -> Dict[str, Any]:
         """Extract color properties including RGB values, theme colors, and adjustments"""
         color_info = {
             'type': str(color.type) if hasattr(color, 'type') and color.type else None
         }
-        
+
         try:
             from pptx.enum.dml import MSO_COLOR_TYPE
-            
+
             if hasattr(color, 'type') and color.type == MSO_COLOR_TYPE.RGB:
                 if hasattr(color, 'rgb') and color.rgb:
                     rgb = color.rgb
@@ -135,52 +139,61 @@ class PPTExtractor:
                         'green': rgb.green if hasattr(rgb, 'green') else None,
                         'blue': rgb.blue if hasattr(rgb, 'blue') else None
                     }
-                    
+
             elif hasattr(color, 'type') and color.type == MSO_COLOR_TYPE.SCHEME:
                 if hasattr(color, 'theme_color'):
                     color_info['theme_color'] = str(color.theme_color)
-                    
+
             # Extract brightness and tint if available
             if hasattr(color, 'brightness') and color.brightness is not None:
                 color_info['brightness'] = color.brightness
-                
+
             if hasattr(color, 'tint_and_shade') and color.tint_and_shade is not None:
                 color_info['tint_and_shade'] = color.tint_and_shade
-                
+
         except Exception as e:
             color_info['error'] = f"Could not extract color properties: {str(e)}"
-            
+
         return color_info
-    
+
     def extract_line_properties(self, line) -> Dict[str, Any]:
         """Extract line/border properties"""
         line_info = {}
-        
+
         try:
             # Line width
             if hasattr(line, 'width') and line.width is not None:
                 line_info['width'] = line.width
-                
+
             # Line color
             if hasattr(line, 'color'):
                 color_info = self.extract_color_properties(line.color)
                 line_info['color'] = color_info
-                
+
             # Line fill (for compound lines)
             if hasattr(line, 'fill'):
                 fill_info = self.extract_fill_properties(line.fill)
                 line_info['fill'] = fill_info
-                
+
         except Exception as e:
             line_info['error'] = f"Could not extract line properties: {str(e)}"
-            
+
         return line_info
+
+    def _safe_get_auto_shape_type(self, shape) -> str:
+        """Safely get auto shape type string"""
+        try:
+            if hasattr(shape, 'auto_shape_type'):
+                return str(shape.auto_shape_type)
+        except Exception:
+            pass
+        return None
 
     def get_auto_shape_type(self, shape) -> str:
         """Extract the specific auto shape type for MSO_SHAPE_TYPE.AUTO_SHAPE"""
         try:
             from pptx.enum.shapes import MSO_SHAPE_TYPE
-            
+
             if shape.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE:
                 # Try to get the auto shape type from the shape element
                 if hasattr(shape, '_element') and hasattr(shape._element, 'prstGeom'):
@@ -189,22 +202,25 @@ class PPTExtractor:
                         # Map internal geometry names to MSO_SHAPE names
                         geom_name = prst_geom.prst
                         return self.map_geometry_to_shape_name(geom_name)
-                
+
                 # If we can't determine the specific type, try to get it from shape properties
                 if hasattr(shape, 'auto_shape_type'):
-                    return str(shape.auto_shape_type)
-                    
+                    try:
+                        return str(shape.auto_shape_type)
+                    except Exception:
+                        pass
+
                 # Fallback: return the generic AUTO_SHAPE with number
                 return f"AUTO_SHAPE ({shape.shape_type.value})"
             else:
                 # For non-auto shapes, return the shape type with number (avoid duplication)
                 shape_name = str(shape.shape_type).split('.')[-1]
                 return f"{shape_name} ({shape.shape_type.value})"
-                
+
         except Exception:
             # Fallback to original behavior
             return str(shape.shape_type)
-    
+
     def map_geometry_to_shape_name(self, geom_name: str) -> str:
         """Map internal PowerPoint geometry names to MSO_SHAPE names"""
         # Mapping from internal geometry names to MSO_SHAPE constants
@@ -321,9 +337,9 @@ class PPTExtractor:
             'accentCallout90': 'LINE_CALLOUT_4_ACCENT_BAR',
             'borderCallout90': 'LINE_CALLOUT_4_BORDER_AND_ACCENT_BAR',
         }
-        
+
         return geometry_mapping.get(geom_name, geom_name.upper())
-    
+
     def get_shape_type_enum_name(self, shape_type_value: int) -> str:
         """Convert MSO_SHAPE_TYPE enum value to consistent name format"""
         # Map MSO_SHAPE_TYPE enum values to their names
@@ -331,7 +347,7 @@ class PPTExtractor:
             -2: 'MIXED',
             1: 'AUTO_SHAPE',
             2: 'CALLOUT',
-            3: 'CHART', 
+            3: 'CHART',
             4: 'COMMENT',
             5: 'FREEFORM',
             6: 'GROUP',
@@ -360,7 +376,7 @@ class PPTExtractor:
             30: '3D_MODEL',
             31: 'LINKED_3D_MODEL',
         }
-        
+
         return shape_type_names.get(shape_type_value, f'UNKNOWN_{shape_type_value}')
 
     def extract_chart_data(self, chart) -> Dict[str, Any]:
@@ -373,14 +389,14 @@ class PPTExtractor:
             'series': [],
             'has_legend': hasattr(chart, 'has_legend') and chart.has_legend
         }
-        
+
         try:
             # Extract categories
             if hasattr(chart, 'plots') and chart.plots:
                 plot = chart.plots[0]
                 if hasattr(plot, 'categories') and plot.categories:
                     chart_info['categories'] = [cat for cat in plot.categories]
-                
+
                 # Extract series data
                 if hasattr(plot, 'series'):
                     for series in plot.series:
@@ -389,12 +405,12 @@ class PPTExtractor:
                             'values': [val for val in series.values] if hasattr(series, 'values') else []
                         }
                         chart_info['series'].append(series_info)
-                        
+
         except Exception as e:
             chart_info['error'] = f"Could not extract chart data: {str(e)}"
-            
+
         return chart_info
-    
+
     def extract_table_data(self, table) -> Dict[str, Any]:
         """Extract table data and properties"""
         table_info = {
@@ -402,7 +418,7 @@ class PPTExtractor:
             'columns': table.columns.__len__() if hasattr(table, 'columns') else 0,
             'data': []
         }
-        
+
         try:
             # Extract table cell data
             for row_idx, row in enumerate(table.rows):
@@ -411,26 +427,35 @@ class PPTExtractor:
                     cell_text = cell.text if hasattr(cell, 'text') else ''
                     row_data.append(cell_text)
                 table_info['data'].append(row_data)
-                
+
         except Exception as e:
             table_info['error'] = f"Could not extract table data: {str(e)}"
-            
+
         return table_info
-    
+
+    def _safe_extract_placeholder_info(self, shape) -> Dict[str, Any]:
+        """Safely extract placeholder information"""
+        try:
+            return self.extract_placeholder_info(shape)
+        except Exception as e:
+            return {'error': f"Could not extract placeholder info: {str(e)}"}
+
     def extract_placeholder_info(self, shape) -> Dict[str, Any]:
         """Extract placeholder-specific information"""
         placeholder_info = {}
-        
+
         try:
-            if hasattr(shape, 'placeholder_format'):
-                placeholder_info['placeholder_type'] = str(shape.placeholder_format.type)
-                placeholder_info['placeholder_idx'] = shape.placeholder_format.idx if hasattr(shape.placeholder_format, 'idx') else None
-                
+            if hasattr(shape, 'placeholder_format') and shape.placeholder_format:
+                placeholder_info['placeholder_type'] = str(
+                    shape.placeholder_format.type)
+                placeholder_info['placeholder_idx'] = shape.placeholder_format.idx if hasattr(
+                    shape.placeholder_format, 'idx') else None
+
         except Exception as e:
             placeholder_info['error'] = f"Could not extract placeholder info: {str(e)}"
-            
+
         return placeholder_info
-    
+
     def extract_text_formatting(self, text_frame) -> Dict[str, Any]:
         """Extract comprehensive text formatting information"""
         text_info = {
@@ -443,7 +468,7 @@ class PPTExtractor:
             'vertical_anchor': str(text_frame.vertical_anchor) if hasattr(text_frame, 'vertical_anchor') else None,
             'paragraphs': []
         }
-        
+
         try:
             # Extract paragraph-level formatting
             for para_idx, paragraph in enumerate(text_frame.paragraphs):
@@ -456,7 +481,7 @@ class PPTExtractor:
                     'line_spacing': paragraph.line_spacing if hasattr(paragraph, 'line_spacing') else None,
                     'runs': []
                 }
-                
+
                 # Extract run-level formatting
                 for run_idx, run in enumerate(paragraph.runs):
                     run_info = {
@@ -469,14 +494,14 @@ class PPTExtractor:
                         'color': self.extract_color_properties(run.font.color) if hasattr(run.font, 'color') else None
                     }
                     para_info['runs'].append(run_info)
-                    
+
                 text_info['paragraphs'].append(para_info)
-                
+
         except Exception as e:
             text_info['error'] = f"Could not extract text formatting: {str(e)}"
-            
+
         return text_info
-    
+
     def extract_media_files(self) -> Dict[str, Any]:
         """Extract media files from the PowerPoint presentation"""
         media_info = {
@@ -485,7 +510,7 @@ class PPTExtractor:
             'video': {},
             'embedded_objects': {}
         }
-        
+
         try:
             # Extract media from ZIP structure
             with zipfile.ZipFile(self.file_path, 'r') as zip_ref:
@@ -493,13 +518,13 @@ class PPTExtractor:
                     if file_info.filename.startswith('ppt/media/'):
                         media_data = zip_ref.read(file_info.filename)
                         file_ext = Path(file_info.filename).suffix.lower()
-                        
+
                         media_entry = {
                             'filename': file_info.filename,
                             'size': len(media_data),
                             'data': base64.b64encode(media_data).decode('utf-8')
                         }
-                        
+
                         # Categorize by file type
                         if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']:
                             media_info['images'][file_info.filename] = media_entry
@@ -509,16 +534,16 @@ class PPTExtractor:
                             media_info['video'][file_info.filename] = media_entry
                         else:
                             media_info['embedded_objects'][file_info.filename] = media_entry
-                            
+
         except Exception as e:
             media_info['error'] = f"Could not extract media files: {str(e)}"
-            
+
         return media_info
-    
+
     def extract_document_properties(self) -> Dict[str, Any]:
         """Extract document properties and metadata"""
         doc_props = {}
-        
+
         try:
             # Extract core properties
             if hasattr(self.presentation, 'core_properties'):
@@ -536,23 +561,23 @@ class PPTExtractor:
                     'revision': core_props.revision if hasattr(core_props, 'revision') else None,
                     'version': core_props.version if hasattr(core_props, 'version') else None
                 }
-                
+
             # Extract slide size and orientation
             if hasattr(self.presentation, 'slide_width') and hasattr(self.presentation, 'slide_height'):
                 doc_props['slide_size'] = {
                     'width': self.presentation.slide_width,
                     'height': self.presentation.slide_height
                 }
-                
+
         except Exception as e:
             doc_props['error'] = f"Could not extract document properties: {str(e)}"
-            
+
         return doc_props
-    
+
     def extract_shadow_properties(self, shadow) -> Dict[str, Any]:
         """Extract shadow properties"""
         shadow_info = {}
-        
+
         try:
             if hasattr(shadow, 'inherit'):
                 shadow_info['inherit'] = shadow.inherit
@@ -566,16 +591,16 @@ class PPTExtractor:
                 shadow_info['distance'] = shadow.distance
             if hasattr(shadow, 'direction'):
                 shadow_info['direction'] = shadow.direction
-                
+
         except Exception as e:
             shadow_info['error'] = f"Could not extract shadow properties: {str(e)}"
-            
+
         return shadow_info
-    
+
     def extract_3d_properties(self, three_d) -> Dict[str, Any]:
         """Extract 3D properties"""
         three_d_info = {}
-        
+
         try:
             if hasattr(three_d, 'bevel_top'):
                 three_d_info['bevel_top'] = str(three_d.bevel_top)
@@ -584,17 +609,18 @@ class PPTExtractor:
             if hasattr(three_d, 'extrusion_height'):
                 three_d_info['extrusion_height'] = three_d.extrusion_height
             if hasattr(three_d, 'extrusion_color'):
-                three_d_info['extrusion_color'] = self.extract_color_properties(three_d.extrusion_color)
-                
+                three_d_info['extrusion_color'] = self.extract_color_properties(
+                    three_d.extrusion_color)
+
         except Exception as e:
             three_d_info['error'] = f"Could not extract 3D properties: {str(e)}"
-            
+
         return three_d_info
-    
+
     def extract_image_properties(self, image) -> Dict[str, Any]:
         """Extract image properties for picture shapes"""
         image_info = {}
-        
+
         try:
             if hasattr(image, 'filename'):
                 image_info['filename'] = image.filename
@@ -603,110 +629,103 @@ class PPTExtractor:
             if hasattr(image, 'blob'):
                 image_info['size'] = len(image.blob)
                 # Store image data for media extraction
-                filename = image.filename if hasattr(image, 'filename') else f"image_{len(self.media_files)}"
+                filename = image.filename if hasattr(
+                    image, 'filename') else f"image_{len(self.media_files)}"
                 self.media_files[filename] = {
                     'data': base64.b64encode(image.blob).decode('utf-8'),
                     'content_type': image.content_type if hasattr(image, 'content_type') else 'image/unknown'
                 }
                 image_info['media_key'] = filename
-                
+
         except Exception as e:
             image_info['error'] = f"Could not extract image properties: {str(e)}"
-            
+
         return image_info
-    
+
     def extract_shapes(self) -> List[Dict[str, Any]]:
         """Extract shape information from all slides"""
         shapes_data = []
-        
+
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+
         for slide_idx, slide in enumerate(self.presentation.slides):
+            # Print all attributes of slide
+            print(f"Slide {slide_idx} attributes:")
+            for attr in dir(slide):
+                print(f"attr: {attr}")
+
             slide_shapes = []
-            
+
             for shape_idx, shape in enumerate(slide.shapes):
                 shape_info = {
                     'slide_index': slide_idx,
                     'shape_index': shape_idx,
-                    'shape_id': shape.shape_id,
-                    'name': shape.name,
+                    'shape_id': shape.shape_id if hasattr(shape, 'shape_id') else None,
+                    'name': shape.name if hasattr(shape, 'name') else None,
                     'shape_type': self.get_auto_shape_type(shape),
-                    'left': shape.left,
-                    'top': shape.top,
-                    'width': shape.width,
-                    'height': shape.height,
+                    'left': shape.left if hasattr(shape, 'left') else None,
+                    'top': shape.top if hasattr(shape, 'top') else None,
+                    'width': shape.width if hasattr(shape, 'width') else None,
+                    'height': shape.height if hasattr(shape, 'height') else None,
+                    'adjustments': list(shape.adjustments) if hasattr(shape, 'adjustments') and shape.adjustments else None,
+                    'auto_shape_type': self._safe_get_auto_shape_type(shape),
+                    'click_action': str(shape.click_action) if hasattr(shape, 'click_action') and shape.click_action else None,
+                    'element': self.extract_element_attributes(shape.element) if hasattr(shape, 'element') else None,
+                    'custom_geometry': self.extract_custom_geometry(shape.element) if hasattr(shape, 'element') else None,
+                    'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
+                    'get_or_add_ln': str(shape.get_or_add_ln) if hasattr(shape, 'get_or_add_ln') else None,
+                    'has_chart': shape.has_chart if hasattr(shape, 'has_chart') else None,
+                    'has_table': shape.has_table if hasattr(shape, 'has_table') else None,
+                    'has_text_frame': shape.has_text_frame if hasattr(shape, 'has_text_frame') else None,
+                    'is_placeholder': shape.is_placeholder if hasattr(shape, 'is_placeholder') else None,
+                    'line': self.extract_line_properties(shape.line) if hasattr(shape, 'line') else None,
+                    'ln': str(shape.ln) if hasattr(shape, 'ln') else None,
+                    'part': str(shape.part) if hasattr(shape, 'part') else None,
+                    'placeholder_format': self._safe_extract_placeholder_info(shape),
+                    'rotation': shape.rotation if hasattr(shape, 'rotation') else None,
+                    'shadow': self.extract_shadow_properties(shape.shadow) if hasattr(shape, 'shadow') else None,
+                    'text': shape.text if hasattr(shape, 'text') else None,
+                    'text_frame': self.extract_text_formatting(shape.text_frame) if hasattr(shape, 'text_frame') and shape.text_frame else None,
                 }
-                
-                # Add comprehensive text content and formatting if available
-                if hasattr(shape, 'text_frame') and shape.text_frame:
-                    text_info = self.extract_text_formatting(shape.text_frame)
-                    shape_info['text'] = shape.text_frame.text
-                    shape_info['text_formatting'] = text_info
-                
+
                 # Extract chart data for chart shapes
-                from pptx.enum.shapes import MSO_SHAPE_TYPE
                 if shape.shape_type == MSO_SHAPE_TYPE.CHART:
                     if hasattr(shape, 'chart'):
-                        shape_info['chart_data'] = self.extract_chart_data(shape.chart)
-                
+                        shape_info['chart_data'] = self.extract_chart_data(
+                            shape.chart)
+
                 # Extract table data for table shapes
                 elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
                     if hasattr(shape, 'table'):
-                        shape_info['table_data'] = self.extract_table_data(shape.table)
-                
-                # Extract placeholder information
-                elif shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER:
-                    shape_info['placeholder_info'] = self.extract_placeholder_info(shape)
-                
-                # Add detailed fill properties
-                if hasattr(shape, 'fill'):
-                    shape_info['has_fill'] = True
-                    fill_info = self.extract_fill_properties(shape.fill)
-                    shape_info['fill'] = fill_info
-                
-                # Add detailed line properties
-                if hasattr(shape, 'line'):
-                    shape_info['has_line'] = True
-                    line_info = self.extract_line_properties(shape.line)
-                    shape_info['line'] = line_info
-                
-                # Add rotation and transformation properties
-                if hasattr(shape, 'rotation'):
-                    shape_info['rotation'] = shape.rotation
-                    
-                # Add shadow properties if available
-                if hasattr(shape, 'shadow'):
-                    shape_info['shadow'] = self.extract_shadow_properties(shape.shadow)
-                    
-                # Add 3D properties if available
-                if hasattr(shape, 'three_d'):
-                    shape_info['three_d'] = self.extract_3d_properties(shape.three_d)
-                    
+                        shape_info['table_data'] = self.extract_table_data(
+                            shape.table)
+
                 # Extract image properties for picture shapes
-                from pptx.enum.shapes import MSO_SHAPE_TYPE
-                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                elif shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     if hasattr(shape, 'image'):
-                        image_info = self.extract_image_properties(shape.image)
-                        shape_info['image_properties'] = image_info
-                
+                        shape_info['image_properties'] = self.extract_image_properties(
+                            shape.image)
+
                 slide_shapes.append(shape_info)
-            
+
             shapes_data.append({
                 'slide_index': slide_idx,
                 'shapes': slide_shapes
             })
-        
+
         return shapes_data
-    
+
     def extract_layouts(self) -> List[Dict[str, Any]]:
         """Extract layout information from the presentation"""
         layouts_data = []
-        
+
         for layout_idx, layout in enumerate(self.presentation.slide_layouts):
             layout_info = {
                 'layout_index': layout_idx,
                 'name': layout.name,
                 'placeholders': []
             }
-            
+
             # Extract placeholder information
             for placeholder in layout.placeholders:
                 placeholder_info = {
@@ -718,11 +737,11 @@ class PPTExtractor:
                     'height': placeholder.height,
                 }
                 layout_info['placeholders'].append(placeholder_info)
-            
+
             layouts_data.append(layout_info)
-        
+
         return layouts_data
-    
+
     def extract_theme(self) -> Dict[str, Any]:
         """Extract comprehensive theme information from the presentation"""
         theme_data = {
@@ -733,7 +752,7 @@ class PPTExtractor:
             'slide_masters': [],
             'layout_masters': []
         }
-        
+
         # Extract slide master information
         slide_master = self.presentation.slide_master
         master_info = {
@@ -743,7 +762,7 @@ class PPTExtractor:
             'background': self.extract_background_properties(slide_master.background) if hasattr(slide_master, 'background') else None,
             'placeholders': []
         }
-        
+
         # Extract master placeholders
         try:
             for placeholder in slide_master.placeholders:
@@ -758,38 +777,41 @@ class PPTExtractor:
                 master_info['placeholders'].append(placeholder_info)
         except Exception as e:
             master_info['placeholders_error'] = f"Could not extract placeholders: {str(e)}"
-            
+
         theme_data['slide_master'] = master_info
-        
+
         # Extract theme colors with proper mapping
         try:
             theme_part = self.presentation.part.theme_part
             if theme_part:
-                theme_data['theme_name'] = theme_part.name if hasattr(theme_part, 'name') else 'Default Theme'
+                theme_data['theme_name'] = theme_part.name if hasattr(
+                    theme_part, 'name') else 'Default Theme'
         except:
             theme_data['theme_name'] = 'Default Theme'
-        
+
         # Extract comprehensive color scheme information
         try:
             color_scheme = slide_master.theme.color_scheme
             theme_colors = {}
-            
+
             # Define theme color names for better mapping
             color_names = [
-                'lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 
+                'lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2',
                 'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'
             ]
-            
+
             for i, color in enumerate(color_scheme):
-                color_name = color_names[i] if i < len(color_names) else f'color_{i}'
+                color_name = color_names[i] if i < len(
+                    color_names) else f'color_{i}'
                 theme_colors[color_name] = {
                     'rgb': str(color.rgb) if hasattr(color, 'rgb') and color.rgb else None,
                     'type': str(color.color_type) if hasattr(color, 'color_type') else None
                 }
             theme_data['color_scheme'] = theme_colors
         except Exception as e:
-            theme_data['color_scheme'] = {'error': f'Could not extract color scheme: {str(e)}'}
-        
+            theme_data['color_scheme'] = {
+                'error': f'Could not extract color scheme: {str(e)}'}
+
         # Extract comprehensive font scheme information
         try:
             font_scheme = slide_master.theme.font_scheme
@@ -806,32 +828,257 @@ class PPTExtractor:
                 }
             }
         except Exception as e:
-            theme_data['font_scheme'] = {'error': f'Could not extract font scheme: {str(e)}'}
-        
+            theme_data['font_scheme'] = {
+                'error': f'Could not extract font scheme: {str(e)}'}
+
         # Extract effect scheme if available
         try:
             if hasattr(slide_master.theme, 'effect_scheme'):
-                theme_data['effect_scheme'] = str(slide_master.theme.effect_scheme)
+                theme_data['effect_scheme'] = str(
+                    slide_master.theme.effect_scheme)
         except Exception as e:
-            theme_data['effect_scheme'] = {'error': f'Could not extract effect scheme: {str(e)}'}
-        
+            theme_data['effect_scheme'] = {
+                'error': f'Could not extract effect scheme: {str(e)}'}
+
         return theme_data
-    
+
     def extract_background_properties(self, background) -> Dict[str, Any]:
         """Extract background properties from slide master or slide"""
         bg_info = {}
-        
+
         try:
             if hasattr(background, 'fill') and background.fill:
                 bg_info['fill'] = self.extract_fill_properties(background.fill)
             if hasattr(background, 'graphics'):
                 bg_info['has_graphics'] = True
-                
+
         except Exception as e:
             bg_info['error'] = f"Could not extract background properties: {str(e)}"
-            
+
         return bg_info
-    
+
+    def extract_element_attributes(self, element) -> Dict[str, Any]:
+        """Extract all attributes from a shape element"""
+        element_info = {
+            'tag': element.tag if hasattr(element, 'tag') else None,
+            'text': element.text if hasattr(element, 'text') else None,
+            'tail': element.tail if hasattr(element, 'tail') else None,
+            'attributes': {},
+            'children': [],
+            'namespace': None
+        }
+
+        try:
+            # Extract all attributes
+            if hasattr(element, 'attrib'):
+                element_info['attributes'] = dict(element.attrib)
+            
+            # Extract namespace info
+            if hasattr(element, 'nsmap'):
+                element_info['namespace'] = element.nsmap
+            
+            # Extract children elements (non-recursive to avoid deep nesting)
+            if hasattr(element, '__iter__'):
+                for child in element:
+                    child_info = {
+                        'tag': child.tag if hasattr(child, 'tag') else None,
+                        'text': child.text if hasattr(child, 'text') else None,
+                        'attributes': dict(child.attrib) if hasattr(child, 'attrib') else {},
+                        'children_count': len(list(child)) if hasattr(child, '__iter__') else 0
+                    }
+                    element_info['children'].append(child_info)
+            
+            # Extract XML string representation
+            try:
+                import xml.etree.ElementTree as ET
+                element_info['xml_string'] = ET.tostring(element, encoding='unicode') if element is not None else None
+            except Exception:
+                element_info['xml_string'] = str(element) if element is not None else None
+
+        except Exception as e:
+            element_info['extraction_error'] = f"Could not extract element attributes: {str(e)}"
+
+        return element_info
+
+    def extract_custom_geometry(self, element) -> Dict[str, Any]:
+        """Extract CT_CustomGeometry2D information from shape element"""
+        custom_geometry = {
+            'has_custom_geometry': False,
+            'adjustment_values': [],
+            'guides': [],
+            'adjustment_handles': [],
+            'connections': [],
+            'text_rectangle': None,
+            'paths': []
+        }
+
+        try:
+            # Define namespace for DrawingML
+            namespaces = {
+                'a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                'p': 'http://schemas.openxmlformats.org/presentationml/2006/main'
+            }
+
+            # Find custGeom element
+            custGeom = element.find('.//a:custGeom', namespaces)
+            
+            if custGeom is not None:
+                custom_geometry['has_custom_geometry'] = True
+                
+                # Extract adjustment values (avLst)
+                avLst = custGeom.find('./a:avLst', namespaces)
+                if avLst is not None:
+                    for gd in avLst.findall('./a:gd', namespaces):
+                        custom_geometry['adjustment_values'].append({
+                            'name': gd.get('name'),
+                            'fmla': gd.get('fmla')
+                        })
+                
+                # Extract guides (gdLst)
+                gdLst = custGeom.find('./a:gdLst', namespaces)
+                if gdLst is not None:
+                    for gd in gdLst.findall('./a:gd', namespaces):
+                        custom_geometry['guides'].append({
+                            'name': gd.get('name'),
+                            'fmla': gd.get('fmla')
+                        })
+                
+                # Extract adjustment handles (ahLst)
+                ahLst = custGeom.find('./a:ahLst', namespaces)
+                if ahLst is not None:
+                    for ah in ahLst.findall('./a:ah', namespaces):
+                        handle_info = {
+                            'gdRefX': ah.get('gdRefX'),
+                            'gdRefY': ah.get('gdRefY'),
+                            'minX': ah.get('minX'),
+                            'minY': ah.get('minY'),
+                            'maxX': ah.get('maxX'),
+                            'maxY': ah.get('maxY')
+                        }
+                        # Extract position
+                        pos = ah.find('./a:pos', namespaces)
+                        if pos is not None:
+                            handle_info['pos'] = {
+                                'x': pos.get('x'),
+                                'y': pos.get('y')
+                            }
+                        custom_geometry['adjustment_handles'].append(handle_info)
+                
+                # Extract connections (cxnLst)
+                cxnLst = custGeom.find('./a:cxnLst', namespaces)
+                if cxnLst is not None:
+                    for cxn in cxnLst.findall('./a:cxn', namespaces):
+                        connection_info = {
+                            'ang': cxn.get('ang')
+                        }
+                        # Extract position
+                        pos = cxn.find('./a:pos', namespaces)
+                        if pos is not None:
+                            connection_info['pos'] = {
+                                'x': pos.get('x'),
+                                'y': pos.get('y')
+                            }
+                        custom_geometry['connections'].append(connection_info)
+                
+                # Extract text rectangle (rect)
+                rect = custGeom.find('./a:rect', namespaces)
+                if rect is not None:
+                    custom_geometry['text_rectangle'] = {
+                        'l': rect.get('l'),
+                        't': rect.get('t'),
+                        'r': rect.get('r'),
+                        'b': rect.get('b')
+                    }
+                
+                # Extract paths (pathLst)
+                pathLst = custGeom.find('./a:pathLst', namespaces)
+                if pathLst is not None:
+                    for path in pathLst.findall('./a:path', namespaces):
+                        path_data = self.extract_path_commands(path, namespaces)
+                        custom_geometry['paths'].append(path_data)
+
+        except Exception as e:
+            custom_geometry['extraction_error'] = f"Could not extract custom geometry: {str(e)}"
+
+        return custom_geometry
+
+    def extract_path_commands(self, path_element, namespaces: Dict[str, str]) -> Dict[str, Any]:
+        """Extract path commands from a path element"""
+        path_data = {
+            'width': path_element.get('w'),
+            'height': path_element.get('h'),
+            'fill': path_element.get('fill'),
+            'stroke': path_element.get('stroke'),
+            'extrusionOk': path_element.get('extrusionOk'),
+            'commands': []
+        }
+
+        try:
+            # Extract all path commands
+            for child in path_element:
+                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                
+                if tag == 'moveTo':
+                    pt = child.find('./a:pt', namespaces)
+                    if pt is not None:
+                        path_data['commands'].append({
+                            'command': 'moveTo',
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                
+                elif tag == 'lnTo':
+                    pt = child.find('./a:pt', namespaces)
+                    if pt is not None:
+                        path_data['commands'].append({
+                            'command': 'lnTo',
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                
+                elif tag == 'cubicBezTo':
+                    points = []
+                    for pt in child.findall('./a:pt', namespaces):
+                        points.append({
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                    path_data['commands'].append({
+                        'command': 'cubicBezTo',
+                        'points': points
+                    })
+                
+                elif tag == 'quadBezTo':
+                    points = []
+                    for pt in child.findall('./a:pt', namespaces):
+                        points.append({
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                    path_data['commands'].append({
+                        'command': 'quadBezTo',
+                        'points': points
+                    })
+                
+                elif tag == 'arcTo':
+                    path_data['commands'].append({
+                        'command': 'arcTo',
+                        'wR': child.get('wR'),
+                        'hR': child.get('hR'),
+                        'stAng': child.get('stAng'),
+                        'swAng': child.get('swAng')
+                    })
+                
+                elif tag == 'close':
+                    path_data['commands'].append({
+                        'command': 'close'
+                    })
+
+        except Exception as e:
+            path_data['extraction_error'] = f"Could not extract path commands: {str(e)}"
+
+        return path_data
+
     def save_to_json(self, data: Any, output_file: str):
         """Save data to JSON file"""
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -840,66 +1087,73 @@ class PPTExtractor:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Enhanced PowerPoint extractor with comprehensive shape, layout, theme, media, and formatting extraction')
-    parser.add_argument('input_file', help='Path to the PowerPoint file (.ppt or .pptx)')
-    parser.add_argument('--output-dir', default='.', help='Output directory for JSON files (default: current directory)')
-    parser.add_argument('--extract-media', action='store_true', help='Extract and embed media files as base64 data')
-    parser.add_argument('--detailed-text', action='store_true', help='Extract detailed text formatting information')
-    parser.add_argument('--include-properties', action='store_true', help='Extract document properties and metadata')
-    
+    parser = argparse.ArgumentParser(
+        description='Enhanced PowerPoint extractor with comprehensive shape, layout, theme, media, and formatting extraction')
+    parser.add_argument(
+        'input_file', help='Path to the PowerPoint file (.ppt or .pptx)')
+    parser.add_argument('--output-dir', default='.',
+                        help='Output directory for JSON files (default: current directory)')
+    parser.add_argument('--extract-media', action='store_true',
+                        help='Extract and embed media files as base64 data')
+    parser.add_argument('--detailed-text', action='store_true',
+                        help='Extract detailed text formatting information')
+    parser.add_argument('--include-properties', action='store_true',
+                        help='Extract document properties and metadata')
+
     args = parser.parse_args()
-    
+
     # Validate input file
     input_path = Path(args.input_file)
     if not input_path.exists():
         print(f"Error: File '{args.input_file}' does not exist.")
         sys.exit(1)
-    
+
     if not input_path.suffix.lower() in ['.ppt', '.pptx']:
-        print(f"Error: File '{args.input_file}' is not a PowerPoint file (.ppt or .pptx).")
+        print(
+            f"Error: File '{args.input_file}' is not a PowerPoint file (.ppt or .pptx).")
         sys.exit(1)
-    
+
     # Create output directory if it doesn't exist
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Extract base filename for output files
     base_name = input_path.stem
-    
+
     try:
         # Initialize extractor
         extractor = PPTExtractor(args.input_file)
-        
+
         # Extract shapes
         print("Extracting shapes...")
         shapes_data = extractor.extract_shapes()
         shapes_output = output_dir / f"{base_name}_shapes.json"
         extractor.save_to_json(shapes_data, shapes_output)
-        
+
         # Extract layouts
         print("Extracting layouts...")
         layouts_data = extractor.extract_layouts()
         layouts_output = output_dir / f"{base_name}_layouts.json"
         extractor.save_to_json(layouts_data, layouts_output)
-        
+
         # Extract theme
         print("Extracting theme...")
         theme_data = extractor.extract_theme()
         theme_output = output_dir / f"{base_name}_theme.json"
         extractor.save_to_json(theme_data, theme_output)
-        
+
         # Extract media files
         print("Extracting media files...")
         media_data = extractor.extract_media_files()
         media_output = output_dir / f"{base_name}_media.json"
         extractor.save_to_json(media_data, media_output)
-        
+
         # Extract document properties
         print("Extracting document properties...")
         doc_props = extractor.extract_document_properties()
         doc_props_output = output_dir / f"{base_name}_properties.json"
         extractor.save_to_json(doc_props, doc_props_output)
-        
+
         # Create summary with all extracted data
         summary_data = {
             'file_path': str(input_path),
@@ -918,10 +1172,10 @@ def main():
                 'total_shapes': sum(len(slide_data['shapes']) for slide_data in shapes_data)
             }
         }
-        
+
         summary_output = output_dir / f"{base_name}_summary.json"
         extractor.save_to_json(summary_data, summary_output)
-        
+
         print(f"\nExtraction completed successfully!")
         print(f"Output files created in: {output_dir}")
         print(f"Files generated:")
@@ -934,9 +1188,11 @@ def main():
         print(f"\nStatistics:")
         print(f"  - Slides: {summary_data['statistics']['slide_count']}")
         print(f"  - Layouts: {summary_data['statistics']['layout_count']}")
-        print(f"  - Media files: {summary_data['statistics']['media_file_count']}")
-        print(f"  - Total shapes: {summary_data['statistics']['total_shapes']}")
-        
+        print(
+            f"  - Media files: {summary_data['statistics']['media_file_count']}")
+        print(
+            f"  - Total shapes: {summary_data['statistics']['total_shapes']}")
+
     except Exception as e:
         print(f"Error processing PowerPoint file: {str(e)}")
         sys.exit(1)
