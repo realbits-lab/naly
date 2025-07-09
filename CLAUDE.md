@@ -2,80 +2,94 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Development Setup
+## Project Overview
 
-### Prerequisites
-- Node.js 18+ (React 19 requires Node.js 18 or higher)
-- pnpm package manager (this project uses pnpm-lock.yaml)
+This is a PowerPoint template generation and collection framework. The project focuses on creating and managing PowerPoint templates through a systematic approach.
 
-### Initial Setup
+## Core Architecture
+
+### Main Components
+
+1. **Fidelity Testing Framework** (`docs/`): Comprehensive testing tools for measuring and improving reconstruction fidelity
+
+### Data Flow
+
+1. **Testing**: Original vs Generated → Fidelity analysis and improvement recommendations
+
+## Development Commands
+
+### Python Environment Setup
 ```bash
-# Install dependencies
-pnpm install
-
-# Start development server with Turbopack
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Start production server
-pnpm start
+pip install python-pptx
 ```
 
-### Available Scripts
-- `pnpm dev` - Start development server on http://localhost:3000 with Turbopack
-- `pnpm build` - Create production build
-- `pnpm start` - Start production server
-- `pnpm lint` - Run ESLint
-- `pnpm generate-screenshots` - Generate component screenshots using Puppeteer
+### Testing and Fidelity Analysis
+```bash
+cd docs
+chmod +x *.sh *.py
 
-### Environment Variables
-The project uses a `.env` file for configuration. Create one if it doesn't exist. No `.env.example` is provided in the repository.
+# Run fidelity comparison
+./compare_pptx_structures.sh original.pptx generated.pptx
 
-## Architecture Overview
+# Run iterative testing
+./iterative_testing.sh
 
-### Technology Stack
-- **Next.js 15.1.7** with App Router and Turbopack
-- **React 19.0.0** with TypeScript
-- **Tailwind CSS** with custom animations and shadcn/ui design system
-- **Component Libraries**: Radix UI primitives, Framer Motion
-- **Form Handling**: React Hook Form + Zod validation
-- **Analytics**: PostHog integration
+# XML analysis
+python analyze_xml_differences.py original.xml generated.xml
+```
+
+## Key Features
+
+### Testing Framework
+- Structural comparison between original and generated files
+- XML-level analysis with namespace handling
+- Media integrity verification
+- Fidelity scoring with weighted metrics
+- Iterative improvement tracking
+
+## Fidelity Metrics
+
+The testing framework uses weighted scoring:
+- **XML Content**: 50% (core structure and formatting)
+- **File Structure**: 20% (required files and relationships)
+- **Media Preservation**: 20% (embedded media integrity)
+- **Directory Structure**: 10% (basic container structure)
+
+Target fidelity: 85%+ for production use
+
+## Architecture Notes
 
 ### Project Structure
 ```
-src/
-├── app/                # Next.js app router
-│   ├── (components)/  # Component documentation routes
-│   ├── blocks/        # Block preview pages
-│   ├── templates/     # Template pages
-│   └── api/          # API routes
-├── blocks/            # Full-page UI blocks
-├── components/        
-│   ├── ui/           # Base shadcn/ui components
-│   ├── ui-layouts/   # Custom layout components
-│   ├── customized/   # Component variations
-│   └── layout/       # App layout components
-├── lib/              # Utilities and helpers
-├── hooks/            # Custom React hooks
-├── providers/        # React context providers
-└── types/            # TypeScript definitions
+docs/                      # Testing framework and documentation
+docs/plan.md              # Development roadmap
+docs/new-architecture.md  # Digital marketplace architecture (separate feature)
 ```
 
-### Key Patterns
-- **Component Registry**: JSON-based system for component discovery
-- **File-based Routing**: Using Next.js App Router
-- **CSS Variables**: For theming (defined in globals.css)
-- **TypeScript Path Aliases**: Use `@/*` for imports from src
-- **Screenshot Generation**: Automated with Puppeteer for component previews
+### Key Dependencies
+- `python-pptx>=0.6.21` (primary PowerPoint manipulation library)
+- Standard Python libraries for XML, JSON, and file handling
 
-### Important Notes
-- This is a component library/showcase project (Naly, formerly Shadcn UI Blocks)
-- No testing framework is currently set up
-- Uses pnpm as the package manager (not npm or yarn)
-- Strict TypeScript configuration is enabled
-- Component code follows shadcn/ui patterns and conventions
+### Documentation References
+- `docs/python-pptx.md` - Complete python-pptx library documentation and API reference
 
-## Python Development Guidelines
-- Claude Code should check the lint of python file after modifying or adding python file
+### Development Workflow
+1. Run fidelity tests to measure impact
+2. Analyze XML differences for specific issues
+3. Iterate until achieving target fidelity scores
+
+## Important Considerations
+
+- Media files are base64-encoded for JSON storage
+- XML namespace handling is critical for proper generation
+- Relationship files (.rels) must be preserved for valid PPTX structure
+- Theme application affects all visual elements
+- Layout inheritance from master slides must be maintained
+
+## Future Development
+
+The project roadmap includes:
+- Template generation system (Phase 0)
+- Vector database integration for template search (Phase 1)
+- AI-driven presentation generation (Phase 2)
+- Digital marketplace integration (separate feature)
