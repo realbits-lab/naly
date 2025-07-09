@@ -14,7 +14,7 @@
         "height": 917697,
         "adjustments": null,
         "auto_shape_type": null,
-        "click_action": "<pptx.action.ActionSetting object at 0x1068feea0>",
+        "click_action": "<pptx.action.ActionSetting object at 0x1071e92b0>",
         "element": {
           "tag": "{http://schemas.openxmlformats.org/presentationml/2006/main}sp",
           "text": null,
@@ -47,6 +47,82 @@
           },
           "xml_string": "<ns0:sp xmlns:ns0=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:ns1=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><ns0:nvSpPr><ns0:cNvPr id=\"59\" name=\"Google Shape;59;p15\" /><ns0:cNvSpPr /><ns0:nvPr /></ns0:nvSpPr><ns0:spPr><ns1:xfrm><ns1:off x=\"1695000\" y=\"992700\" /><ns1:ext cx=\"917712\" cy=\"917697\" /></ns1:xfrm><ns1:custGeom><ns1:avLst /><ns1:gdLst /><ns1:ahLst /><ns1:cxnLst /><ns1:rect l=\"l\" t=\"t\" r=\"r\" b=\"b\" /><ns1:pathLst><ns1:path w=\"59991\" h=\"59990\" extrusionOk=\"0\"><ns1:moveTo><ns1:pt x=\"59990\" y=\"0\" /></ns1:moveTo><ns1:cubicBezTo><ns1:pt x=\"26871\" y=\"0\" /><ns1:pt x=\"1\" y=\"26870\" /><ns1:pt x=\"1\" y=\"59989\" /></ns1:cubicBezTo><ns1:lnTo><ns1:pt x=\"37819\" y=\"59989\" /></ns1:lnTo><ns1:cubicBezTo><ns1:pt x=\"37819\" y=\"47691\" /><ns1:pt x=\"47717\" y=\"37693\" /><ns1:pt x=\"59990\" y=\"37693\" /></ns1:cubicBezTo><ns1:lnTo><ns1:pt x=\"59990\" y=\"0\" /></ns1:lnTo><ns1:close /></ns1:path></ns1:pathLst></ns1:custGeom><ns1:solidFill><ns1:schemeClr val=\"accent1\" /></ns1:solidFill><ns1:ln><ns1:noFill /></ns1:ln></ns0:spPr><ns0:txBody><ns1:bodyPr spcFirstLastPara=\"1\" wrap=\"square\" lIns=\"91425\" tIns=\"91425\" rIns=\"91425\" bIns=\"91425\" anchor=\"ctr\" anchorCtr=\"0\"><ns1:noAutofit /></ns1:bodyPr><ns1:lstStyle /><ns1:p><ns1:pPr marL=\"0\" lvl=\"0\" indent=\"0\" algn=\"l\" rtl=\"0\"><ns1:spcBef><ns1:spcPts val=\"0\" /></ns1:spcBef><ns1:spcAft><ns1:spcPts val=\"0\" /></ns1:spcAft><ns1:buNone /></ns1:pPr><ns1:endParaRPr /></ns1:p></ns0:txBody></ns0:sp>"
         },
+        "custom_geometry": {
+          "has_custom_geometry": true,
+          "adjustment_values": [],
+          "guides": [],
+          "adjustment_handles": [],
+          "connections": [],
+          "text_rectangle": {
+            "l": "l",
+            "t": "t",
+            "r": "r",
+            "b": "b"
+          },
+          "paths": [
+            {
+              "width": "59991",
+              "height": "59990",
+              "fill": null,
+              "stroke": null,
+              "extrusionOk": "0",
+              "commands": [
+                {
+                  "command": "moveTo",
+                  "x": "59990",
+                  "y": "0"
+                },
+                {
+                  "command": "cubicBezTo",
+                  "points": [
+                    {
+                      "x": "26871",
+                      "y": "0"
+                    },
+                    {
+                      "x": "1",
+                      "y": "26870"
+                    },
+                    {
+                      "x": "1",
+                      "y": "59989"
+                    }
+                  ]
+                },
+                {
+                  "command": "lnTo",
+                  "x": "37819",
+                  "y": "59989"
+                },
+                {
+                  "command": "cubicBezTo",
+                  "points": [
+                    {
+                      "x": "37819",
+                      "y": "47691"
+                    },
+                    {
+                      "x": "47717",
+                      "y": "37693"
+                    },
+                    {
+                      "x": "59990",
+                      "y": "37693"
+                    }
+                  ]
+                },
+                {
+                  "command": "lnTo",
+                  "x": "59990",
+                  "y": "0"
+                },
+                {
+                  "command": "close"
+                }
+              ]
+            }
+          ]
+        },
         "fill": {
           "type": "SOLID (1)",
           "solid": true,
@@ -56,7 +132,7 @@
             "brightness": 0
           }
         },
-        "get_or_add_ln": "<bound method Shape.get_or_add_ln of <pptx.shapes.autoshape.Shape object at 0x1068fede0>>",
+        "get_or_add_ln": "<bound method Shape.get_or_add_ln of <pptx.shapes.autoshape.Shape object at 0x1071e91c0>>",
         "has_chart": false,
         "has_table": false,
         "has_text_frame": true,
@@ -74,8 +150,8 @@
             }
           }
         },
-        "ln": "<CT_LineProperties '<a:ln>' at 0x1068e39d0>",
-        "part": "<pptx.parts.slide.SlidePart object at 0x1068fcd70>",
+        "ln": "<CT_LineProperties '<a:ln>' at 0x1071cfe80>",
+        "part": "<pptx.parts.slide.SlidePart object at 0x1071bf140>",
         "placeholder_format": {
           "error": "Could not extract placeholder info: shape is not a placeholder"
         },

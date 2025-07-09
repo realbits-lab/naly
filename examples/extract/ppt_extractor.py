@@ -671,6 +671,7 @@ class PPTExtractor:
                     'auto_shape_type': self._safe_get_auto_shape_type(shape),
                     'click_action': str(shape.click_action) if hasattr(shape, 'click_action') and shape.click_action else None,
                     'element': self.extract_element_attributes(shape.element) if hasattr(shape, 'element') else None,
+                    'custom_geometry': self.extract_custom_geometry(shape.element) if hasattr(shape, 'element') else None,
                     'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
                     'get_or_add_ln': str(shape.get_or_add_ln) if hasattr(shape, 'get_or_add_ln') else None,
                     'has_chart': shape.has_chart if hasattr(shape, 'has_chart') else None,
@@ -898,6 +899,185 @@ class PPTExtractor:
             element_info['extraction_error'] = f"Could not extract element attributes: {str(e)}"
 
         return element_info
+
+    def extract_custom_geometry(self, element) -> Dict[str, Any]:
+        """Extract CT_CustomGeometry2D information from shape element"""
+        custom_geometry = {
+            'has_custom_geometry': False,
+            'adjustment_values': [],
+            'guides': [],
+            'adjustment_handles': [],
+            'connections': [],
+            'text_rectangle': None,
+            'paths': []
+        }
+
+        try:
+            # Define namespace for DrawingML
+            namespaces = {
+                'a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                'p': 'http://schemas.openxmlformats.org/presentationml/2006/main'
+            }
+
+            # Find custGeom element
+            custGeom = element.find('.//a:custGeom', namespaces)
+            
+            if custGeom is not None:
+                custom_geometry['has_custom_geometry'] = True
+                
+                # Extract adjustment values (avLst)
+                avLst = custGeom.find('./a:avLst', namespaces)
+                if avLst is not None:
+                    for gd in avLst.findall('./a:gd', namespaces):
+                        custom_geometry['adjustment_values'].append({
+                            'name': gd.get('name'),
+                            'fmla': gd.get('fmla')
+                        })
+                
+                # Extract guides (gdLst)
+                gdLst = custGeom.find('./a:gdLst', namespaces)
+                if gdLst is not None:
+                    for gd in gdLst.findall('./a:gd', namespaces):
+                        custom_geometry['guides'].append({
+                            'name': gd.get('name'),
+                            'fmla': gd.get('fmla')
+                        })
+                
+                # Extract adjustment handles (ahLst)
+                ahLst = custGeom.find('./a:ahLst', namespaces)
+                if ahLst is not None:
+                    for ah in ahLst.findall('./a:ah', namespaces):
+                        handle_info = {
+                            'gdRefX': ah.get('gdRefX'),
+                            'gdRefY': ah.get('gdRefY'),
+                            'minX': ah.get('minX'),
+                            'minY': ah.get('minY'),
+                            'maxX': ah.get('maxX'),
+                            'maxY': ah.get('maxY')
+                        }
+                        # Extract position
+                        pos = ah.find('./a:pos', namespaces)
+                        if pos is not None:
+                            handle_info['pos'] = {
+                                'x': pos.get('x'),
+                                'y': pos.get('y')
+                            }
+                        custom_geometry['adjustment_handles'].append(handle_info)
+                
+                # Extract connections (cxnLst)
+                cxnLst = custGeom.find('./a:cxnLst', namespaces)
+                if cxnLst is not None:
+                    for cxn in cxnLst.findall('./a:cxn', namespaces):
+                        connection_info = {
+                            'ang': cxn.get('ang')
+                        }
+                        # Extract position
+                        pos = cxn.find('./a:pos', namespaces)
+                        if pos is not None:
+                            connection_info['pos'] = {
+                                'x': pos.get('x'),
+                                'y': pos.get('y')
+                            }
+                        custom_geometry['connections'].append(connection_info)
+                
+                # Extract text rectangle (rect)
+                rect = custGeom.find('./a:rect', namespaces)
+                if rect is not None:
+                    custom_geometry['text_rectangle'] = {
+                        'l': rect.get('l'),
+                        't': rect.get('t'),
+                        'r': rect.get('r'),
+                        'b': rect.get('b')
+                    }
+                
+                # Extract paths (pathLst)
+                pathLst = custGeom.find('./a:pathLst', namespaces)
+                if pathLst is not None:
+                    for path in pathLst.findall('./a:path', namespaces):
+                        path_data = self.extract_path_commands(path, namespaces)
+                        custom_geometry['paths'].append(path_data)
+
+        except Exception as e:
+            custom_geometry['extraction_error'] = f"Could not extract custom geometry: {str(e)}"
+
+        return custom_geometry
+
+    def extract_path_commands(self, path_element, namespaces: Dict[str, str]) -> Dict[str, Any]:
+        """Extract path commands from a path element"""
+        path_data = {
+            'width': path_element.get('w'),
+            'height': path_element.get('h'),
+            'fill': path_element.get('fill'),
+            'stroke': path_element.get('stroke'),
+            'extrusionOk': path_element.get('extrusionOk'),
+            'commands': []
+        }
+
+        try:
+            # Extract all path commands
+            for child in path_element:
+                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                
+                if tag == 'moveTo':
+                    pt = child.find('./a:pt', namespaces)
+                    if pt is not None:
+                        path_data['commands'].append({
+                            'command': 'moveTo',
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                
+                elif tag == 'lnTo':
+                    pt = child.find('./a:pt', namespaces)
+                    if pt is not None:
+                        path_data['commands'].append({
+                            'command': 'lnTo',
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                
+                elif tag == 'cubicBezTo':
+                    points = []
+                    for pt in child.findall('./a:pt', namespaces):
+                        points.append({
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                    path_data['commands'].append({
+                        'command': 'cubicBezTo',
+                        'points': points
+                    })
+                
+                elif tag == 'quadBezTo':
+                    points = []
+                    for pt in child.findall('./a:pt', namespaces):
+                        points.append({
+                            'x': pt.get('x'),
+                            'y': pt.get('y')
+                        })
+                    path_data['commands'].append({
+                        'command': 'quadBezTo',
+                        'points': points
+                    })
+                
+                elif tag == 'arcTo':
+                    path_data['commands'].append({
+                        'command': 'arcTo',
+                        'wR': child.get('wR'),
+                        'hR': child.get('hR'),
+                        'stAng': child.get('stAng'),
+                        'swAng': child.get('swAng')
+                    })
+                
+                elif tag == 'close':
+                    path_data['commands'].append({
+                        'command': 'close'
+                    })
+
+        except Exception as e:
+            path_data['extraction_error'] = f"Could not extract path commands: {str(e)}"
+
+        return path_data
 
     def save_to_json(self, data: Any, output_file: str):
         """Save data to JSON file"""
