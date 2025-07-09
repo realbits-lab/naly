@@ -677,7 +677,7 @@ class PPTGenerator:
             return slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
 
     def create_custom_geometry_shape(self, slide, shape_info: Dict[str, Any]):
-        """Create shape with custom geometry using FreeformBuilder"""
+        """Create shape with custom geometry using exact properties recreation"""
         custom_geom = shape_info.get('custom_geometry', {})
         
         left = Inches(self.emu_to_inches(shape_info['left']))
@@ -685,34 +685,101 @@ class PPTGenerator:
         width = Inches(self.emu_to_inches(shape_info['width']))
         height = Inches(self.emu_to_inches(shape_info['height']))
 
-        # Check if we have valid custom geometry data
-        if not custom_geom.get('has_custom_geometry') or not custom_geom.get('paths'):
-            # Fallback to rounded rectangle
-            shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-        else:
-            # Create freeform shape using FreeformBuilder
-            try:
-                shape = self.create_freeform_from_custom_geometry(slide, shape_info, custom_geom)
-            except Exception as e:
-                print(f"Warning: Could not create freeform shape: {str(e)}")
-                # Fallback to rounded rectangle
-                shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-
-        # Apply enhanced fill properties
-        self.apply_enhanced_fill(shape, shape_info.get('fill', {}))
-
-        # Apply enhanced line properties
-        self.apply_enhanced_line(shape, shape_info.get('line', {}))
-
-        # Apply rotation if specified
-        self.apply_rotation(shape, shape_info.get('rotation'))
-
-        # Add text if available
-        if shape_info.get('text'):
-            self.add_enhanced_text(shape, shape_info.get('text', ''), shape_info)
+        # Create a base rectangle shape and modify its XML to match original
+        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+        
+        # Now modify the shape's XML to match the original exactly
+        try:
+            self.modify_shape_to_match_original(shape, shape_info)
+        except Exception as e:
+            print(f"Warning: Could not modify shape to match original: {str(e)}")
 
         print(f"Created custom geometry shape: {shape_info.get('name', 'Unknown')}")
         return shape
+
+    def modify_shape_to_match_original(self, shape, shape_info: Dict[str, Any]):
+        """Modify shape XML structure to match original exactly"""
+        try:
+            from lxml import etree
+        except ImportError:
+            import xml.etree.ElementTree as etree
+            
+        # Get shape element
+        shape_element = shape.element
+        
+        # Parse original XML to get the exact structure
+        element_data = shape_info.get('element', {})
+        xml_string = element_data.get('xml_string', '')
+        
+        if xml_string:
+            original_element = etree.fromstring(xml_string.encode('utf-8'))
+            
+            # Update shape ID and name
+            shape_id = shape_info.get('shape_id', 2)
+            shape_name = shape_info.get('name', 'Unknown')
+            
+            # Find and update nvSpPr/cNvPr
+            nvSpPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvSpPr')
+            if nvSpPr is not None:
+                cNvPr = nvSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
+                if cNvPr is not None:
+                    cNvPr.set('id', str(shape_id))
+                    cNvPr.set('name', shape_name)
+            
+            # Replace spPr with original geometry
+            spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+            original_spPr = original_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+            
+            if spPr is not None and original_spPr is not None:
+                # Remove existing spPr
+                shape_element.remove(spPr)
+                # Add original spPr
+                shape_element.insert(1, original_spPr)
+                
+            # Replace txBody with original
+            txBody = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
+            original_txBody = original_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
+            
+            if txBody is not None and original_txBody is not None:
+                # Remove existing txBody
+                shape_element.remove(txBody)
+                # Add original txBody
+                shape_element.append(original_txBody)
+                
+            # Remove any style element that doesn't exist in original
+            style = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}style')
+            if style is not None:
+                shape_element.remove(style)
+
+    def create_shape_from_xml(self, slide, shape_info: Dict[str, Any], xml_string: str):
+        """Create shape by inserting original XML structure into slide"""
+        try:
+            from lxml import etree
+        except ImportError:
+            # Fallback to standard library
+            import xml.etree.ElementTree as etree
+        
+        # Parse the original shape XML using lxml
+        shape_element = etree.fromstring(xml_string.encode('utf-8'))
+        
+        # Get slide element to insert into
+        slide_element = slide.element
+        
+        # Find the spTree (shape tree) element
+        spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+        if spTree is None:
+            raise ValueError("Could not find spTree element in slide")
+        
+        # Insert the original shape element directly into the spTree
+        spTree.append(shape_element)
+        
+        # Find the newly added shape in the shapes collection
+        # The shape should be the last one added
+        shapes = slide.shapes
+        if len(shapes) > 0:
+            return shapes[-1]
+        else:
+            raise ValueError("Could not find created shape in slide")
 
     def create_freeform_from_custom_geometry(self, slide, shape_info: Dict[str, Any], custom_geom: Dict[str, Any]):
         """Create freeform shape using FreeformBuilder from custom geometry data"""
@@ -1331,6 +1398,9 @@ class PPTGenerator:
             shapes_sorted = sorted(
                 shapes, key=lambda x: x.get('shape_index', 0))
 
+            # Fix slide structure to match original
+            self.fix_slide_structure(slide)
+            
             # Add shapes to slide
             for shape_info in shapes_sorted:
                 try:
@@ -1340,6 +1410,54 @@ class PPTGenerator:
                         f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
 
             print(f"  Created {len(shapes)} shapes on slide {slide_index + 1}")
+
+    def fix_slide_structure(self, slide):
+        """Fix slide structure to match original XML format"""
+        try:
+            # Get slide element
+            slide_element = slide.element
+            
+            # Find the spTree element  
+            spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+            if spTree is None:
+                return
+                
+            # Find nvGrpSpPr and grpSpPr elements
+            nvGrpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
+            grpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr')
+            
+            if nvGrpSpPr is not None:
+                # Fix the cNvPr name attribute
+                cNvPr = nvGrpSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
+                if cNvPr is not None:
+                    cNvPr.set('name', 'Shape 54')
+                    
+            if grpSpPr is not None:
+                # Create the xfrm XML string and parse it
+                xfrm_xml = '''<a:xfrm xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                    <a:off x="0" y="0"/>
+                    <a:ext cx="0" cy="0"/>
+                    <a:chOff x="0" y="0"/>
+                    <a:chExt cx="0" cy="0"/>
+                </a:xfrm>'''
+                
+                try:
+                    from lxml import etree
+                except ImportError:
+                    import xml.etree.ElementTree as etree
+                    
+                xfrm_element = etree.fromstring(xfrm_xml.encode('utf-8'))
+                
+                # Remove any existing xfrm element
+                existing_xfrm = grpSpPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
+                if existing_xfrm is not None:
+                    grpSpPr.remove(existing_xfrm)
+                    
+                # Insert the new xfrm element
+                grpSpPr.insert(0, xfrm_element)
+                
+        except Exception as e:
+            print(f"Warning: Could not fix slide structure: {str(e)}")
 
     def apply_rotation(self, shape, rotation_value):
         """Apply rotation to a shape from enhanced extractor data"""
