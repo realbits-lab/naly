@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+    <p:cSld>
+        <p:spTree>
+            <p:nvGrpSpPr>
+                <p:cNvPr id="1" name="Shape 54"/>
+                <p:cNvGrpSpPr/>
+                <p:nvPr/>
+            </p:nvGrpSpPr>
+            <p:grpSpPr>
+                <a:xfrm>
+                    <a:off x="0" y="0"/>
+                    <a:ext cx="0" cy="0"/>
+                    <a:chOff x="0" y="0"/>
+                    <a:chExt cx="0" cy="0"/>
+                </a:xfrm>
+            </p:grpSpPr>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="55" name="Google Shape;55;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="457198" y="411475"/>
+                        <a:ext cx="4305240" cy="5400478"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="68405" h="85807" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="0" y="11543"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="0" y="85807"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="68405" y="85807"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="68405" y="0"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="11566" y="18"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:srgbClr val="EFEFEF"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:endParaRPr lang="en-KR"/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="56" name="Google Shape;56;p15"/>
+                    <p:cNvSpPr txBox="1">
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="subTitle" idx="1"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="5032425" y="3493438"/>
+                        <a:ext cx="3654300" cy="405600"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="t" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="r" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="1600"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en" sz="1600"/>
+                            <a:t>Here is where this template begins</a:t>
+                        </a:r>
+                        <a:endParaRPr sz="1600"/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="57" name="Google Shape;57;p15"/>
+                    <p:cNvSpPr txBox="1">
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="ctrTitle"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="5032550" y="1244463"/>
+                        <a:ext cx="3654300" cy="2172900"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                        <a:avLst/>
+                    </a:prstGeom>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="r" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en" sz="5000" b="0">
+                                <a:latin typeface="Fira Sans Condensed SemiBold"/>
+                                <a:ea typeface="Fira Sans Condensed SemiBold"/>
+                                <a:cs typeface="Fira Sans Condensed SemiBold"/>
+                                <a:sym typeface="Fira Sans Condensed SemiBold"/>
+                            </a:rPr>
+                            <a:t>Design Elements Infographics</a:t>
+                        </a:r>
+                        <a:endParaRPr sz="5000" b="0">
+                            <a:latin typeface="Fira Sans Condensed SemiBold"/>
+                            <a:ea typeface="Fira Sans Condensed SemiBold"/>
+                            <a:cs typeface="Fira Sans Condensed SemiBold"/>
+                            <a:sym typeface="Fira Sans Condensed SemiBold"/>
+                        </a:endParaRPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="58" name="Google Shape;58;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="457198" y="411475"/>
+                        <a:ext cx="726493" cy="726493"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="11367" h="11367" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="0" y="11367"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="11367" y="0"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="11367" y="11367"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:srgbClr val="D9D9D9"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                    <a:effectLst>
+                        <a:outerShdw blurRad="71438" dist="19050" dir="2640000" algn="bl" rotWithShape="0">
+                            <a:srgbClr val="000000">
+                                <a:alpha val="25000"/>
+                            </a:srgbClr>
+                        </a:outerShdw>
+                    </a:effectLst>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:endParaRPr lang="en-KR"/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="59" name="Google Shape;59;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1695000" y="992700"/>
+                        <a:ext cx="917712" cy="917697"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="59991" h="59990" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="59990" y="0"/>
+                                </a:moveTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="26871" y="0"/>
+                                    <a:pt x="1" y="26870"/>
+                                    <a:pt x="1" y="59989"/>
+                                </a:cubicBezTo>
+                                <a:lnTo>
+                                    <a:pt x="37819" y="59989"/>
+                                </a:lnTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="37819" y="47691"/>
+                                    <a:pt x="47717" y="37693"/>
+                                    <a:pt x="59990" y="37693"/>
+                                </a:cubicBezTo>
+                                <a:lnTo>
+                                    <a:pt x="59990" y="0"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent1"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="60" name="Google Shape;60;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2606911" y="992700"/>
+                        <a:ext cx="917697" cy="917697"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="59990" h="59990" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="0" y="0"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="0" y="37693"/>
+                                </a:lnTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="12298" y="37693"/>
+                                    <a:pt x="22196" y="47691"/>
+                                    <a:pt x="22196" y="59989"/>
+                                </a:cubicBezTo>
+                                <a:lnTo>
+                                    <a:pt x="59990" y="59989"/>
+                                </a:lnTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="59990" y="26870"/>
+                                    <a:pt x="33119" y="0"/>
+                                    <a:pt x="0" y="0"/>
+                                </a:cubicBezTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent4"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="61" name="Google Shape;61;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1695000" y="1904593"/>
+                        <a:ext cx="917712" cy="916167"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="59991" h="59890" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="1" y="0"/>
+                                </a:moveTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="1" y="33019"/>
+                                    <a:pt x="26871" y="59889"/>
+                                    <a:pt x="59990" y="59889"/>
+                                </a:cubicBezTo>
+                                <a:lnTo>
+                                    <a:pt x="59990" y="22196"/>
+                                </a:lnTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="47717" y="22196"/>
+                                    <a:pt x="37819" y="12198"/>
+                                    <a:pt x="37819" y="0"/>
+                                </a:cubicBezTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent2"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="62" name="Google Shape;62;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="2606911" y="1904593"/>
+                        <a:ext cx="917697" cy="916167"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="59990" h="59890" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="22196" y="0"/>
+                                </a:moveTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="22196" y="12198"/>
+                                    <a:pt x="12298" y="22196"/>
+                                    <a:pt x="0" y="22196"/>
+                                </a:cubicBezTo>
+                                <a:lnTo>
+                                    <a:pt x="0" y="59889"/>
+                                </a:lnTo>
+                                <a:cubicBezTo>
+                                    <a:pt x="33119" y="59889"/>
+                                    <a:pt x="59990" y="33019"/>
+                                    <a:pt x="59990" y="0"/>
+                                </a:cubicBezTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent3"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="63" name="Google Shape;63;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm flipH="1">
+                        <a:off x="3189187" y="3454202"/>
+                        <a:ext cx="335413" cy="980442"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="2302" h="14545" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="0" y="1"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="0" y="14545"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="14545"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="1"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent5"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="64" name="Google Shape;64;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm flipH="1">
+                        <a:off x="2691115" y="3150352"/>
+                        <a:ext cx="335415" cy="1284290"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="2303" h="15812" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="1" y="0"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="1" y="15812"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="15812"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="0"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent4"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr>
+                            <a:solidFill>
+                                <a:srgbClr val="FF8817"/>
+                            </a:solidFill>
+                        </a:endParaRPr>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="65" name="Google Shape;65;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm flipH="1">
+                        <a:off x="2193061" y="3814799"/>
+                        <a:ext cx="335415" cy="617364"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="2303" h="11209" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="1" y="0"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="1" y="11208"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="11208"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="0"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent2"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="66" name="Google Shape;66;p15"/>
+                    <p:cNvSpPr/>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm flipH="1">
+                        <a:off x="1695000" y="3559980"/>
+                        <a:ext cx="335415" cy="874591"/>
+                    </a:xfrm>
+                    <a:custGeom>
+                        <a:avLst/>
+                        <a:gdLst/>
+                        <a:ahLst/>
+                        <a:cxnLst/>
+                        <a:rect l="l" t="t" r="r" b="b"/>
+                        <a:pathLst>
+                            <a:path w="2303" h="14545" extrusionOk="0">
+                                <a:moveTo>
+                                    <a:pt x="0" y="1"/>
+                                </a:moveTo>
+                                <a:lnTo>
+                                    <a:pt x="0" y="14545"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="14545"/>
+                                </a:lnTo>
+                                <a:lnTo>
+                                    <a:pt x="2302" y="1"/>
+                                </a:lnTo>
+                                <a:close/>
+                            </a:path>
+                        </a:pathLst>
+                    </a:custGeom>
+                    <a:solidFill>
+                        <a:schemeClr val="accent1"/>
+                    </a:solidFill>
+                    <a:ln>
+                        <a:noFill/>
+                    </a:ln>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr spcFirstLastPara="1" wrap="square" lIns="91425" tIns="91425" rIns="91425" bIns="91425" anchor="ctr" anchorCtr="0">
+                        <a:noAutofit/>
+                    </a:bodyPr>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:pPr marL="0" lvl="0" indent="0" algn="l" rtl="0">
+                            <a:spcBef>
+                                <a:spcPts val="0"/>
+                            </a:spcBef>
+                            <a:spcAft>
+                                <a:spcPts val="0"/>
+                            </a:spcAft>
+                            <a:buNone/>
+                        </a:pPr>
+                        <a:endParaRPr/>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+        </p:spTree>
+    </p:cSld>
+    <p:clrMapOvr>
+        <a:masterClrMapping/>
+    </p:clrMapOvr>
+</p:sld>
