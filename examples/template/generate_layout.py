@@ -5,6 +5,7 @@ Generate a PowerPoint file with custom slide using available layouts.
 
 import os
 from pptx import Presentation
+from pptx.slide import Slide, SlideLayout
 from pptx.util import Inches, Pt
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.enum.shapes import PP_PLACEHOLDER
@@ -24,37 +25,74 @@ def generate_default_powerpoint():
     # Check if blank.pptx exists in the current directory
     blank_path = os.path.join(os.path.dirname(__file__), "blank.pptx")
     if os.path.exists(blank_path):
+        print(f"Loading template from: {blank_path}")
         prs = Presentation(blank_path)
     else:
         # Create a blank presentation if blank.pptx doesn't exist
+        print("Creating new blank presentation")
         prs = Presentation()
+
+    # Show available layouts
+    print(f"Available layouts: {len(prs.slide_layouts)}")
+    for i, layout in enumerate(prs.slide_layouts):
+        print(
+            f"  Layout {i}: {layout.name} ({len(layout.placeholders)} placeholders)")
 
     # Add a slide using an existing layout with placeholders
     add_custom_layout(prs)
 
     # Add slides with custom shapes
     add_slide_with_title_and_content(prs)
-    # add_slide_with_title_and_chart(prs)
-    # add_slide_with_title_and_table(prs)
-    # add_slide_with_all_shapes(prs)
+    add_slide_with_title_and_chart(prs)
+    add_slide_with_title_and_table(prs)
+    add_slide_with_all_shapes(prs)
 
     return prs
 
 
 def add_custom_layout(prs):
-    """Add a slide using an existing layout with title and content placeholders."""
-    layout = prs.slide_layouts[0]
+    """Add a slide using an existing layout and work with its placeholders."""
+    # Try to find a layout with placeholders
+    layout = None
+    for i, slide_layout in enumerate(prs.slide_layouts):
+        print(
+            f"Layout {i}: {slide_layout.name} - {len(slide_layout.placeholders)} placeholders")
+        if len(slide_layout.placeholders) > 0:
+            layout = slide_layout
+            break
 
-    # Add title placeholder to layout
-    title_placeholder = create_title_shape(
-        layout, Inches(1), Inches(0.5), Inches(8), Inches(1.5))
+    if layout is None:
+        layout = prs.slide_layouts[0]
+        print(f"Using default layout: {layout.name}")
 
-    # Add content placeholder to layout
-    content_placeholder = create_body_shape(
-        layout, Inches(1), Inches(2), Inches(8), Inches(4))
+    slide = prs.slides.add_slide(layout)
 
-    print("Added placeholders to layout: title and content")
-    return layout
+    # Work with existing placeholders
+    print(f"Slide has {len(slide.placeholders)} placeholders")
+
+    for placeholder in slide.placeholders:
+        idx = placeholder.placeholder_format.idx
+        ph_type = placeholder.placeholder_format.type
+        print(f"Placeholder idx: {idx}, type: {ph_type}")
+
+        # Add content based on placeholder type
+        if ph_type == PP_PLACEHOLDER.TITLE:
+            placeholder.text = "Layout Title"
+        elif ph_type == PP_PLACEHOLDER.BODY:
+            placeholder.text = "Layout Body Content\n• Bullet 1\n• Bullet 2"
+        elif ph_type == PP_PLACEHOLDER.OBJECT:
+            placeholder.text = "Object Content"
+
+    # If no placeholders exist, create regular shapes as fallback
+    if len(slide.placeholders) == 0:
+        print("No placeholders found, creating regular shapes")
+        title_shape = create_title_shape(slide, Inches(
+            1), Inches(0.5), Inches(8), Inches(1.5))
+        content_shape = create_body_shape(
+            slide, Inches(1), Inches(2), Inches(8), Inches(4))
+
+    print(f"Added slide using layout: {layout.name}")
+    return slide
 
 
 def add_slide_with_custom_shapes(prs, shape_types=['title', 'body']):
