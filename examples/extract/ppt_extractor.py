@@ -670,7 +670,7 @@ class PPTExtractor:
                     'adjustments': list(shape.adjustments) if hasattr(shape, 'adjustments') and shape.adjustments else None,
                     'auto_shape_type': self._safe_get_auto_shape_type(shape),
                     'click_action': str(shape.click_action) if hasattr(shape, 'click_action') and shape.click_action else None,
-                    'element': str(shape.element) if hasattr(shape, 'element') else None,
+                    'element': self.extract_element_attributes(shape.element) if hasattr(shape, 'element') else None,
                     'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
                     'get_or_add_ln': str(shape.get_or_add_ln) if hasattr(shape, 'get_or_add_ln') else None,
                     'has_chart': shape.has_chart if hasattr(shape, 'has_chart') else None,
@@ -855,6 +855,49 @@ class PPTExtractor:
             bg_info['error'] = f"Could not extract background properties: {str(e)}"
 
         return bg_info
+
+    def extract_element_attributes(self, element) -> Dict[str, Any]:
+        """Extract all attributes from a shape element"""
+        element_info = {
+            'tag': element.tag if hasattr(element, 'tag') else None,
+            'text': element.text if hasattr(element, 'text') else None,
+            'tail': element.tail if hasattr(element, 'tail') else None,
+            'attributes': {},
+            'children': [],
+            'namespace': None
+        }
+
+        try:
+            # Extract all attributes
+            if hasattr(element, 'attrib'):
+                element_info['attributes'] = dict(element.attrib)
+            
+            # Extract namespace info
+            if hasattr(element, 'nsmap'):
+                element_info['namespace'] = element.nsmap
+            
+            # Extract children elements (non-recursive to avoid deep nesting)
+            if hasattr(element, '__iter__'):
+                for child in element:
+                    child_info = {
+                        'tag': child.tag if hasattr(child, 'tag') else None,
+                        'text': child.text if hasattr(child, 'text') else None,
+                        'attributes': dict(child.attrib) if hasattr(child, 'attrib') else {},
+                        'children_count': len(list(child)) if hasattr(child, '__iter__') else 0
+                    }
+                    element_info['children'].append(child_info)
+            
+            # Extract XML string representation
+            try:
+                import xml.etree.ElementTree as ET
+                element_info['xml_string'] = ET.tostring(element, encoding='unicode') if element is not None else None
+            except Exception:
+                element_info['xml_string'] = str(element) if element is not None else None
+
+        except Exception as e:
+            element_info['extraction_error'] = f"Could not extract element attributes: {str(e)}"
+
+        return element_info
 
     def save_to_json(self, data: Any, output_file: str):
         """Save data to JSON file"""
