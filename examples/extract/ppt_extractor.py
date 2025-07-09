@@ -649,11 +649,6 @@ class PPTExtractor:
         from pptx.enum.shapes import MSO_SHAPE_TYPE
 
         for slide_idx, slide in enumerate(self.presentation.slides):
-            # Print all attributes of slide
-            print(f"Slide {slide_idx} attributes:")
-            for attr in dir(slide):
-                print(f"attr: {attr}")
-
             slide_shapes = []
 
             for shape_idx, shape in enumerate(slide.shapes):
