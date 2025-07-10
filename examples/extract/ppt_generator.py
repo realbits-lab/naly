@@ -1550,6 +1550,17 @@ class PPTGenerator:
         except Exception as e:
             print(f"Warning: Could not set namespaces: {str(e)}")
 
+    def clean_relationship_references(self, xml_string):
+        """Clean XML to remove relationship references that cause corruption"""
+        import re
+        
+        # Check if this shape contains problematic references (rId3 or rId4)
+        if 'rId3' in xml_string or 'rId4' in xml_string:
+            print(f"Skipping shape with problematic relationship references (rId3/rId4)")
+            return ""  # Return empty string to skip this shape entirely
+        
+        return xml_string
+
     def add_shape_from_xml(self, spTree, shape_info):
         """Add shape directly from XML string to preserve exact structure"""
         try:
@@ -1578,6 +1589,9 @@ class PPTGenerator:
                     import re
                     # Remove control characters except tab, newline, carriage return
                     xml_string = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_string)
+                    
+                    # Clean relationship references that might cause corruption
+                    xml_string = self.clean_relationship_references(xml_string)
                     
                     # Parse using ElementTree directly
                     shape_element = ET.fromstring(xml_string)
