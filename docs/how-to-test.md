@@ -1,6 +1,9 @@
 Improve @examples/extract/ppt_extractor.py and @examples/extract/ppt_generator.py to match slide1.xml of input and output powerpoint open xml file for
   the first slide.
 
+This is 1-2 case for example.
+You can use other cases as 1-1, 1-3, 1-4, 1-5, 1-6, 1-7, 1-8, 1-9, 1-10 to test the generator.
+
 1. Run "python ppt_extractor.py sample_parts/sample1-2.pptx --output-dir outputs" in examples/extract directory.
 2. Run "python ppt_generator.py \
 outputs/sample1-2_shapes.json \

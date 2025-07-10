@@ -1456,9 +1456,14 @@ class PPTGenerator:
             print(
                 f"Creating slide {slide_index + 1} with {len(shapes)} shapes...")
 
-            # Use blank layout to avoid automatic placeholders
-            blank_layout = self.presentation.slide_layouts[-1]  # Usually blank layout
-            slide = self.presentation.slides.add_slide(blank_layout)
+            # Check if we need to use existing slide or create new one
+            if len(self.presentation.slides) > slide_index:
+                # Use existing slide from template
+                slide = self.presentation.slides[slide_index]
+            else:
+                # Create new slide if needed
+                blank_layout = self.presentation.slide_layouts[-1]  # Usually blank layout
+                slide = self.presentation.slides.add_slide(blank_layout)
 
             # Generate slide with exact XML structure
             self.recreate_slide_xml_structure(slide, shapes)
@@ -1471,53 +1476,130 @@ class PPTGenerator:
     def recreate_slide_xml_structure(self, slide, shapes):
         """Recreate slide XML structure exactly matching original"""
         try:
-            import xml.etree.ElementTree as ET
-            from lxml import etree
-            
-            # Get slide element
-            slide_element = slide.element
-            
-            # Clear all existing shapes except the group container
-            spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
-            if spTree is not None:
-                # Keep only nvGrpSpPr and grpSpPr, remove all shapes
-                to_remove = []
-                for child in spTree:
-                    if child.tag not in [
-                        '{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr',
-                        '{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr'
-                    ]:
-                        to_remove.append(child)
-                for child in to_remove:
-                    spTree.remove(child)
-                
-                # Fix group shape ID to match original
-                nvGrpSpPr = spTree.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
-                if nvGrpSpPr is not None:
-                    cNvPr = nvGrpSpPr.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
-                    if cNvPr is not None and shapes:
-                        # Set group ID based on first shape ID - 1
-                        first_shape = min(shapes, key=lambda x: x.get('shape_id', 999))
-                        group_id = first_shape.get('shape_id', 54) - 1
-                        cNvPr.set('id', str(group_id))
-                        cNvPr.set('name', f'Shape {group_id}')
-                
-                # Add shapes directly from XML
-                for shape_info in sorted(shapes, key=lambda x: x.get('shape_index', 0)):
-                    self.add_shape_from_xml(spTree, shape_info)
-                
-                # Add all required namespaces to slide element
-                self.add_original_namespaces(slide_element)
+            # Use direct XML replacement approach
+            self.replace_slide_xml_content(slide, shapes)
             
         except Exception as e:
             print(f"Warning: Could not recreate XML structure: {str(e)}")
             # Fallback to original method
+            print("Using fallback shape creation method...")
             self.fix_slide_structure(slide)
             for shape_info in shapes:
                 try:
                     self.create_enhanced_shape(slide, shape_info)
-                except Exception as e:
-                    print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(e)}")
+                except Exception as shape_error:
+                    print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(shape_error)}")
+
+    def replace_slide_xml_content(self, slide, shapes):
+        """Replace entire slide XML content with reconstructed version"""
+        try:
+            from lxml import etree
+            
+            # Build the complete slide XML from shape data
+            slide_xml = self.build_complete_slide_xml(shapes)
+            
+            # Clean the XML string to remove invalid characters
+            import re
+            slide_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', slide_xml)
+            
+            # Parse the complete XML
+            complete_slide = etree.fromstring(slide_xml)
+            
+            # Get the slide element and replace its content
+            slide_element = slide.element
+            
+            # Clear the current slide content
+            slide_element.clear()
+            
+            # Copy all attributes and content from complete slide
+            slide_element.tag = complete_slide.tag
+            slide_element.attrib.clear()
+            slide_element.attrib.update(complete_slide.attrib)
+            slide_element.text = complete_slide.text
+            slide_element.tail = complete_slide.tail
+            
+            # Copy all children
+            for child in complete_slide:
+                slide_element.append(child)
+            
+            # Handle fallback shapes that couldn't be added via XML
+            if hasattr(self, 'fallback_shapes') and self.fallback_shapes:
+                print(f"Creating {len(self.fallback_shapes)} fallback shapes...")
+                for shape_info in self.fallback_shapes:
+                    try:
+                        self.create_enhanced_shape(slide, shape_info)
+                        print(f"  Created fallback shape: {shape_info.get('name', 'unknown')}")
+                    except Exception as fallback_error:
+                        print(f"  Warning: Could not create fallback shape {shape_info.get('name', 'unknown')}: {str(fallback_error)}")
+                
+        except Exception as e:
+            print(f"Warning: Could not replace slide XML content: {str(e)}")
+
+    def build_complete_slide_xml(self, shapes):
+        """Build complete slide XML from shape data"""
+        try:
+            # Get first shape to determine group ID
+            if shapes:
+                first_shape = min(shapes, key=lambda x: x.get('shape_id', 999))
+                group_id = first_shape.get('shape_id', 54) - 1
+                group_name = f'Shape {group_id}'
+            else:
+                group_id = 1
+                group_name = ''
+            
+            # Build the basic slide structure (without XML declaration for lxml parsing)
+            slide_xml = f'''<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+    <p:cSld>
+        <p:spTree>
+            <p:nvGrpSpPr>
+                <p:cNvPr id="{group_id}" name="{group_name}"/>
+                <p:cNvGrpSpPr/>
+                <p:nvPr/>
+            </p:nvGrpSpPr>
+            <p:grpSpPr>
+                <a:xfrm>
+                    <a:off x="0" y="0"/>
+                    <a:ext cx="0" cy="0"/>
+                    <a:chOff x="0" y="0"/>
+                    <a:chExt cx="0" cy="0"/>
+                </a:xfrm>
+            </p:grpSpPr>'''
+            
+            # Track shapes that need fallback creation
+            self.fallback_shapes = []
+            
+            # Add all shapes
+            for shape_info in sorted(shapes, key=lambda x: x.get('shape_index', 0)):
+                element_data = shape_info.get('element', {})
+                xml_string = element_data.get('xml_string', '')
+                
+                if xml_string:
+                    # Clean the XML string
+                    cleaned_xml = self.clean_relationship_references(xml_string)
+                    if cleaned_xml.strip() and cleaned_xml != "USE_FALLBACK":
+                        # Remove XML declaration if present
+                        if cleaned_xml.startswith('<?xml'):
+                            cleaned_xml = cleaned_xml.split('?>', 1)[1].strip()
+                        slide_xml += '\n            ' + cleaned_xml
+                    elif cleaned_xml == "USE_FALLBACK":
+                        # Track this shape for fallback creation
+                        print(f"Marking shape for fallback creation: {shape_info.get('name', 'unknown')}")
+                        self.fallback_shapes.append(shape_info)
+            
+            # Close the slide structure
+            slide_xml += '''
+        </p:spTree>
+    </p:cSld>
+    <p:clrMapOvr>
+        <a:masterClrMapping/>
+    </p:clrMapOvr>
+</p:sld>'''
+            
+            return slide_xml
+            
+        except Exception as e:
+            print(f"Warning: Could not build complete slide XML: {str(e)}")
+            return None
 
     def add_original_namespaces(self, slide_element):
         """Add all original namespaces to match source file"""
@@ -1556,18 +1638,31 @@ class PPTGenerator:
         
         # Check if this shape contains problematic references (rId3 or rId4)
         if 'rId3' in xml_string or 'rId4' in xml_string:
-            print(f"Skipping shape with problematic relationship references (rId3/rId4)")
-            return ""  # Return empty string to skip this shape entirely
+            print(f"Found shape with problematic relationship references (rId3/rId4) - will use fallback creation")
+            return "USE_FALLBACK"  # Signal to use fallback method instead of skipping entirely
         
         return xml_string
+
+    def _copy_element_recursive(self, parent, source_element, root_element):
+        """Recursively copy XML element structure using compatible element creation"""
+        try:
+            # Create new element using parent's context
+            new_element = root_element.makeelement(source_element.tag, source_element.attrib)
+            new_element.text = source_element.text
+            new_element.tail = source_element.tail
+            
+            # Copy all children recursively
+            for child in source_element:
+                self._copy_element_recursive(new_element, child, root_element)
+            
+            parent.append(new_element)
+        except Exception as e:
+            print(f"Warning: Could not copy element {source_element.tag}: {str(e)}")
 
     def add_shape_from_xml(self, spTree, shape_info):
         """Add shape directly from XML string to preserve exact structure"""
         try:
-            try:
-                from lxml import etree as ET
-            except ImportError:
-                import xml.etree.ElementTree as ET
+            from lxml import etree as ET
             
             # Get the original XML string from element data
             element_data = shape_info.get('element', {})
@@ -1593,11 +1688,32 @@ class PPTGenerator:
                     # Clean relationship references that might cause corruption
                     xml_string = self.clean_relationship_references(xml_string)
                     
-                    # Parse using ElementTree directly
-                    shape_element = ET.fromstring(xml_string)
+                    # Skip if XML was cleaned to empty string (problematic shape)
+                    if not xml_string.strip():
+                        return
+                    
+                    # Use fallback creation for shapes with problematic references
+                    if xml_string == "USE_FALLBACK":
+                        print(f"Using fallback creation for shape: {shape_info.get('shape_type', 'unknown')}")
+                        self.create_enhanced_shape(slide, shape_info)
+                        return
+                    
+                    # Use python-pptx's internal XML handling approach
+                    # Convert the XML string to ElementTree and inject it using lxml
+                    from lxml import etree
+                    
+                    # Parse the XML string using lxml first
+                    temp_element = etree.fromstring(xml_string)
+                    
+                    # Convert lxml element to string and re-parse with python-pptx compatible method
+                    xml_str = etree.tostring(temp_element, encoding='unicode')
+                    
+                    # Use spTree's underlying lxml parser to create compatible elements
+                    doc = etree.fromstring(f"<root>{xml_str}</root>")
+                    new_shape = doc[0]  # Get the first child (our shape)
                     
                     # Append to spTree
-                    spTree.append(shape_element)
+                    spTree.append(new_shape)
                     
                     print(f"Added shape from XML: {shape_info.get('name', 'Unknown')}")
                     

@@ -25,17 +25,8 @@ pip install python-pptx
 
 ### Testing and Fidelity Analysis
 ```bash
-cd docs
-chmod +x *.sh *.py
-
-# Run fidelity comparison
-./compare_pptx_structures.sh original.pptx generated.pptx
-
-# Run iterative testing
-./iterative_testing.sh
-
-# XML analysis
-python analyze_xml_differences.py original.xml generated.xml
+cd examples/extract
+./test.sh 1-[number]
 ```
 
 ## Key Features
@@ -78,6 +69,7 @@ docs/new-architecture.md  # Digital marketplace architecture (separate feature)
 2. Analyze XML differences for specific issues
 3. Iterate until achieving target fidelity scores
 4. Use examples/extract/outputs directory to test the fidelity of the generator.
+5. Refer @docs/how-to-test.md for more details about the testing process.
 
 ## Important Considerations
 

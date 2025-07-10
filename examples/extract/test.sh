@@ -9,9 +9,23 @@ OUTPUT_DIR="./outputs"
 EXTRACTOR="./ppt_extractor.py"
 GENERATOR="./ppt_generator.py"
 
+# Function to clean outputs directory
+clean_outputs() {
+    if [ -d "$OUTPUT_DIR" ]; then
+        echo "Cleaning outputs directory: $OUTPUT_DIR"
+        rm -rf "$OUTPUT_DIR"/*
+        echo "✓ All files and directories in $OUTPUT_DIR have been deleted"
+    else
+        echo "Output directory $OUTPUT_DIR does not exist"
+    fi
+}
+
 # Function to show usage and available files
 show_usage() {
-    echo "Usage: $0 <file_index>"
+    echo "Usage: $0 [OPTIONS] <file_index>"
+    echo
+    echo "Options:"
+    echo "  --clean, -C    Clean all files and directories in outputs directory"
     echo
     echo "Available sample files:"
     if [ -d "$SAMPLE_DIR" ]; then
@@ -27,15 +41,23 @@ show_usage() {
     fi
     echo
     echo "Examples:"
-    echo "  $0 1-2    # Use sample1-2.pptx"
-    echo "  $0 1-3    # Use sample1-3.pptx"
-    echo "  $0 1      # Use sample1.pptx"
+    echo "  $0 1-2         # Use sample1-2.pptx"
+    echo "  $0 1-3         # Use sample1-3.pptx"
+    echo "  $0 1           # Use sample1.pptx"
+    echo "  $0 --clean     # Clean outputs directory"
+    echo "  $0 -C          # Clean outputs directory"
 }
 
 # Check if argument is provided
 if [ $# -eq 0 ]; then
     show_usage
     exit 1
+fi
+
+# Handle clean option
+if [ "$1" = "--clean" ] || [ "$1" = "-C" ]; then
+    clean_outputs
+    exit 0
 fi
 
 FILE_INDEX="$1"
@@ -66,11 +88,11 @@ echo
 # Step 2: Generate PowerPoint file from extracted data
 echo "Step 2: Generating PowerPoint file from extracted data..."
 python3 "$GENERATOR" \
-    --shapes "$OUTPUT_DIR/sample${FILE_INDEX}_shapes.json" \
-    --layouts "$OUTPUT_DIR/sample${FILE_INDEX}_layouts.json" \
-    --theme "$OUTPUT_DIR/sample${FILE_INDEX}_theme.json" \
-    --media "$OUTPUT_DIR/sample${FILE_INDEX}_media.json" \
-    --properties "$OUTPUT_DIR/sample${FILE_INDEX}_properties.json" \
+    "$OUTPUT_DIR/sample${FILE_INDEX}_shapes.json" \
+    "$OUTPUT_DIR/sample${FILE_INDEX}_layouts.json" \
+    "$OUTPUT_DIR/sample${FILE_INDEX}_theme.json" \
+    --media-file "$OUTPUT_DIR/sample${FILE_INDEX}_media.json" \
+    --properties-file "$OUTPUT_DIR/sample${FILE_INDEX}_properties.json" \
     --output "$OUTPUT_DIR/sample${FILE_INDEX}_generated.pptx"
 echo "✓ Generation completed"
 echo
