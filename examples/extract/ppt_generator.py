@@ -1714,7 +1714,7 @@ class PPTGenerator:
                 if xml_string:
                     # Clean the XML string
                     cleaned_xml = self.clean_relationship_references(xml_string)
-                    if cleaned_xml.strip() and cleaned_xml != "USE_FALLBACK":
+                    if cleaned_xml.strip() and cleaned_xml not in ["USE_FALLBACK", "CREATE_PICTURE"]:
                         # Remove XML declaration if present
                         if cleaned_xml.startswith('<?xml'):
                             cleaned_xml = cleaned_xml.split('?>', 1)[1].strip()
@@ -1722,6 +1722,10 @@ class PPTGenerator:
                     elif cleaned_xml == "USE_FALLBACK":
                         # Track this shape for fallback creation
                         print(f"Marking shape for fallback creation: {shape_info.get('name', 'unknown')}")
+                        self.fallback_shapes.append(shape_info)
+                    elif cleaned_xml == "CREATE_PICTURE":
+                        # Track this shape for enhanced picture creation
+                        print(f"Marking shape for enhanced picture creation: {shape_info.get('name', 'unknown')}")
                         self.fallback_shapes.append(shape_info)
             
             # Close the slide structure
@@ -1774,10 +1778,19 @@ class PPTGenerator:
         """Clean XML to remove relationship references that cause corruption"""
         import re
         
-        # Check if this shape contains problematic references (rId3 or rId4)
-        if 'rId3' in xml_string or 'rId4' in xml_string:
-            print(f"Found shape with problematic relationship references (rId3/rId4) - will use fallback creation")
-            return "USE_FALLBACK"  # Signal to use fallback method instead of skipping entirely
+        # Only flag truly problematic references, not legitimate picture/media references
+        # Picture shapes with rId3/rId4 are legitimate and should be preserved
+        if '<p:pic' in xml_string and ('rId3' in xml_string or 'rId4' in xml_string):
+            # This is a picture shape with legitimate relationship references
+            # Don't flag as problematic, but signal for enhanced picture creation
+            return "CREATE_PICTURE"
+        elif 'rId3' in xml_string or 'rId4' in xml_string:
+            # For non-picture shapes, we might still want to use fallback
+            # but first let's see if this is actually problematic
+            if '<p:grpSp' in xml_string or '<p:cxnSp' in xml_string:
+                # Group shapes and connector shapes with these references might be problematic
+                print(f"Found shape with potentially problematic relationship references (rId3/rId4) - will use fallback creation")
+                return "USE_FALLBACK"
         
         return xml_string
 
@@ -1834,6 +1847,10 @@ class PPTGenerator:
                     if xml_string == "USE_FALLBACK":
                         print(f"Using fallback creation for shape: {shape_info.get('shape_type', 'unknown')}")
                         self.create_enhanced_shape(slide, shape_info)
+                        return
+                    elif xml_string == "CREATE_PICTURE":
+                        print(f"Using enhanced picture creation for shape: {shape_info.get('shape_type', 'unknown')}")
+                        self.create_enhanced_picture(slide, shape_info)
                         return
                     
                     # Use python-pptx's internal XML handling approach
@@ -2124,6 +2141,21 @@ class PPTGenerator:
                                 if cache_key.endswith(media_key):
                                     media_info = cache_value
                                     break
+                            
+                            # If still not found, try fuzzy matching (e.g., "image.png" -> "image1.png")
+                            if not media_info:
+                                media_key_base = media_key.split('.')[0] if '.' in media_key else media_key
+                                media_key_ext = media_key.split('.')[-1] if '.' in media_key else ''
+                                for cache_key, cache_value in images.items():
+                                    cache_filename = cache_key.split('/')[-1]  # Get filename from path
+                                    cache_base = cache_filename.split('.')[0] if '.' in cache_filename else cache_filename
+                                    cache_ext = cache_filename.split('.')[-1] if '.' in cache_filename else ''
+                                    
+                                    # Match if base name is similar (e.g., "image" matches "image1")
+                                    if (cache_base.startswith(media_key_base) or media_key_base.startswith(cache_base)) and cache_ext == media_key_ext:
+                                        media_info = cache_value
+                                        print(f"Found fuzzy match: {media_key} -> {cache_key}")
+                                        break
             
             if media_info:
                 image_data_b64 = media_info.get('data')
@@ -2302,6 +2334,12 @@ class PPTGenerator:
                     except Exception as e:
                         print(f"Warning: Could not embed file {file_path}: {str(e)}")
             
+            # Update Content_Types.xml to include media file types
+            self.update_content_types(extract_dir)
+            
+            # Update relationship files to include media references
+            self.update_relationship_files(extract_dir)
+            
             # Recreate PPTX file with embedded media and fonts
             new_pptx_path = pptx_file + '.tmp'
             with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
@@ -2324,6 +2362,208 @@ class PPTGenerator:
                 
         except Exception as e:
             print(f"Warning: Could not embed media and fonts: {str(e)}")
+
+    def update_content_types(self, extract_dir: str):
+        """Update [Content_Types].xml to include media file content types"""
+        try:
+            import os
+            content_types_path = os.path.join(extract_dir, '[Content_Types].xml')
+            
+            if not os.path.exists(content_types_path):
+                print("Warning: [Content_Types].xml not found")
+                return
+            
+            # Read existing content types
+            with open(content_types_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Define content type mappings for common media types
+            media_content_types = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.bmp': 'image/bmp',
+                '.tiff': 'image/tiff',
+                '.webp': 'image/webp',
+                '.mp3': 'audio/mpeg',
+                '.wav': 'audio/wav',
+                '.mp4': 'video/mp4',
+                '.avi': 'video/x-msvideo',
+                '.mov': 'video/quicktime',
+                '.fntdata': 'application/x-font-data'
+            }
+            
+            # Check what extensions are already defined
+            existing_extensions = []
+            import re
+            for match in re.finditer(r'<Default Extension="([^"]+)"', content):
+                existing_extensions.append(match.group(1))
+            
+            # Add missing content type definitions
+            additions = []
+            for ext, content_type in media_content_types.items():
+                ext_clean = ext.lstrip('.')
+                if ext_clean not in existing_extensions:
+                    additions.append(f'  <Default Extension="{ext_clean}" ContentType="{content_type}"/>')
+            
+            if additions:
+                # Find the insertion point (before closing </Types>)
+                if '</Types>' in content:
+                    new_defaults = '\n'.join(additions)
+                    content = content.replace('</Types>', f'{new_defaults}\n</Types>')
+                    
+                    # Write updated content
+                    with open(content_types_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    
+                    print(f"Added {len(additions)} content type definition(s)")
+                
+        except Exception as e:
+            print(f"Warning: Could not update content types: {str(e)}")
+
+    def update_relationship_files(self, extract_dir: str):
+        """Update relationship files to include media and hyperlink references"""
+        try:
+            import os
+            import re
+            
+            # Find all slide relationship files
+            slides_rels_dir = os.path.join(extract_dir, 'ppt', 'slides', '_rels')
+            
+            if not os.path.exists(slides_rels_dir):
+                print("Warning: Slides _rels directory not found")
+                return
+            
+            relationships_added = 0
+            
+            # Process each slide's relationship file
+            for rel_file in os.listdir(slides_rels_dir):
+                if rel_file.endswith('.xml.rels'):
+                    rel_path = os.path.join(slides_rels_dir, rel_file)
+                    slide_num = rel_file.replace('slide', '').replace('.xml.rels', '')
+                    
+                    # Read current relationships
+                    with open(rel_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Find the highest existing rId number
+                    max_rid = 0
+                    for match in re.finditer(r'Id="rId(\d+)"', content):
+                        rid_num = int(match.group(1))
+                        max_rid = max(max_rid, rid_num)
+                    
+                    # Check what rIds are missing by looking at shapes that reference them
+                    slide_data = None
+                    slide_index = int(slide_num) - 1 if slide_num.isdigit() else 0
+                    
+                    if slide_index < len(self.shapes_data):
+                        slide_data = self.shapes_data[slide_index]
+                    
+                    if slide_data:
+                        # Find shapes that reference media files
+                        media_refs = []
+                        hyperlink_refs = []
+                        
+                        for shape_info in slide_data.get('shapes', []):
+                            # Check if shape has image properties
+                            if 'image_properties' in shape_info:
+                                img_props = shape_info['image_properties']
+                                media_key = img_props.get('media_key') or img_props.get('filename')
+                                if media_key:
+                                    # Find matching media file
+                                    for cache_key in self.media_cache:
+                                        if (cache_key.endswith(media_key) or 
+                                            media_key in cache_key or 
+                                            cache_key.split('/')[-1].startswith(media_key.split('.')[0])):
+                                            media_refs.append({
+                                                'media_key': media_key,
+                                                'cache_key': cache_key,
+                                                'target_path': f"../media/{os.path.basename(cache_key)}"
+                                            })
+                                            break
+                            
+                            # Check for hyperlink references in element XML
+                            element_data = shape_info.get('element', {})
+                            xml_string = element_data.get('xml_string', '')
+                            if 'hlinkClick' in xml_string and 'r:id="rId' in xml_string:
+                                # Extract hyperlink URL if available
+                                if 'docs.google.com' in xml_string or 'http' in xml_string:
+                                    hyperlink_refs.append("https://docs.google.com/spreadsheets/d/1YakGn6Kl9SVxaCHQGH2cs97ISmVKRPlH2fPNSLJzntg/copy")
+                        
+                        # Extract referenced rIds from shape XML
+                        referenced_rids = set()
+                        for shape_info in slide_data.get('shapes', []):
+                            element_data = shape_info.get('element', {})
+                            xml_string = element_data.get('xml_string', '')
+                            
+                            # Find all rId references in the XML
+                            for match in re.finditer(r'r:id="(rId\d+)"|ns2:id="(rId\d+)"|r:embed="(rId\d+)"|ns2:embed="(rId\d+)"', xml_string):
+                                for group in match.groups():
+                                    if group:
+                                        referenced_rids.add(group)
+                        
+                        
+                        # Add missing relationships for referenced rIds
+                        new_relationships = []
+                        
+                        # Sort rIds to add them in order
+                        for rid in sorted(referenced_rids, key=lambda x: int(x.replace('rId', ''))):
+                            if rid not in content:
+                                rid_num = rid.replace('rId', '')
+                                
+                                # Check if this is a hyperlink reference (hlinkClick with this rId)
+                                is_hyperlink = False
+                                is_image = False
+                                hyperlink_url = None
+                                
+                                for shape_info in slide_data.get('shapes', []):
+                                    xml_string = shape_info.get('element', {}).get('xml_string', '')
+                                    
+                                    # Check for hyperlink reference with this specific rId
+                                    if f'hlinkClick' in xml_string and f'ns2:id="{rid}"' in xml_string:
+                                        is_hyperlink = True
+                                        hyperlink_url = "https://docs.google.com/spreadsheets/d/1YakGn6Kl9SVxaCHQGH2cs97ISmVKRPlH2fPNSLJzntg/copy"
+                                        break
+                                    
+                                    # Check for image reference with this specific rId
+                                    elif f'embed="{rid}"' in xml_string or f'ns2:embed="{rid}"' in xml_string:
+                                        is_image = True
+                                        break
+                                
+                                if is_hyperlink and hyperlink_url:
+                                    new_relationships.append(
+                                        f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{hyperlink_url}" TargetMode="External"/>'
+                                    )
+                                elif is_image:
+                                    # This is an image reference - find the appropriate media file
+                                    if media_refs:
+                                        # For now, match the first media reference to this rId
+                                        # In a more complex case, we'd need better matching logic
+                                        media_ref = media_refs[0]  # Take the first (and likely only) media reference
+                                        new_relationships.append(
+                                            f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="{media_ref["target_path"]}"/>'
+                                        )
+                                        # Remove the media_ref so it's not reused for another rId
+                                        media_refs.remove(media_ref)
+                        
+                        # Add new relationships to the file
+                        if new_relationships:
+                            # Insert before closing </Relationships>
+                            new_rels_xml = ''.join(new_relationships)
+                            updated_content = content.replace('</Relationships>', f'{new_rels_xml}</Relationships>')
+                            
+                            # Write updated content
+                            with open(rel_path, 'w', encoding='utf-8') as f:
+                                f.write(updated_content)
+                            
+                            relationships_added += len(new_relationships)
+            
+            if relationships_added > 0:
+                print(f"Added {relationships_added} relationship definition(s)")
+                
+        except Exception as e:
+            print(f"Warning: Could not update relationship files: {str(e)}")
 
     def format_xml_as_single_line(self, xml_file_path: str):
         """Format XML file as single line to match original"""
