@@ -1,0 +1,96 @@
+{
+  "slide_master": {
+    "name": "simple-light-2",
+    "width": null,
+    "height": null,
+    "background": {
+      "fill": {
+        "type": "SOLID (1)",
+        "solid": true,
+        "fore_color": {
+          "type": "SCHEME (2)",
+          "theme_color": "LIGHT_1 (2)",
+          "brightness": 0
+        }
+      }
+    },
+    "placeholders": [
+      {
+        "placeholder_type": "TITLE (1)",
+        "name": "Google Shape;6;p1",
+        "left": 311700,
+        "top": 445025,
+        "width": 8520600,
+        "height": 572700
+      },
+      {
+        "placeholder_type": "BODY (2)",
+        "name": "Google Shape;7;p1",
+        "left": 311700,
+        "top": 1152475,
+        "width": 8520600,
+        "height": 3416400
+      }
+    ]
+  },
+  "color_scheme": {
+    "dk1": {
+      "rgb": "000000",
+      "type": "srgb"
+    },
+    "lt1": {
+      "rgb": "FFFFFF",
+      "type": "srgb"
+    },
+    "dk2": {
+      "rgb": "595959",
+      "type": "srgb"
+    },
+    "lt2": {
+      "rgb": "EEEEEE",
+      "type": "srgb"
+    },
+    "accent1": {
+      "rgb": "264653",
+      "type": "srgb"
+    },
+    "accent2": {
+      "rgb": "2A9D8F",
+      "type": "srgb"
+    },
+    "accent3": {
+      "rgb": "8AB17D",
+      "type": "srgb"
+    },
+    "accent4": {
+      "rgb": "E76F51",
+      "type": "srgb"
+    },
+    "accent5": {
+      "rgb": "F4A261",
+      "type": "srgb"
+    },
+    "accent6": {
+      "rgb": "E9C46A",
+      "type": "srgb"
+    },
+    "hlink": {
+      "rgb": "000000",
+      "type": "srgb"
+    },
+    "folHlink": {
+      "rgb": "0097A7",
+      "type": "srgb"
+    },
+    "_extraction_note": "Correct theme colors applied. Theme colors detected: ['accent1', 'accent4', 'accent2', 'accent3', 'accent5', 'accent6']"
+  },
+  "font_scheme": {
+    "error": "No font scheme found"
+  },
+  "theme_name": "Design Elements Infographics by Slidesgo",
+  "slide_masters": [],
+  "layout_masters": [],
+  "effect_scheme": {
+    "error": "No effect scheme found"
+  }
+}

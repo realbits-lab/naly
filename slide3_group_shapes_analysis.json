@@ -1,0 +1,143 @@
+{
+  "slide_index": 2,
+  "group_shapes_found": 3,
+  "expected_structure": "4 corner planet icons + 1 center icon",
+  "actual_structure": "2 side GROUP shapes + 1 center GROUP shape",
+  "missing_shapes": "2 corner GROUP shapes (possibly not extracted as GROUP type)",
+  
+  "group_shapes": [
+    {
+      "shape_index": 27,
+      "shape_id": 126,
+      "name": "Google Shape;126;p17",
+      "shape_type": "GROUP (6) (6)",
+      "position": {
+        "left": 702674,
+        "top": 3505134,
+        "width": 365760,
+        "height": 365772,
+        "center_x": 885554.0,
+        "center_y": 3688020.0
+      },
+      "location": "Left-Bottom Corner",
+      "element": {
+        "tag": "{http://schemas.openxmlformats.org/presentationml/2006/main}grpSp",
+        "children_count": 5,
+        "children": [
+          "nvGrpSpPr",
+          "grpSpPr", 
+          "sp",
+          "sp",
+          "sp"
+        ]
+      },
+      "custom_geometry": {
+        "has_custom_geometry": true,
+        "path_count": 1,
+        "path_dimensions": "9294x9957"
+      }
+    },
+    {
+      "shape_index": 28,
+      "shape_id": 130,
+      "name": "Google Shape;130;p17",
+      "shape_type": "GROUP (6) (6)",
+      "position": {
+        "left": 4383513,
+        "top": 2736068,
+        "width": 328426,
+        "height": 365750,
+        "center_x": 4547726.0,
+        "center_y": 2918943.0
+      },
+      "location": "CENTER Icon",
+      "element": {
+        "tag": "{http://schemas.openxmlformats.org/presentationml/2006/main}grpSp",
+        "children_count": 4,
+        "children": [
+          "nvGrpSpPr",
+          "grpSpPr",
+          "sp",
+          "sp"
+        ]
+      },
+      "custom_geometry": {
+        "has_custom_geometry": true,
+        "path_count": 1,
+        "path_dimensions": "5671x5766"
+      }
+    },
+    {
+      "shape_index": 29,
+      "shape_id": 133,
+      "name": "Google Shape;133;p17",
+      "shape_type": "GROUP (6) (6)",
+      "position": {
+        "left": 8074337,
+        "top": 3505145,
+        "width": 365772,
+        "height": 365752,
+        "center_x": 8257223.0,
+        "center_y": 3688021.0
+      },
+      "location": "Right-Bottom Corner",
+      "element": {
+        "tag": "{http://schemas.openxmlformats.org/presentationml/2006/main}grpSp",
+        "children_count": 4,
+        "children": [
+          "nvGrpSpPr",
+          "grpSpPr",
+          "sp",
+          "sp"
+        ]
+      },
+      "custom_geometry": {
+        "has_custom_geometry": true,
+        "path_count": 1,
+        "path_dimensions": "726x2080"
+      }
+    }
+  ],
+  
+  "potential_missing_corner_shapes": [
+    {
+      "shape_index": 10,
+      "shape_id": 109,
+      "name": "Google Shape;109;p17",
+      "shape_type": "FREEFORM (5) (5)",
+      "position": {
+        "left": 550888,
+        "top": 1854525,
+        "width": 669300,
+        "height": 669275,
+        "center_x": 885538.0,
+        "center_y": 2189162.5
+      },
+      "location": "Left-Top Corner",
+      "note": "Should be part of a GROUP but extracted as FREEFORM"
+    },
+    {
+      "shape_index": 11,
+      "shape_id": 110,
+      "name": "Google Shape;110;p17",
+      "shape_type": "FREEFORM (5) (5)",
+      "position": {
+        "left": 7921313,
+        "top": 1889695,
+        "width": 671800,
+        "height": 669275,
+        "center_x": 8257213.0,
+        "center_y": 2224332.5
+      },
+      "location": "Right-Top Corner",
+      "note": "Should be part of a GROUP but extracted as FREEFORM"
+    }
+  ],
+  
+  "analysis": {
+    "issue": "Missing 2 corner GROUP shapes",
+    "cause": "The 4 corner planet icons appear to be extracted as individual FREEFORM shapes instead of GROUP shapes",
+    "impact": "Only the center icon (GROUP shape 28) is being rendered, missing the 4 corner planet icons",
+    "solution": "The extractor needs to properly identify and group the corner planet icon components into GROUP shapes"
+  }
+}
