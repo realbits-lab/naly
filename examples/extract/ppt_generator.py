@@ -317,8 +317,8 @@ class PPTGenerator:
             if media_file and Path(media_file).exists():
                 with open(media_file, 'r', encoding='utf-8') as f:
                     media_data = json.load(f)
-                    # Cache media files for later use
-                    for category in ['images', 'audio', 'video', 'embedded_objects']:
+                    # Cache media files and fonts for later use
+                    for category in ['images', 'audio', 'video', 'embedded_objects', 'fonts']:
                         if category in media_data:
                             self.media_cache.update(media_data[category])
 
@@ -2198,6 +2198,9 @@ class PPTGenerator:
         # Post-process XML to match original format
         self.post_process_xml_format(output_file)
         
+        # Add media and font files to the PPTX structure
+        self.embed_media_and_fonts(output_file)
+        
         print(f"\nPresentation saved to: {output_file}")
         print(f"Total slides: {len(self.presentation.slides)}")
 
@@ -2241,6 +2244,86 @@ class PPTGenerator:
             
         except Exception as e:
             print(f"Warning: Could not post-process XML format: {str(e)}")
+
+    def embed_media_and_fonts(self, pptx_file: str):
+        """Embed media and font files into the PPTX structure"""
+        if not self.media_cache:
+            return
+            
+        try:
+            import zipfile
+            import tempfile
+            import shutil
+            import os
+            
+            # Extract PPTX to temp directory
+            temp_dir = tempfile.mkdtemp()
+            extract_dir = os.path.join(temp_dir, 'pptx_contents')
+            
+            with zipfile.ZipFile(pptx_file, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+            
+            # Create media and fonts directories
+            ppt_dir = os.path.join(extract_dir, 'ppt')
+            media_dir = os.path.join(ppt_dir, 'media')
+            fonts_dir = os.path.join(ppt_dir, 'fonts')
+            
+            # Create directories if they don't exist
+            os.makedirs(media_dir, exist_ok=True)
+            os.makedirs(fonts_dir, exist_ok=True)
+            
+            # Embed media and font files
+            embedded_count = 0
+            for file_path, file_info in self.media_cache.items():
+                if 'data' in file_info:
+                    try:
+                        # Decode base64 data
+                        file_data = base64.b64decode(file_info['data'])
+                        
+                        # Determine target path
+                        if file_path.startswith('ppt/'):
+                            target_path = os.path.join(extract_dir, file_path.replace('/', os.sep))
+                        else:
+                            # Handle cases where the path doesn't start with ppt/
+                            if 'font' in file_path.lower() or file_path.endswith('.fntdata'):
+                                target_path = os.path.join(fonts_dir, os.path.basename(file_path))
+                            else:
+                                target_path = os.path.join(media_dir, os.path.basename(file_path))
+                        
+                        # Create directory if needed
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        
+                        # Write file
+                        with open(target_path, 'wb') as f:
+                            f.write(file_data)
+                        
+                        embedded_count += 1
+                        
+                    except Exception as e:
+                        print(f"Warning: Could not embed file {file_path}: {str(e)}")
+            
+            # Recreate PPTX file with embedded media and fonts
+            new_pptx_path = pptx_file + '.tmp'
+            with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
+                for root, dirs, files in os.walk(extract_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, extract_dir)
+                        # Normalize path separators for ZIP format
+                        arcname = arcname.replace(os.sep, '/')
+                        zip_out.write(file_path, arcname)
+            
+            # Replace original file
+            shutil.move(new_pptx_path, pptx_file)
+            
+            # Clean up
+            shutil.rmtree(temp_dir)
+            
+            if embedded_count > 0:
+                print(f"Successfully embedded {embedded_count} media/font file(s)")
+                
+        except Exception as e:
+            print(f"Warning: Could not embed media and fonts: {str(e)}")
 
     def format_xml_as_single_line(self, xml_file_path: str):
         """Format XML file as single line to match original"""

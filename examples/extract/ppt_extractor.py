@@ -565,18 +565,20 @@ class PPTExtractor:
         return text_info
 
     def extract_media_files(self) -> Dict[str, Any]:
-        """Extract media files from the PowerPoint presentation"""
+        """Extract media files and fonts from the PowerPoint presentation"""
         media_info = {
             'images': {},
             'audio': {},
             'video': {},
-            'embedded_objects': {}
+            'embedded_objects': {},
+            'fonts': {}
         }
 
         try:
-            # Extract media from ZIP structure
+            # Extract media and fonts from ZIP structure
             with zipfile.ZipFile(self.file_path, 'r') as zip_ref:
                 for file_info in zip_ref.filelist:
+                    # Extract media files
                     if file_info.filename.startswith('ppt/media/'):
                         media_data = zip_ref.read(file_info.filename)
                         file_ext = Path(file_info.filename).suffix.lower()
@@ -596,6 +598,20 @@ class PPTExtractor:
                             media_info['video'][file_info.filename] = media_entry
                         else:
                             media_info['embedded_objects'][file_info.filename] = media_entry
+                    
+                    # Extract font files
+                    elif file_info.filename.startswith('ppt/fonts/'):
+                        font_data = zip_ref.read(file_info.filename)
+                        file_ext = Path(file_info.filename).suffix.lower()
+
+                        font_entry = {
+                            'filename': file_info.filename,
+                            'size': len(font_data),
+                            'data': base64.b64encode(font_data).decode('utf-8')
+                        }
+
+                        # Store font files (usually .fntdata files for embedded fonts)
+                        media_info['fonts'][file_info.filename] = font_entry
 
         except Exception as e:
             media_info['error'] = f"Could not extract media files: {str(e)}"
