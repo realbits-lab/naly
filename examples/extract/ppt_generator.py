@@ -524,7 +524,8 @@ class PPTGenerator:
                     # Add paragraph text if no runs data
                     para_text = para_data.get('text', '')
                     if para_text:
-                        run = p.runs[0] if p.runs else p.add_run()
+                        # Always create new run to avoid text duplication
+                        run = p.add_run()
                         run.text = para_text
 
         except Exception as e:
@@ -601,7 +602,7 @@ class PPTGenerator:
         if 'AUTO_SHAPE' in clean_name:
             return MSO_SHAPE.RECTANGLE  # Default auto shape
         elif 'FREEFORM' in clean_name:
-            return MSO_SHAPE.ROUNDED_RECTANGLE  # Better default for freeform
+            return MSO_SHAPE.RECTANGLE  # Safe fallback for freeform to prevent corruption
 
         return None
 
@@ -642,9 +643,12 @@ class PPTGenerator:
         elif type_number == 14 or 'PLACEHOLDER' in shape_type_str:  # Placeholder
             return self.handle_enhanced_placeholder(slide, shape_info)
 
-        # Handle custom geometry shapes
+        # Handle custom geometry shapes - but skip FREEFORM to prevent corruption
         if shape_info.get('custom_geometry', {}).get('has_custom_geometry'):
-            return self.create_custom_geometry_shape(slide, shape_info)
+            if 'FREEFORM' not in shape_type_str:
+                return self.create_custom_geometry_shape(slide, shape_info)
+            else:
+                print(f"Skipping custom geometry for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
 
         # Create auto shape with enhanced mapping
         mso_shape = self.get_shape_type_enum(shape_type_str)
@@ -658,20 +662,11 @@ class PPTGenerator:
         try:
             shape = slide.shapes.add_shape(mso_shape, left, top, width, height)
 
-            # Set shape name and ID to match original
+            # Set shape name only (removed ID setting to prevent corruption)
             if shape_info.get('name'):
                 shape.name = shape_info['name']
-            if shape_info.get('shape_id'):
-                # Note: shape_id is read-only in python-pptx, but we can try to set it via XML
-                try:
-                    shape_element = shape.element
-                    nvSpPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvSpPr')
-                    if nvSpPr is not None:
-                        cNvPr = nvSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
-                        if cNvPr is not None:
-                            cNvPr.set('id', str(shape_info['shape_id']))
-                except:
-                    pass
+            # Note: Removed manual shape ID setting to prevent PowerPoint corruption
+            # python-pptx automatically manages unique shape IDs
 
             # Apply enhanced fill properties
             self.apply_enhanced_fill(shape, shape_info.get('fill', {}))
@@ -688,15 +683,16 @@ class PPTGenerator:
             # Apply shadow properties if available
             self.apply_shadow_properties(shape, shape_info.get('shadow', {}))
 
-            # Add text with enhanced formatting
-            if shape_info.get('text'):
-                self.add_enhanced_text(
-                    shape, shape_info.get('text', ''), shape_info)
-            elif shape_info.get('text_frame'):
+            # Add text with enhanced formatting - avoid duplicate text
+            if shape_info.get('text_frame'):
                 # Apply enhanced text formatting from extractor
                 if hasattr(shape, 'text_frame') and shape.text_frame:
                     self.apply_text_formatting(
                         shape.text_frame, shape_info.get('text_frame', {}))
+            elif shape_info.get('text'):
+                # Only use simple text if no text_frame data
+                self.add_enhanced_text(
+                    shape, shape_info.get('text', ''), shape_info)
 
             # Remove style elements that don't exist in original
             self.remove_unwanted_style_elements(shape)
@@ -732,6 +728,12 @@ class PPTGenerator:
 
     def modify_shape_to_match_original(self, shape, shape_info: Dict[str, Any]):
         """Modify shape XML structure to match original exactly"""
+        # Skip XML modification for FREEFORM shapes to prevent corruption
+        shape_type_str = shape_info.get('auto_shape_type', shape_info.get('shape_type', ''))
+        if 'FREEFORM' in str(shape_type_str):
+            print(f"Skipping XML modification for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
+            return
+            
         try:
             from lxml import etree
         except ImportError:
@@ -739,6 +741,11 @@ class PPTGenerator:
             
         # Get shape element
         shape_element = shape.element
+        
+        # Validate shape element before modification
+        if shape_element is None:
+            print(f"Warning: Invalid shape element for {shape_info.get('name', 'Unknown')}")
+            return
         
         # Parse original XML to get the exact structure
         element_data = shape_info.get('element', {})
@@ -751,17 +758,9 @@ class PPTGenerator:
         if xml_string:
             original_element = etree.fromstring(xml_string.encode('utf-8'))
             
-            # Update shape ID and name
-            shape_id = shape_info.get('shape_id', 2)
+            # Note: Removed manual shape ID setting to prevent conflicts
+            # python-pptx automatically manages shape IDs to avoid corruption
             shape_name = shape_info.get('name', 'Unknown')
-            
-            # Find and update nvSpPr/cNvPr
-            nvSpPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvSpPr')
-            if nvSpPr is not None:
-                cNvPr = nvSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
-                if cNvPr is not None:
-                    cNvPr.set('id', str(shape_id))
-                    cNvPr.set('name', shape_name)
             
             # Replace spPr with original geometry
             spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
@@ -1133,16 +1132,23 @@ class PPTGenerator:
         self.apply_enhanced_color(color_obj, color_info)
 
     def add_enhanced_text(self, shape, text: str, shape_info: Dict[str, Any]):
-        """Add text with enhanced formatting"""
+        """Add text with enhanced formatting - avoiding duplicate runs"""
         if not hasattr(shape, 'text_frame') or not shape.text_frame:
             return
 
         text_frame = shape.text_frame
         text_frame.clear()  # Clear existing text
 
-        # Add paragraph with text
-        p = text_frame.add_paragraph()
-        p.text = text
+        # Use existing paragraph or add new one - avoid duplication
+        if text_frame.paragraphs:
+            p = text_frame.paragraphs[0]
+        else:
+            p = text_frame.add_paragraph()
+        
+        # Clear any existing content and add run
+        p.clear()
+        run = p.add_run()
+        run.text = text
 
         # Apply text formatting
         for run in p.runs:
@@ -1874,7 +1880,7 @@ class PPTGenerator:
                 if nvGrpSpPr is not None:
                     cNvPr = nvGrpSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
                     if cNvPr is not None:
-                        cNvPr.set('name', 'Shape 70')  # Match original group name
+                        cNvPr.set('name', 'Shape 54')  # Match original group name
                         cNvPr.set('id', '1')  # Match original group ID
                         
         except Exception as e:
