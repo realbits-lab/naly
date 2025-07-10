@@ -81,13 +81,13 @@ echo
 
 # Step 1: Extract PowerPoint XML data from sample file
 echo "Step 1: Extracting PowerPoint data from $INPUT_FILE..."
-python3 "$EXTRACTOR" "$INPUT_PATH" --output-dir "$OUTPUT_DIR"
+/opt/homebrew/anaconda3/envs/naly/bin/python "$EXTRACTOR" "$INPUT_PATH" --output-dir "$OUTPUT_DIR"
 echo "✓ Extraction completed"
 echo
 
 # Step 2: Generate PowerPoint file from extracted data
 echo "Step 2: Generating PowerPoint file from extracted data..."
-python3 "$GENERATOR" \
+/opt/homebrew/anaconda3/envs/naly/bin/python "$GENERATOR" \
     "$OUTPUT_DIR/sample${FILE_INDEX}_shapes.json" \
     "$OUTPUT_DIR/sample${FILE_INDEX}_layouts.json" \
     "$OUTPUT_DIR/sample${FILE_INDEX}_theme.json" \
