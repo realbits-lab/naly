@@ -980,61 +980,71 @@ class PPTGenerator:
             return
 
         try:
+            width_val = line_info.get('width')
+            is_zero_width = width_val == 0
+            
+            # Handle zero-width lines FIRST before accessing shape.line
+            # This prevents python-pptx from initializing default line properties
+            if is_zero_width:
+                try:
+                    from lxml import etree
+                    shape_element = shape.element
+                    spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+                    if spPr is not None:
+                        ln = spPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
+                        if ln is None:
+                            # Create ln element if it doesn't exist using lxml
+                            ln = etree.SubElement(spPr, '{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
+                        
+                        # Clear all children and add noFill
+                        ln.clear()
+                        noFill = etree.SubElement(ln, '{http://schemas.openxmlformats.org/drawingml/2006/main}noFill')
+                        return  # Exit early for zero-width lines
+                except Exception as e:
+                    print(f"Warning: Could not apply noFill for zero-width line: {e}")
+                return  # Exit early for zero-width lines
+            
+            # Only access shape.line for non-zero-width lines
             line = shape.line
 
-            # Apply line width
+            # Apply line width (but skip other properties for zero-width lines)
             if 'width' in line_info and line_info['width'] is not None:
-                width_val = line_info['width']
-                if width_val == 0:
-                    # Zero width means no line fill - manually set XML to noFill
-                    try:
-                        shape_element = shape.element
-                        spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
-                        if spPr is not None:
-                            ln = spPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
-                            if ln is not None:
-                                # Clear all children and add noFill
-                                ln.clear()
-                                import xml.etree.ElementTree as ET
-                                noFill = ET.SubElement(ln, '{http://schemas.openxmlformats.org/drawingml/2006/main}noFill')
-                    except:
-                        try:
-                            line.width = Emu(0)
-                        except:
-                            pass
-                else:
+                if not is_zero_width:
                     line.width = Emu(width_val)
 
-            # Apply line color with theme support
-            color_info = line_info.get('color', {})
-            if color_info:
-                self.apply_enhanced_color(line.color, color_info)
+            # Skip all other line properties for zero-width lines
+            if not is_zero_width:
+                # Apply line color with theme support
+                color_info = line_info.get('color', {})
+                if color_info:
+                    self.apply_enhanced_color(line.color, color_info)
 
-            # Apply line style properties from enhanced extractor
-            if 'style' in line_info:
-                # python-pptx has limited line style support
-                style_name = line_info['style']
-                if 'DASH' in style_name.upper():
-                    from pptx.enum.dml import MSO_LINE_DASH_STYLE
+                # Apply line style properties from enhanced extractor
+                if 'style' in line_info:
+                    # python-pptx has limited line style support
+                    style_name = line_info['style']
+                    if 'DASH' in style_name.upper():
+                        from pptx.enum.dml import MSO_LINE_DASH_STYLE
+                        try:
+                            line.dash_style = MSO_LINE_DASH_STYLE.DASH
+                        except:
+                            pass
+
+                # Apply line transparency
+                if 'transparency' in line_info and line_info['transparency'] is not None:
                     try:
-                        line.dash_style = MSO_LINE_DASH_STYLE.DASH
+                        # Convert to alpha value (0.0 = opaque, 1.0 = transparent)
+                        alpha = 1.0 - (line_info['transparency'] / 100.0)
+                        if hasattr(line.color, 'alpha'):
+                            line.color.alpha = alpha
                     except:
                         pass
 
-            # Apply line transparency
-            if 'transparency' in line_info and line_info['transparency'] is not None:
-                try:
-                    # Convert to alpha value (0.0 = opaque, 1.0 = transparent)
-                    alpha = 1.0 - (line_info['transparency'] / 100.0)
-                    if hasattr(line.color, 'alpha'):
-                        line.color.alpha = alpha
-                except:
-                    pass
+                # Apply line fill if available (but not for zero-width lines)
+                fill_info = line_info.get('fill', {})
+                if fill_info and hasattr(line, 'fill'):
+                    self.apply_enhanced_fill(line, fill_info)
 
-            # Apply line fill if available (but not for zero-width lines)
-            fill_info = line_info.get('fill', {})
-            if fill_info and hasattr(line, 'fill') and line_info.get('width', 1) != 0:
-                self.apply_enhanced_fill(line, fill_info)
 
         except Exception as e:
             print(
@@ -1652,7 +1662,8 @@ class PPTGenerator:
                         # For PIE shapes: empirical mapping to match exact target values
                         # Target: 198.64621 -> 19864621, 0.7332 -> 73320 
                         # Empirical observation: system applies 100000x scaling, so we need adj_value / 10
-                        shape.adjustments[i] = adj_value / 10
+                        # shape.adjustments[i] = adj_value / 10
+                        shape.adjustments[i] = adj_value
         except Exception as e:
             print(f"Warning: Could not apply shape adjustments: {str(e)}")
 
