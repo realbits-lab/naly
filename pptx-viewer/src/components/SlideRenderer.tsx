@@ -142,10 +142,25 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     const centerX = 150;
     const centerY = 150;
     
-    // Use shape index to determine the arc segment
-    const shapeIndex = shape.shape_index || 0;
+    // Parse XML transformations to determine segment position
+    const xmlString = shape.element?.xml_string || "";
+    const hasFlipH = xmlString.includes('flipH="1"');
+    const hasRotation = xmlString.includes('rot="10800000"'); // 180 degrees
+    
+    // Determine segment position based on transformations
+    let segmentIndex = 0;
+    if (!hasFlipH && !hasRotation) {
+      segmentIndex = 0; // Top-left (01)
+    } else if (hasFlipH && !hasRotation) {
+      segmentIndex = 1; // Top-right (02)
+    } else if (!hasFlipH && hasRotation) {
+      segmentIndex = 2; // Bottom-left (03)
+    } else if (hasFlipH && hasRotation) {
+      segmentIndex = 3; // Bottom-right (04)
+    }
+    
     const segmentAngle = 90; // Each segment is 90 degrees
-    const startAngle = shapeIndex * segmentAngle - 90; // Start from top
+    const startAngle = segmentIndex * segmentAngle - 90; // Start from top
     const endAngle = startAngle + segmentAngle;
     
     // Convert to radians
@@ -303,6 +318,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             // Check if it's a BLOCK_ARC shape (donut chart segment)
             const isBlockArc = shape.auto_shape_type && shape.auto_shape_type.includes('BLOCK_ARC');
             
+            
             return (
               <div
                 key={index}
@@ -335,11 +351,16 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 {/* Render BLOCK_ARC shapes as donut chart segments */}
                 {isBlockArc && (
                   <svg
-                    width="100%"
-                    height="100%"
+                    width={width}
+                    height={height}
                     viewBox="0 0 300 300"
-                    className="absolute inset-0"
-                    style={{ overflow: 'visible' }}
+                    className="absolute"
+                    style={{ 
+                      left: `${left}px`, 
+                      top: `${top}px`,
+                      overflow: 'visible',
+                      pointerEvents: 'none'
+                    }}
                   >
                     <path
                       d={createArcPath(shape, slide.slide_index)}
@@ -348,6 +369,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                     />
                   </svg>
                 )}
+
 
                 {/* Render simple shapes without custom geometry and without text */}
                 {!pathData && !isTextShape && !isBlockArc && fillColor !== "transparent" && (
