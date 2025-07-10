@@ -852,51 +852,99 @@ class PPTExtractor:
 
         # Extract comprehensive color scheme information
         try:
-            color_scheme = slide_master.theme.color_scheme
-            theme_colors = {}
+            # Try multiple ways to access theme colors
+            color_scheme = None
+            
+            # Method 1: Try via slide master theme
+            if hasattr(slide_master, 'theme') and slide_master.theme:
+                color_scheme = slide_master.theme.color_scheme
+            
+            # Method 2: Try via presentation part theme
+            elif hasattr(self.presentation, 'part') and hasattr(self.presentation.part, 'theme_part'):
+                theme_part = self.presentation.part.theme_part
+                if theme_part and hasattr(theme_part, 'color_scheme'):
+                    color_scheme = theme_part.color_scheme
+            
+            # Method 3: Try via presentation theme_part directly  
+            elif hasattr(self.presentation, 'theme_part') and self.presentation.theme_part:
+                color_scheme = self.presentation.theme_part.color_scheme
 
-            # Define theme color names for better mapping
-            color_names = [
-                'lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2',
-                'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'
-            ]
+            if color_scheme:
+                theme_colors = {}
+                # Define theme color names for better mapping
+                color_names = [
+                    'lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2',
+                    'accent3', 'accent4', 'accent5', 'accent6', 'hlink', 'folHlink'
+                ]
 
-            for i, color in enumerate(color_scheme):
-                color_name = color_names[i] if i < len(
-                    color_names) else f'color_{i}'
-                theme_colors[color_name] = {
-                    'rgb': str(color.rgb) if hasattr(color, 'rgb') and color.rgb else None,
-                    'type': str(color.color_type) if hasattr(color, 'color_type') else None
-                }
-            theme_data['color_scheme'] = theme_colors
+                for i, color in enumerate(color_scheme):
+                    color_name = color_names[i] if i < len(
+                        color_names) else f'color_{i}'
+                    theme_colors[color_name] = {
+                        'rgb': str(color.rgb) if hasattr(color, 'rgb') and color.rgb else None,
+                        'type': str(color.color_type) if hasattr(color, 'color_type') else None
+                    }
+                theme_data['color_scheme'] = theme_colors
+            else:
+                theme_data['color_scheme'] = {'error': 'No color scheme found'}
         except Exception as e:
             theme_data['color_scheme'] = {
                 'error': f'Could not extract color scheme: {str(e)}'}
 
         # Extract comprehensive font scheme information
         try:
-            font_scheme = slide_master.theme.font_scheme
-            theme_data['font_scheme'] = {
-                'major_font': {
-                    'latin': font_scheme.major_font.latin if hasattr(font_scheme.major_font, 'latin') else None,
-                    'ea': font_scheme.major_font.ea if hasattr(font_scheme.major_font, 'ea') else None,
-                    'cs': font_scheme.major_font.cs if hasattr(font_scheme.major_font, 'cs') else None,
-                },
-                'minor_font': {
-                    'latin': font_scheme.minor_font.latin if hasattr(font_scheme.minor_font, 'latin') else None,
-                    'ea': font_scheme.minor_font.ea if hasattr(font_scheme.minor_font, 'ea') else None,
-                    'cs': font_scheme.minor_font.cs if hasattr(font_scheme.minor_font, 'cs') else None,
+            # Try multiple ways to access font scheme
+            font_scheme = None
+            
+            # Method 1: Try via slide master theme
+            if hasattr(slide_master, 'theme') and slide_master.theme:
+                font_scheme = slide_master.theme.font_scheme
+            
+            # Method 2: Try via presentation part theme
+            elif hasattr(self.presentation, 'part') and hasattr(self.presentation.part, 'theme_part'):
+                theme_part = self.presentation.part.theme_part
+                if theme_part and hasattr(theme_part, 'font_scheme'):
+                    font_scheme = theme_part.font_scheme
+            
+            # Method 3: Try via presentation theme_part directly  
+            elif hasattr(self.presentation, 'theme_part') and self.presentation.theme_part:
+                font_scheme = self.presentation.theme_part.font_scheme
+
+            if font_scheme:
+                theme_data['font_scheme'] = {
+                    'major_font': {
+                        'latin': font_scheme.major_font.latin if hasattr(font_scheme.major_font, 'latin') else None,
+                        'ea': font_scheme.major_font.ea if hasattr(font_scheme.major_font, 'ea') else None,
+                        'cs': font_scheme.major_font.cs if hasattr(font_scheme.major_font, 'cs') else None,
+                    },
+                    'minor_font': {
+                        'latin': font_scheme.minor_font.latin if hasattr(font_scheme.minor_font, 'latin') else None,
+                        'ea': font_scheme.minor_font.ea if hasattr(font_scheme.minor_font, 'ea') else None,
+                        'cs': font_scheme.minor_font.cs if hasattr(font_scheme.minor_font, 'cs') else None,
+                    }
                 }
-            }
+            else:
+                theme_data['font_scheme'] = {'error': 'No font scheme found'}
         except Exception as e:
             theme_data['font_scheme'] = {
                 'error': f'Could not extract font scheme: {str(e)}'}
 
         # Extract effect scheme if available
         try:
-            if hasattr(slide_master.theme, 'effect_scheme'):
-                theme_data['effect_scheme'] = str(
-                    slide_master.theme.effect_scheme)
+            effect_scheme = None
+            
+            # Try multiple ways to access effect scheme
+            if hasattr(slide_master, 'theme') and slide_master.theme and hasattr(slide_master.theme, 'effect_scheme'):
+                effect_scheme = slide_master.theme.effect_scheme
+            elif hasattr(self.presentation, 'part') and hasattr(self.presentation.part, 'theme_part'):
+                theme_part = self.presentation.part.theme_part
+                if theme_part and hasattr(theme_part, 'effect_scheme'):
+                    effect_scheme = theme_part.effect_scheme
+            
+            if effect_scheme:
+                theme_data['effect_scheme'] = str(effect_scheme)
+            else:
+                theme_data['effect_scheme'] = {'error': 'No effect scheme found'}
         except Exception as e:
             theme_data['effect_scheme'] = {
                 'error': f'Could not extract effect scheme: {str(e)}'}

@@ -218,4 +218,4 @@ env.bak/
 venv.bak/
 
 examples/extract/outputs
-examples/extract/~$*
+**/~$*
