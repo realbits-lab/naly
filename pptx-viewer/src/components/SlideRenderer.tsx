@@ -348,8 +348,8 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             if (blockArcShapes.length > 0) {
               const slideWidth = 960; 
               const slideHeight = 540;  
-              const centerLeft = slideWidth / 2;
-              const centerTop = slideHeight / 2 + 20; // Slightly lower to match original
+              const centerLeft = slideWidth / 2 - 10; // Slightly left to center better
+              const centerTop = slideHeight / 2 - 30; // Move up to match original position
               
               return (
                 <svg
