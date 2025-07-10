@@ -160,11 +160,11 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             key={runIndex}
             style={{
               fontFamily: run.font_name || theme.font_scheme.minor_font?.latin || "Arial",
-              fontSize: run.font_size ? `${run.font_size / 100}pt` : "12pt",
+              fontSize: run.font_size ? `${run.font_size / 12700}pt` : "12pt",
               fontWeight: run.bold ? "bold" : "normal",
               fontStyle: run.italic ? "italic" : "normal",
               textDecoration: run.underline ? "underline" : "none",
-              color: getColorFromInfo(run.color),
+              color: '#000000', // Force black color
             }}
           >
             {run.text}
@@ -222,6 +222,9 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             // Check if it's a placeholder with text
             const isTextPlaceholder = shape.is_placeholder && shape.has_text_frame && shape.text;
             
+            // Check if it's a text box or placeholder
+            const isTextShape = shape.has_text_frame && shape.text && shape.text.trim().length > 0;
+            
             return (
               <div
                 key={index}
@@ -236,7 +239,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 title={`${shape.name || `Shape ${index + 1}`} (${shape.shape_type})`}
               >
                 {/* Render custom geometry shapes with SVG */}
-                {pathData && !isTextPlaceholder && (
+                {pathData && !isTextShape && (
                   <svg
                     width="100%"
                     height="100%"
@@ -251,8 +254,8 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   </svg>
                 )}
                 
-                {/* Render simple shapes without custom geometry */}
-                {!pathData && !isTextPlaceholder && (
+                {/* Render simple shapes without custom geometry and without text */}
+                {!pathData && !isTextShape && fillColor !== "transparent" && (
                   <div
                     className="absolute inset-0"
                     style={{
@@ -263,18 +266,21 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 )}
 
                 {/* Render text content */}
-                {shape.has_text_frame && shape.text && (
+                {isTextShape && (
                   <div 
-                    className="absolute inset-0 flex items-center justify-center text-center p-1"
+                    className="absolute inset-0 flex items-center justify-center p-1"
                     style={{
-                      fontSize: isTextPlaceholder ? 
-                        (shape.text.includes('Design Elements') ? `${Math.max(24, width / 12)}px` : `${Math.max(14, width / 20)}px`) :
-                        `${Math.max(8, width / 20)}px`,
-                      fontWeight: isTextPlaceholder && shape.text.includes('Design Elements') ? 'bold' : 'normal',
+                      fontSize: shape.text_frame?.paragraphs?.[0]?.runs?.[0]?.font_size 
+                        ? `${Math.max(12, (shape.text_frame.paragraphs[0].runs[0].font_size / 12700) * scale)}px`
+                        : shape.text?.includes('Design Elements') ? `${Math.max(28, width / 10)}px` : `${Math.max(16, width / 15)}px`,
+                      fontWeight: shape.text?.includes('Design Elements') ? 'bold' : 'normal',
                       lineHeight: "1.2",
                       wordBreak: "break-word",
-                      color: isTextPlaceholder ? '#000' : 'inherit',
+                      color: shape.text?.includes('Design Elements') ? '#000' : '#000',
+                      backgroundColor: 'transparent',
                       zIndex: 10,
+                      textAlign: shape.text_frame?.paragraphs?.[0]?.alignment?.includes('RIGHT') ? 'right' : 'center',
+                      fontFamily: shape.text_frame?.paragraphs?.[0]?.runs?.[0]?.font_name || 'Arial, sans-serif',
                     }}
                   >
                     {renderText(shape)}
