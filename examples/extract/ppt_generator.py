@@ -1553,7 +1553,10 @@ class PPTGenerator:
     def add_shape_from_xml(self, spTree, shape_info):
         """Add shape directly from XML string to preserve exact structure"""
         try:
-            import xml.etree.ElementTree as ET
+            try:
+                from lxml import etree as ET
+            except ImportError:
+                import xml.etree.ElementTree as ET
             
             # Get the original XML string from element data
             element_data = shape_info.get('element', {})
