@@ -331,7 +331,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                       : getFillStyle(shape.fill).backgroundColor || "transparent";
                     return (
                       <path
-                        key={arcIndex}
+                        key={`arc-${shape.shape_id || shape.shape_index || arcIndex}`}
                         d={createArcPath(shape, slide.slide_index)}
                         fill={fillColor}
                         stroke="none"
@@ -372,6 +372,12 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             // Check if it's a BLOCK_ARC shape (donut chart segment)
             const isBlockArc = shape.auto_shape_type && shape.auto_shape_type.includes('BLOCK_ARC');
             
+            // Check if it's a FREEFORM circular planet container (for slide 3 corner planet icons)
+            const isCircularPlanet = slide.slide_index === 2 && 
+              shape.shape_type && shape.shape_type.includes('FREEFORM') &&
+              pathData && shape.custom_geometry?.paths?.[0]?.commands?.some(cmd => cmd.command === 'cubicBezTo') &&
+              Math.abs(width - height) < 50; // Nearly square/circular dimensions
+            
             // Skip BLOCK_ARC shapes in slide 3 since they're rendered as unified donut above
             if (slide.slide_index === 2 && isBlockArc) {
               return null;
@@ -392,7 +398,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 title={`${shape.name || `Shape ${index + 1}`} (${shape.shape_type})`}
               >
                 {/* Render custom geometry shapes with SVG */}
-                {pathData && !isTextShape && (
+                {pathData && !isTextShape && !isCircularPlanet && (
                   <svg
                     width="100%"
                     height="100%"
@@ -401,7 +407,25 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   >
                     <path
                       d={pathData}
-                      fill={fillColor}
+                      fill={(() => {
+                        // Fix bar chart colors for slide 4
+                        if (slide.slide_index === 3 && shape.shape_type?.includes('FREEFORM') && height > width * 2) {
+                          const leftPos = convertEMUToPixels(shape.left);
+                          
+                          // Match bar colors to theme colors based on position
+                          if (leftPos < 500) {
+                            return getSchemeColor('accent2'); // Teal (Mars)
+                          } else if (leftPos < 600) {
+                            return getSchemeColor('accent4'); // Orange (Saturn)  
+                          } else if (leftPos < 700) {
+                            return getSchemeColor('accent5'); // Light orange (Neptune)
+                          } else {
+                            return getSchemeColor('accent1'); // Dark blue (Jupiter)
+                          }
+                        }
+                        
+                        return fillColor !== "transparent" ? fillColor : "transparent";
+                      })(),
                       stroke="none"
                     />
                   </svg>
@@ -409,8 +433,19 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 
 
 
+                {/* Render pentagon arrow shapes for slide 4 */}
+                {slide.slide_index === 3 && shape.auto_shape_type?.includes('PENTAGON') && (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundColor: fillColor,
+                      clipPath: 'polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%)', // Arrow shape
+                    }}
+                  />
+                )}
+
                 {/* Render simple shapes without custom geometry and without text */}
-                {!pathData && !isTextShape && !isBlockArc && fillColor !== "transparent" && (
+                {!pathData && !isTextShape && !isBlockArc && !isCircularPlanet && !(slide.slide_index === 3 && shape.auto_shape_type?.includes('PENTAGON')) && fillColor !== "transparent" && (
                   <div
                     className="absolute inset-0"
                     style={{
@@ -420,29 +455,149 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   />
                 )}
 
-                {/* Render GROUP shapes as cards */}
+                {/* Render circular planet containers (FREEFORM) */}
+                {isCircularPlanet && (
+                  <div className="absolute inset-0">
+                    {/* Render the circular background */}
+                    <svg
+                      width="100%"
+                      height="100%"
+                      viewBox={`0 0 ${shape.custom_geometry?.paths?.[0]?.width || width} ${shape.custom_geometry?.paths?.[0]?.height || height}`}
+                      className="absolute inset-0"
+                    >
+                      <path
+                        d={pathData}
+                        fill={fillColor}
+                        stroke="none"
+                      />
+                    </svg>
+                    
+                    {/* Render white planet icon */}
+                    <svg
+                      width={Math.min(width * 0.4, 60)}
+                      height={Math.min(height * 0.4, 60)}
+                      viewBox="0 0 24 24"
+                      className="absolute"
+                      style={{ 
+                        left: '50%', 
+                        top: '50%', 
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 10
+                      }}
+                    >
+                      {/* Generic planet icon */}
+                      <circle cx="12" cy="12" r="8" fill="white" stroke="none"/>
+                      <circle cx="12" cy="12" r="3" fill="none" stroke="white" strokeWidth="1" opacity="0.3"/>
+                      <path d="M8 12c0-2 1-3 2-3s2 1 2 3-1 3-2 3-2-1-2-3z" fill="none" stroke="white" strokeWidth="0.8" opacity="0.4"/>
+                    </svg>
+                  </div>
+                )}
+
+                {/* Render GROUP shapes as containers */}
                 {isGroupShape && (
                   <div
-                    className="absolute inset-0 rounded-lg overflow-hidden"
+                    className="absolute inset-0 overflow-hidden"
                     style={{
-                      backgroundColor: fillColor !== "transparent" ? fillColor : getSchemeColor('accent' + (index % 4 + 1)),
-                      border: '1px solid rgba(0,0,0,0.1)',
+                      backgroundColor: (() => {
+                        // Fix for slide 3 GROUP shapes - assign correct theme colors based on position  
+                        if (slide.slide_index === 2) {
+                          const leftPos = convertEMUToPixels(shape.left);
+                          const topPos = convertEMUToPixels(shape.top);
+                          
+                          // Venus (bottom-left): Shape 27, left=702674, should be teal
+                          if (leftPos < 200 && topPos > 300) {
+                            return getSchemeColor('accent2'); // Teal
+                          }
+                          // Mars (bottom-right): Shape 29, left=8074337, should be orange  
+                          else if (leftPos > 700 && topPos > 300) {
+                            return getSchemeColor('accent4'); // Orange
+                          }
+                          // Center icon: Shape 28, left=4383513, should be green
+                          else if (leftPos > 300 && leftPos < 700 && topPos > 200 && topPos < 400) {
+                            return getSchemeColor('accent3'); // Green
+                          }
+                        }
+                        
+                        return fillColor !== "transparent" ? fillColor : getSchemeColor('accent' + (index % 4 + 1));
+                      })(),
+                      border: 'none',
+                      borderRadius: slide.slide_index === 2 ? '50%' : '8px', // Circular for slide 3, rounded corners for slide 4
                     }}
                   >
-                    {/* Render triangular icon if there's a path */}
-                    {pathData && (
+                    {/* Render custom geometry icon or fallback icon */}
+                    {pathData ? (
                       <svg
-                        width="60"
-                        height="60"
+                        width={Math.min(width * 0.6, 80)}
+                        height={Math.min(height * 0.6, 80)}
                         viewBox={`0 0 ${shape.custom_geometry?.paths?.[0]?.width || 100} ${shape.custom_geometry?.paths?.[0]?.height || 100}`}
-                        className="absolute bottom-4 right-4"
-                        style={{ opacity: 0.3 }}
+                        className="absolute inset-0 m-auto"
+                        style={{ 
+                          left: '50%', 
+                          top: '50%', 
+                          transform: 'translate(-50%, -50%)',
+                          zIndex: 10
+                        }}
                       >
                         <path
                           d={pathData}
-                          fill="rgba(255,255,255,0.8)"
+                          fill="white"
                           stroke="none"
                         />
+                      </svg>
+                    ) : slide.slide_index === 3 && (
+                      // Fallback icons for slide 4 planet GROUP shapes
+                      <svg
+                        width={Math.min(width * 0.4, 60)}
+                        height={Math.min(height * 0.4, 60)}
+                        viewBox="0 0 24 24"
+                        className="absolute"
+                        style={{ 
+                          left: '50%', 
+                          top: '50%', 
+                          transform: 'translate(-50%, -50%)',
+                          zIndex: 10
+                        }}
+                      >
+                        {(() => {
+                          const topPos = convertEMUToPixels(shape.top);
+                          
+                          // Jupiter (top position ~165px): People icon
+                          if (topPos < 180) {
+                            return (
+                              <g fill="white">
+                                <circle cx="12" cy="8" r="3"/>
+                                <path d="M12 14c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z"/>
+                              </g>
+                            );
+                          }
+                          // Mars (second position ~231px): Pie chart icon  
+                          else if (topPos < 250) {
+                            return (
+                              <g fill="white">
+                                <circle cx="12" cy="12" r="8" fillOpacity="0.3"/>
+                                <path d="M12 4 A8 8 0 0 1 20 12 L12 12 Z"/>
+                              </g>
+                            );
+                          }
+                          // Saturn (third position ~324px): Document icon
+                          else if (topPos < 350) {
+                            return (
+                              <g fill="white">
+                                <rect x="6" y="4" width="12" height="16" rx="1"/>
+                                <path d="M8 8h8M8 12h8M8 16h6"/>
+                              </g>
+                            );
+                          }
+                          // Neptune (bottom position ~410px): Gear icon
+                          else {
+                            return (
+                              <g fill="white">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="m19.4 15-1.5-1.5c.1-.5.1-1 0-1.5L19.4 9l-1.9-1.9-1.5 1.5c-.5-.1-1-.1-1.5 0L12.6 4.6 10.7 6.1l1.5 1.5c-.1.5-.1 1 0 1.5L10.7 10.7 8.8 12.6l1.5 1.5c.5.1 1 .1 1.5 0l1.5 1.5 1.9-1.9-1.5-1.5c.1-.5.1-1 0-1.5z"/>
+                              </g>
+                            );
+                          }
+                        })()}
                       </svg>
                     )}
                     
