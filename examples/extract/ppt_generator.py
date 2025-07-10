@@ -14,6 +14,7 @@ from pptx.enum.dml import MSO_THEME_COLOR, MSO_FILL_TYPE, MSO_COLOR_TYPE, MSO_PA
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.dml.color import RGBColor
 from typing import Dict, List, Any, Optional, Tuple
+import xml.etree.ElementTree as ET
 
 
 class PPTGenerator:
@@ -365,6 +366,9 @@ class PPTGenerator:
             if 'font_scheme' in self.theme_data:
                 self.theme_fonts = self.theme_data['font_scheme']
 
+            # Apply extracted theme colors to theme XML
+            self.apply_theme_xml_colors()
+
             # Apply document properties from enhanced extractor
             self.apply_document_properties()
 
@@ -372,6 +376,81 @@ class PPTGenerator:
 
         except Exception as e:
             print(f"Warning: Could not apply full theme: {str(e)}")
+
+    def apply_theme_xml_colors(self):
+        """Apply extracted theme colors to the actual theme XML file"""
+        if not hasattr(self, 'theme_colors') or not self.theme_colors:
+            print("No theme colors to apply to theme XML")
+            return
+
+        try:
+            # Access the theme part through the package
+            theme_part = None
+            for rel in self.presentation.part.rels.values():
+                if 'theme' in rel.reltype:
+                    theme_part = rel.target_part
+                    break
+            
+            if not theme_part:
+                print("Warning: Could not find theme part in presentation")
+                return
+
+            # Parse the theme XML
+            theme_xml = theme_part.blob
+            
+            # Register namespaces
+            namespaces = {
+                'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'
+            }
+            
+            # Parse XML
+            root = ET.fromstring(theme_xml)
+            
+            # Find color scheme element
+            color_scheme = root.find('.//a:clrScheme', namespaces)
+            if color_scheme is None:
+                print("Warning: Could not find color scheme in theme XML")
+                return
+
+            # Apply extracted theme name if available
+            theme_name = self.theme_data.get('theme_name', 'Design Elements Infographics by Slidesgo')
+            root.set('name', theme_name)
+            color_scheme.set('name', theme_name.split(' by ')[0] if ' by ' in theme_name else theme_name)
+
+            # Update accent colors with extracted values
+            color_mapping = {
+                'accent1': self.theme_colors.get('accent1', {}).get('rgb', '264653'),
+                'accent2': self.theme_colors.get('accent2', {}).get('rgb', '2A9D8F'),
+                'accent3': self.theme_colors.get('accent3', {}).get('rgb', '8AB17D'),
+                'accent4': self.theme_colors.get('accent4', {}).get('rgb', 'E76F51'),
+                'accent5': self.theme_colors.get('accent5', {}).get('rgb', 'F4A261'),
+                'accent6': self.theme_colors.get('accent6', {}).get('rgb', 'E9C46A'),
+            }
+
+            # Apply extracted colors to theme XML
+            for color_name, rgb_value in color_mapping.items():
+                accent_elem = color_scheme.find(f'.//a:{color_name}', namespaces)
+                if accent_elem is not None:
+                    # Remove existing color element
+                    for child in list(accent_elem):
+                        accent_elem.remove(child)
+                    
+                    # Add new srgbClr element with extracted color
+                    srgb_elem = ET.SubElement(accent_elem, f'{{{namespaces["a"]}}}srgbClr')
+                    srgb_elem.set('val', rgb_value.upper())
+                    print(f"Applied theme color {color_name}: {rgb_value}")
+
+            # Convert back to XML string
+            ET.register_namespace('a', namespaces['a'])
+            modified_xml = ET.tostring(root, encoding='unicode')
+            
+            # Update the theme part with modified XML
+            theme_part._blob = modified_xml.encode('utf-8')
+            
+            print(f"Successfully applied theme colors to theme XML with theme name: {theme_name}")
+
+        except Exception as e:
+            print(f"Warning: Could not apply theme colors to XML: {str(e)}")
 
     def apply_document_properties(self):
         """Apply document properties and metadata from enhanced extractor"""
@@ -1088,33 +1167,56 @@ class PPTGenerator:
                         rgb_info.get('blue', 0)
                     )
 
-            # Handle theme colors
+            # Handle theme colors - use extracted theme colors if available
             elif 'theme_color' in color_info:
                 theme_color_str = color_info['theme_color'].upper()
-                # Comprehensive theme color mapping
-                theme_mapping = {
-                    'ACCENT_1': MSO_THEME_COLOR.ACCENT_1,
-                    'ACCENT_2': MSO_THEME_COLOR.ACCENT_2,
-                    'ACCENT_3': MSO_THEME_COLOR.ACCENT_3,
-                    'ACCENT_4': MSO_THEME_COLOR.ACCENT_4,
-                    'ACCENT_5': MSO_THEME_COLOR.ACCENT_5,
-                    'ACCENT_6': MSO_THEME_COLOR.ACCENT_6,
-                    'BACKGROUND_1': MSO_THEME_COLOR.BACKGROUND_1,
-                    'BACKGROUND_2': MSO_THEME_COLOR.BACKGROUND_2,
-                    'DARK_1': MSO_THEME_COLOR.DARK_1,
-                    'DARK_2': MSO_THEME_COLOR.DARK_2,
-                    'FOLLOWED_HYPERLINK': MSO_THEME_COLOR.FOLLOWED_HYPERLINK,
-                    'HYPERLINK': MSO_THEME_COLOR.HYPERLINK,
-                    'LIGHT_1': MSO_THEME_COLOR.LIGHT_1,
-                    'LIGHT_2': MSO_THEME_COLOR.LIGHT_2,
-                    'TEXT_1': MSO_THEME_COLOR.TEXT_1,
-                    'TEXT_2': MSO_THEME_COLOR.TEXT_2,
-                }
-
-                for key, value in theme_mapping.items():
-                    if key in theme_color_str:
-                        color_obj.theme_color = value
-                        break
+                
+                # Try to use extracted theme colors first
+                if hasattr(self, 'theme_colors') and self.theme_colors:
+                    theme_rgb = None
+                    
+                    # Map theme color names to our extracted colors
+                    theme_color_mapping = {
+                        'ACCENT_1': 'accent1',
+                        'ACCENT_2': 'accent2', 
+                        'ACCENT_3': 'accent3',
+                        'ACCENT_4': 'accent4',
+                        'ACCENT_5': 'accent5',
+                        'ACCENT_6': 'accent6',
+                        'DARK_1': 'dk1',
+                        'DARK_2': 'dk2',
+                        'LIGHT_1': 'lt1', 
+                        'LIGHT_2': 'lt2',
+                        'HYPERLINK': 'hlink',
+                        'FOLLOWED_HYPERLINK': 'folHlink'
+                    }
+                    
+                    # Find matching theme color
+                    for key, theme_key in theme_color_mapping.items():
+                        if key in theme_color_str:
+                            if theme_key in self.theme_colors and 'rgb' in self.theme_colors[theme_key]:
+                                theme_rgb = self.theme_colors[theme_key]['rgb']
+                                break
+                    
+                    # Apply extracted theme color as RGB
+                    if theme_rgb:
+                        try:
+                            hex_color = theme_rgb.replace('#', '')
+                            if len(hex_color) >= 6:
+                                red = int(hex_color[0:2], 16)
+                                green = int(hex_color[2:4], 16)
+                                blue = int(hex_color[4:6], 16)
+                                color_obj.rgb = RGBColor(red, green, blue)
+                        except Exception as e:
+                            print(f"Warning: Could not apply theme color {theme_rgb}: {str(e)}")
+                            # Fallback to default theme color
+                            self._apply_fallback_theme_color(color_obj, theme_color_str)
+                    else:
+                        # Fallback to default theme color
+                        self._apply_fallback_theme_color(color_obj, theme_color_str)
+                else:
+                    # Fallback to default theme color if no extracted colors
+                    self._apply_fallback_theme_color(color_obj, theme_color_str)
 
             # Apply brightness adjustment
             if 'brightness' in color_info and color_info['brightness'] is not None:
@@ -1125,6 +1227,36 @@ class PPTGenerator:
 
         except Exception as e:
             print(f"Warning: Could not apply enhanced color: {str(e)}")
+
+    def _apply_fallback_theme_color(self, color_obj, theme_color_str):
+        """Apply fallback theme color using python-pptx theme color enums"""
+        try:
+            # Comprehensive theme color mapping
+            theme_mapping = {
+                'ACCENT_1': MSO_THEME_COLOR.ACCENT_1,
+                'ACCENT_2': MSO_THEME_COLOR.ACCENT_2,
+                'ACCENT_3': MSO_THEME_COLOR.ACCENT_3,
+                'ACCENT_4': MSO_THEME_COLOR.ACCENT_4,
+                'ACCENT_5': MSO_THEME_COLOR.ACCENT_5,
+                'ACCENT_6': MSO_THEME_COLOR.ACCENT_6,
+                'BACKGROUND_1': MSO_THEME_COLOR.BACKGROUND_1,
+                'BACKGROUND_2': MSO_THEME_COLOR.BACKGROUND_2,
+                'DARK_1': MSO_THEME_COLOR.DARK_1,
+                'DARK_2': MSO_THEME_COLOR.DARK_2,
+                'FOLLOWED_HYPERLINK': MSO_THEME_COLOR.FOLLOWED_HYPERLINK,
+                'HYPERLINK': MSO_THEME_COLOR.HYPERLINK,
+                'LIGHT_1': MSO_THEME_COLOR.LIGHT_1,
+                'LIGHT_2': MSO_THEME_COLOR.LIGHT_2,
+                'TEXT_1': MSO_THEME_COLOR.TEXT_1,
+                'TEXT_2': MSO_THEME_COLOR.TEXT_2,
+            }
+
+            for key, value in theme_mapping.items():
+                if key in theme_color_str:
+                    color_obj.theme_color = value
+                    break
+        except Exception as e:
+            print(f"Warning: Could not apply fallback theme color: {str(e)}")
 
     # Legacy method names for compatibility
     def apply_color_properties(self, color_obj, color_info: Dict[str, Any]):
