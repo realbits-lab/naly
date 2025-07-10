@@ -203,6 +203,35 @@ class PPTExtractor:
             pass
         return None
 
+    def _shape_supports_shadow(self, shape) -> bool:
+        """Check if a shape supports shadow properties"""
+        try:
+            from pptx.enum.shapes import MSO_SHAPE_TYPE
+            # GraphicFrame and some other shapes don't support shadow properties
+            unsupported_types = [
+                MSO_SHAPE_TYPE.CHART,
+                MSO_SHAPE_TYPE.TABLE,
+                MSO_SHAPE_TYPE.CANVAS,
+                MSO_SHAPE_TYPE.DIAGRAM,
+                MSO_SHAPE_TYPE.IGX_GRAPHIC,
+                MSO_SHAPE_TYPE.GRAPHIC,
+                MSO_SHAPE_TYPE.LINKED_GRAPHIC,
+                MSO_SHAPE_TYPE.CONTENT_APP,
+                MSO_SHAPE_TYPE.WEB_VIDEO,
+                MSO_SHAPE_TYPE.MEDIA
+            ]
+            
+            if hasattr(shape, 'shape_type') and shape.shape_type in unsupported_types:
+                return False
+                
+            # Additional check for GraphicFrame shapes (which can be charts, tables, etc.)
+            if hasattr(shape, '__class__') and 'GraphicFrame' in str(shape.__class__):
+                return False
+                
+            return True
+        except Exception:
+            return False
+
     def get_auto_shape_type(self, shape) -> str:
         """Extract the specific auto shape type for MSO_SHAPE_TYPE.AUTO_SHAPE"""
         try:
@@ -454,6 +483,25 @@ class PPTExtractor:
         except Exception as e:
             return {'error': f"Could not extract placeholder info: {str(e)}"}
 
+    def _safe_extract_shadow_properties(self, shape) -> Dict[str, Any]:
+        """Safely extract shadow properties"""
+        try:
+            # Check if shape supports shadow properties
+            if not self._shape_supports_shadow(shape):
+                return None
+            
+            # Check if shape has shadow attribute
+            if hasattr(shape, 'shadow') and shape.shadow is not None:
+                return self.extract_shadow_properties(shape.shadow)
+            else:
+                return None
+        except Exception as e:
+            # Handle specific GraphicFrame shadow error
+            if "shadow property on GraphicFrame not yet supported" in str(e):
+                return {'error': "Shadow property not supported for this shape type"}
+            else:
+                return {'error': f"Could not extract shadow properties: {str(e)}"}
+
     def extract_placeholder_info(self, shape) -> Dict[str, Any]:
         """Extract placeholder-specific information"""
         placeholder_info = {}
@@ -607,7 +655,11 @@ class PPTExtractor:
                 shadow_info['direction'] = shadow.direction
 
         except Exception as e:
-            shadow_info['error'] = f"Could not extract shadow properties: {str(e)}"
+            # Handle specific GraphicFrame shadow error
+            if "shadow property on GraphicFrame not yet supported" in str(e):
+                shadow_info['error'] = "Shadow property not supported for this shape type"
+            else:
+                shadow_info['error'] = f"Could not extract shadow properties: {str(e)}"
 
         return shadow_info
 
@@ -692,7 +744,7 @@ class PPTExtractor:
                     'part': str(shape.part) if hasattr(shape, 'part') else None,
                     'placeholder_format': self._safe_extract_placeholder_info(shape),
                     'rotation': shape.rotation if hasattr(shape, 'rotation') else None,
-                    'shadow': self.extract_shadow_properties(shape.shadow) if hasattr(shape, 'shadow') else None,
+                    'shadow': self._safe_extract_shadow_properties(shape),
                     'text': shape.text if hasattr(shape, 'text') else None,
                     'text_frame': self.extract_text_formatting(shape.text_frame) if hasattr(shape, 'text_frame') and shape.text_frame else None,
                 }
