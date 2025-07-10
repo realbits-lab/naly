@@ -19,11 +19,11 @@ export default function DemoLoader({ onDataLoad }: DemoLoaderProps) {
 
     try {
       const [shapesData, layoutsData, themeData, mediaData, propertiesData] = await Promise.all([
-        fetch('/sample1-1_shapes.json').then(res => res.json()),
-        fetch('/sample1-1_layouts.json').then(res => res.json()),
-        fetch('/sample1-1_theme.json').then(res => res.json()),
-        fetch('/sample1-1_media.json').then(res => res.json()),
-        fetch('/sample1-1_properties.json').then(res => res.json()),
+        fetch('/sample1_shapes.json').then(res => res.json()),
+        fetch('/sample1_layouts.json').then(res => res.json()),
+        fetch('/sample1_theme.json').then(res => res.json()),
+        fetch('/sample1_media.json').then(res => res.json()),
+        fetch('/sample1_properties.json').then(res => res.json()),
       ]);
 
       const powerPointData: PowerPointData = {
