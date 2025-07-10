@@ -747,7 +747,7 @@ class PPTExtractor:
                     'adjustments': list(shape.adjustments) if hasattr(shape, 'adjustments') and shape.adjustments else None,
                     'auto_shape_type': self._safe_get_auto_shape_type(shape),
                     'click_action': self._safe_get_click_action(shape),
-                    'element': self.extract_element_attributes(shape.element) if hasattr(shape, 'element') else None,
+                    'element': self.extract_element_xml_only(shape.element) if hasattr(shape, 'element') else None,
                     'custom_geometry': self.extract_custom_geometry(shape.element) if hasattr(shape, 'element') else None,
                     'fill': self.extract_fill_properties(shape.fill) if hasattr(shape, 'fill') else None,
                     'get_or_add_ln': str(shape.get_or_add_ln) if hasattr(shape, 'get_or_add_ln') else None,
@@ -1067,6 +1067,63 @@ class PPTExtractor:
             bg_info['error'] = f"Could not extract background properties: {str(e)}"
 
         return bg_info
+
+    def extract_element_xml_only(self, element) -> Dict[str, Any]:
+        """Extract only the XML string from a shape element for generator compatibility"""
+        element_info = {}
+
+        try:
+            # Extract XML string representation
+            try:
+                import xml.etree.ElementTree as ET
+                xml_string = ET.tostring(element, encoding='unicode') if element is not None else None
+                
+                # Clean malformed text structure
+                if xml_string:
+                    xml_string = self.clean_xml_text_structure(xml_string)
+                
+                element_info['xml_string'] = xml_string
+            except Exception:
+                element_info['xml_string'] = str(element) if element is not None else None
+
+        except Exception as e:
+            element_info['extraction_error'] = f"Could not extract element XML: {str(e)}"
+
+        return element_info
+
+    def clean_xml_text_structure(self, xml_string: str) -> str:
+        """Clean malformed text structure in XML by removing text outside proper paragraph structure"""
+        try:
+            import re
+            
+            # Pattern to find text that appears before paragraph properties
+            # This matches text that appears directly in <p> tags before <pPr> or other tags
+            pattern = r'(<[^:]*:p[^>]*>)([^<]+)(<[^:]*:pPr[^>]*>)'
+            
+            def replace_func(match):
+                # Return the paragraph opening tag followed directly by the paragraph properties
+                # This removes the loose text that appears before pPr
+                return match.group(1) + match.group(3)
+            
+            # Clean the malformed text structure
+            cleaned_xml = re.sub(pattern, replace_func, xml_string)
+            
+            # Also clean text that appears before runs in paragraphs
+            # Pattern for text before runs: <p>text<r>text<rPr>...
+            pattern2 = r'(<[^:]*:p[^>]*>)([^<]+)(<[^:]*:r[^>]*>)([^<]+)(<[^:]*:rPr[^>]*>)'
+            
+            def replace_func2(match):
+                # Keep the paragraph tag, the run tag, and the run properties
+                # Remove the duplicate text before the run
+                return match.group(1) + match.group(3) + match.group(5)
+            
+            cleaned_xml = re.sub(pattern2, replace_func2, cleaned_xml)
+            
+            return cleaned_xml
+            
+        except Exception as e:
+            print(f"Warning: Could not clean XML text structure: {e}")
+            return xml_string
 
     def extract_element_attributes(self, element) -> Dict[str, Any]:
         """Extract all attributes from a shape element"""

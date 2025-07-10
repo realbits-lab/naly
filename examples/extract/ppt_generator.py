@@ -563,12 +563,12 @@ class PPTGenerator:
             # Clear existing content to rebuild with formatting
             text_frame.clear()
 
-            for para_data in paragraphs_data:
-                # Add paragraph
-                if text_frame.paragraphs:
-                    p = text_frame.add_paragraph()
-                else:
+            for para_idx, para_data in enumerate(paragraphs_data):
+                # Add paragraph - for first paragraph, use existing one from clear()
+                if para_idx == 0:
                     p = text_frame.paragraphs[0]
+                else:
+                    p = text_frame.add_paragraph()
 
                 # Apply paragraph properties
                 if 'alignment' in para_data and para_data['alignment']:
