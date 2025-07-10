@@ -142,26 +142,34 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     const centerX = 150;
     const centerY = 150;
     
-    // Parse XML transformations to determine segment position
-    const xmlString = shape.element?.xml_string || "";
-    const hasFlipH = xmlString.includes('flipH="1"');
-    const hasRotation = xmlString.includes('rot="10800000"'); // 180 degrees
+    // Map segments based on theme colors to match original PowerPoint layout
+    const themeColor = shape.fill?.fore_color?.theme_color;
+    let startAngle = 0;
+    let endAngle = 90;
     
-    // Determine segment position based on transformations
-    let segmentIndex = 0;
-    if (!hasFlipH && !hasRotation) {
-      segmentIndex = 0; // Top-left (01)
-    } else if (hasFlipH && !hasRotation) {
-      segmentIndex = 1; // Top-right (02)
-    } else if (!hasFlipH && hasRotation) {
-      segmentIndex = 2; // Bottom-left (03)
-    } else if (hasFlipH && hasRotation) {
-      segmentIndex = 3; // Bottom-right (04)
+    switch (themeColor) {
+      case "ACCENT_1 (5)": // Dark navy - 01 (top-left)
+        startAngle = 180;
+        endAngle = 270;
+        break;
+      case "ACCENT_4 (8)": // Orange - 02 (top-right)  
+        startAngle = 270;
+        endAngle = 360;
+        break;
+      case "ACCENT_2 (6)": // Teal - 03 (bottom-left)
+        startAngle = 90;
+        endAngle = 180;
+        break;
+      case "ACCENT_5 (9)": // Light orange - 04 (bottom-right)
+        startAngle = 0;
+        endAngle = 90;
+        break;
+      default:
+        // Fallback to original logic if theme color not recognized
+        const segmentIndex = (shape.shape_index || 0) % 4;
+        startAngle = segmentIndex * 90;
+        endAngle = startAngle + 90;
     }
-    
-    const segmentAngle = 90; // Each segment is 90 degrees
-    const startAngle = segmentIndex * segmentAngle - 90; // Start from top
-    const endAngle = startAngle + segmentAngle;
     
     // Convert to radians
     const startRad = (startAngle * Math.PI) / 180;
@@ -179,7 +187,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     const x4 = centerX + innerRadius * Math.cos(startRad);
     const y4 = centerY + innerRadius * Math.sin(startRad);
     
-    const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+    const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
     
     return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
   };
@@ -290,6 +298,52 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             height: `${scaledHeight}px`,
           }}
         >
+          {/* Render unified donut chart for slide 3 BLOCK_ARC shapes */}
+          {slide.slide_index === 2 && (() => {
+            const blockArcShapes = slide.shapes.filter(shape => 
+              shape?.auto_shape_type?.includes('BLOCK_ARC')
+            );
+            
+            if (blockArcShapes.length > 0) {
+              const slideWidth = 960; 
+              const slideHeight = 540;  
+              const centerLeft = (slideWidth / 2) - 50; // Shift left by 50px to match original position
+              const centerTop = slideHeight / 2;
+              
+              return (
+                <svg
+                  width="300"
+                  height="300"
+                  viewBox="0 0 300 300"
+                  className="absolute"
+                  style={{ 
+                    left: `${centerLeft}px`, 
+                    top: `${centerTop}px`,
+                    overflow: 'visible',
+                    pointerEvents: 'none',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10
+                  }}
+                >
+                  {blockArcShapes.map((shape, arcIndex) => {
+                    const fillColor = shape.element?.xml_string 
+                      ? extractFillFromXML(shape.element.xml_string)
+                      : getFillStyle(shape.fill).backgroundColor || "transparent";
+                    return (
+                      <path
+                        key={arcIndex}
+                        d={createArcPath(shape, slide.slide_index)}
+                        fill={fillColor}
+                        stroke="none"
+                      />
+                    );
+                  })}
+                </svg>
+              );
+            }
+            return null;
+          })()}
+
           {slide.shapes.map((shape, index) => {
             const left = convertEMUToPixels(shape.left) * scale;
             const top = convertEMUToPixels(shape.top) * scale;
@@ -317,6 +371,11 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             
             // Check if it's a BLOCK_ARC shape (donut chart segment)
             const isBlockArc = shape.auto_shape_type && shape.auto_shape_type.includes('BLOCK_ARC');
+            
+            // Skip BLOCK_ARC shapes in slide 3 since they're rendered as unified donut above
+            if (slide.slide_index === 2 && isBlockArc) {
+              return null;
+            }
             
             
             return (
@@ -348,27 +407,6 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   </svg>
                 )}
                 
-                {/* Render BLOCK_ARC shapes as donut chart segments */}
-                {isBlockArc && (
-                  <svg
-                    width={width}
-                    height={height}
-                    viewBox="0 0 300 300"
-                    className="absolute"
-                    style={{ 
-                      left: `${left}px`, 
-                      top: `${top}px`,
-                      overflow: 'visible',
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    <path
-                      d={createArcPath(shape, slide.slide_index)}
-                      fill={fillColor}
-                      stroke="none"
-                    />
-                  </svg>
-                )}
 
 
                 {/* Render simple shapes without custom geometry and without text */}
