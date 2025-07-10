@@ -1,8 +1,6 @@
 "use client";
 
 import { Shape, SlideData, Theme, ColorInfo, FillInfo } from "@/types/pptx";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 interface SlideRendererProps {
   slide: SlideData;
@@ -284,12 +282,9 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
   };
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <h3 className="font-semibold">Slide {slide.slide_index + 1}</h3>
-          <Badge variant="outline">{slide.shapes.length} shapes</Badge>
-        </div>
+    <div>
+      <h3>Slide {slide.slide_index + 1}</h3>
+      <div>
         
         <div 
           className="relative border border-gray-200 bg-white mx-auto"
@@ -344,6 +339,96 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             return null;
           })()}
 
+          {/* Render semicircle donut chart for slide 5 BLOCK_ARC shapes */}
+          {slide.slide_index === 4 && (() => {
+            const blockArcShapes = slide.shapes.filter(shape => 
+              shape?.auto_shape_type?.includes('BLOCK_ARC')
+            );
+            
+            if (blockArcShapes.length > 0) {
+              const slideWidth = 960; 
+              const slideHeight = 540;  
+              const centerLeft = slideWidth / 2;
+              const centerTop = slideHeight / 2 + 20; // Slightly lower to match original
+              
+              return (
+                <svg
+                  width="400"
+                  height="200"
+                  viewBox="0 0 400 200"
+                  className="absolute"
+                  style={{ 
+                    left: `${centerLeft}px`, 
+                    top: `${centerTop}px`,
+                    overflow: 'visible',
+                    pointerEvents: 'none',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10
+                  }}
+                >
+                  {blockArcShapes.map((shape, arcIndex) => {
+                    const fillColor = shape.element?.xml_string 
+                      ? extractFillFromXML(shape.element.xml_string)
+                      : getFillStyle(shape.fill).backgroundColor || "transparent";
+                    
+                    // Create semicircle donut segments for slide 5
+                    const radius = 150;
+                    const innerRadius = 80;
+                    const centerX = 200;
+                    const centerY = 180;
+                    
+                    // Determine which segment based on theme color
+                    const themeColor = shape.fill?.fore_color?.theme_color;
+                    let startAngle, endAngle;
+                    
+                    if (themeColor === "ACCENT_1 (5)") {
+                      // Saturn (55%) - larger left segment
+                      startAngle = 180; // Start from left
+                      endAngle = 180 + (180 * 0.55); // 55% of semicircle
+                    } else if (themeColor === "ACCENT_4 (8)") {
+                      // Neptune (45%) - smaller right segment  
+                      startAngle = 180 + (180 * 0.55); // Start where Saturn ends
+                      endAngle = 360; // End at right
+                    } else {
+                      // Fallback
+                      startAngle = arcIndex * 90;
+                      endAngle = startAngle + 90;
+                    }
+                    
+                    // Convert to radians
+                    const startRad = (startAngle * Math.PI) / 180;
+                    const endRad = (endAngle * Math.PI) / 180;
+                    
+                    // Calculate outer arc points
+                    const x1 = centerX + radius * Math.cos(startRad);
+                    const y1 = centerY + radius * Math.sin(startRad);
+                    const x2 = centerX + radius * Math.cos(endRad);
+                    const y2 = centerY + radius * Math.sin(endRad);
+                    
+                    // Calculate inner arc points
+                    const x3 = centerX + innerRadius * Math.cos(endRad);
+                    const y3 = centerY + innerRadius * Math.sin(endRad);
+                    const x4 = centerX + innerRadius * Math.cos(startRad);
+                    const y4 = centerY + innerRadius * Math.sin(startRad);
+                    
+                    const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
+                    const pathData = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
+                    
+                    return (
+                      <path
+                        key={`arc-${shape.shape_id || shape.shape_index || arcIndex}`}
+                        d={pathData}
+                        fill={fillColor}
+                        stroke="none"
+                      />
+                    );
+                  })}
+                </svg>
+              );
+            }
+            return null;
+          })()}
+
           {slide.shapes.map((shape, index) => {
             const left = convertEMUToPixels(shape.left) * scale;
             const top = convertEMUToPixels(shape.top) * scale;
@@ -378,8 +463,8 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
               pathData && shape.custom_geometry?.paths?.[0]?.commands?.some(cmd => cmd.command === 'cubicBezTo') &&
               Math.abs(width - height) < 50; // Nearly square/circular dimensions
             
-            // Skip BLOCK_ARC shapes in slide 3 since they're rendered as unified donut above
-            if (slide.slide_index === 2 && isBlockArc) {
+            // Skip BLOCK_ARC shapes in slide 3 and slide 5 since they're rendered as unified donut above
+            if ((slide.slide_index === 2 || slide.slide_index === 4) && isBlockArc) {
               return null;
             }
             
@@ -407,25 +492,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   >
                     <path
                       d={pathData}
-                      fill={(() => {
-                        // Fix bar chart colors for slide 4
-                        if (slide.slide_index === 3 && shape.shape_type?.includes('FREEFORM') && height > width * 2) {
-                          const leftPos = convertEMUToPixels(shape.left);
-                          
-                          // Match bar colors to theme colors based on position
-                          if (leftPos < 500) {
-                            return getSchemeColor('accent2'); // Teal (Mars)
-                          } else if (leftPos < 600) {
-                            return getSchemeColor('accent4'); // Orange (Saturn)  
-                          } else if (leftPos < 700) {
-                            return getSchemeColor('accent5'); // Light orange (Neptune)
-                          } else {
-                            return getSchemeColor('accent1'); // Dark blue (Jupiter)
-                          }
-                        }
-                        
-                        return fillColor !== "transparent" ? fillColor : "transparent";
-                      })(),
+                      fill={fillColor}
                       stroke="none"
                     />
                   </svg>
@@ -656,10 +723,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
           })}
         </div>
         
-        <div className="mt-4 text-sm text-gray-600">
-          <p>Scale: {Math.round(scale * 100)}% | Original: {slideWidth}×{slideHeight}</p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
