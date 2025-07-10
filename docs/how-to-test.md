@@ -1,7 +1,7 @@
 Improve @examples/extract/ppt_extractor.py and @examples/extract/ppt_generator.py to match slide1.xml of input and output powerpoint open xml file for
   the first slide.
 
-1. Run "python ppt_extractor.py outputs/sample1-2.pptx --output-dir outputs" in examples/extract directory.
+1. Run "python ppt_extractor.py sample_parts/sample1-2.pptx --output-dir outputs" in examples/extract directory.
 2. Run "python ppt_generator.py \
 outputs/sample1-2_shapes.json \
 outputs/sample1-2_layouts.json \
@@ -9,7 +9,7 @@ outputs/sample1-2_theme.json \
 --media-file outputs/sample1-2_media.json \
 --properties-file outputs/sample1-2_properties.json \
 --output outputs/sample1-2_enhanced.pptx"
-3. Unzip @examples/extract/outputs/sample1-2.pptx and @examples/extract/outputs/sample1-2_enhanced.pptx to the @examples/extract/outputs directory.
+3. Unzip @examples/extract/sample_parts/sample1-2.pptx and @examples/extract/outputs/sample1-2_enhanced.pptx to the @examples/extract/outputs directory.
 4. Compare the slide1.xml file inside each output directory in ppt/slides directory.
 5. Find the different part and analyze why this different parts exist.
 6. Modify ppt_extractor.py and ppt_generator.py for recover these differences.
