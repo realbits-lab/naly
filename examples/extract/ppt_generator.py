@@ -20,7 +20,7 @@ class PPTGenerator:
     """Enhanced PowerPoint generator with improved fidelity and feature support"""
 
     def __init__(self):
-        self.presentation = Presentation()
+        self.presentation = Presentation('blank.pptx')
         self.shapes_data = []
         self.layouts_data = []
         self.theme_data = {}
@@ -346,9 +346,15 @@ class PPTGenerator:
     def apply_enhanced_theme(self):
         """Apply enhanced theme settings including colors, fonts, and master slides"""
         try:
-            # Set slide size based on theme or default to 16:9
-            self.presentation.slide_width = Inches(10)
-            self.presentation.slide_height = Inches(7.5)
+            # Set slide size based on extracted properties or default to 16:9
+            if hasattr(self, 'document_properties') and self.document_properties and 'slide_size' in self.document_properties:
+                slide_size = self.document_properties['slide_size']
+                self.presentation.slide_width = slide_size['width']  # EMU units
+                self.presentation.slide_height = slide_size['height']  # EMU units
+            else:
+                # Default to proper 16:9 format (10" x 5.625")
+                self.presentation.slide_width = Inches(10)
+                self.presentation.slide_height = Inches(5.625)
 
             # Apply color scheme if available
             if 'color_scheme' in self.theme_data:
@@ -617,6 +623,11 @@ class PPTGenerator:
 
         # Prioritize auto_shape_type over generic shape_type for better accuracy
         shape_type_str = shape_info.get('auto_shape_type', shape_info.get('shape_type', ''))
+        
+        # Ensure shape_type_str is not None
+        if shape_type_str is None:
+            shape_type_str = ''
+            
         type_number, clean_name = self.parse_shape_type_info(shape_type_str)
 
         # Handle special shape types
@@ -732,6 +743,10 @@ class PPTGenerator:
         # Parse original XML to get the exact structure
         element_data = shape_info.get('element', {})
         xml_string = element_data.get('xml_string', '')
+        
+        # Ensure xml_string is not None (handle case where key exists but value is None)
+        if xml_string is None:
+            xml_string = ''
         
         if xml_string:
             original_element = etree.fromstring(xml_string.encode('utf-8'))
@@ -1146,7 +1161,7 @@ class PPTGenerator:
                 if color_info.get('rgb'):
                     rgb = color_info['rgb']
                     if rgb.get('hex'):
-                        hex_color = rgb['hex'].replace('#', '')
+                        hex_color = rgb.get('hex', '000000').replace('#', '')
                         if len(hex_color) >= 6:
                             run.font.color.rgb = RGBColor(
                                 int(hex_color[0:2], 16),
@@ -1354,7 +1369,7 @@ class PPTGenerator:
 
         rgb_info = color_info.get('rgb', {})
         if rgb_info and rgb_info.get('hex'):
-            hex_color = rgb_info['hex'].replace('#', '')
+            hex_color = rgb_info.get('hex', '000000').replace('#', '')
             if len(hex_color) >= 6:
                 font.color.rgb = RGBColor(
                     int(hex_color[0:2], 16),
@@ -1544,6 +1559,10 @@ class PPTGenerator:
             element_data = shape_info.get('element', {})
             xml_string = element_data.get('xml_string', '')
             
+            # Ensure xml_string is not None (handle case where key exists but value is None)
+            if xml_string is None:
+                xml_string = ''
+            
             if xml_string:
                 # Parse the original XML
                 try:
@@ -1662,8 +1681,8 @@ class PPTGenerator:
                         # For PIE shapes: empirical mapping to match exact target values
                         # Target: 198.64621 -> 19864621, 0.7332 -> 73320 
                         # Empirical observation: system applies 100000x scaling, so we need adj_value / 10
-                        # shape.adjustments[i] = adj_value / 10
-                        shape.adjustments[i] = adj_value
+                        # Use round() for more precise conversion 
+                        shape.adjustments[i] = round(adj_value)
         except Exception as e:
             print(f"Warning: Could not apply shape adjustments: {str(e)}")
 
@@ -1814,9 +1833,28 @@ class PPTGenerator:
             media_key = image_properties.get(
                 'media_key') or image_properties.get('filename')
 
-            if media_key and media_key in self.media_cache:
-                # Get image data from cache
-                media_info = self.media_cache[media_key]
+            # Try different key formats to find the media in the structured cache
+            media_info = None
+            if media_key:
+                # Check in images section first
+                if 'images' in self.media_cache:
+                    images = self.media_cache['images']
+                    # Try direct key
+                    if media_key in images:
+                        media_info = images[media_key]
+                    else:
+                        # Try with full path prefix
+                        full_key = f"ppt/media/{media_key}"
+                        if full_key in images:
+                            media_info = images[full_key]
+                        else:
+                            # Try all keys that end with the media_key filename
+                            for cache_key, cache_value in images.items():
+                                if cache_key.endswith(media_key):
+                                    media_info = cache_value
+                                    break
+            
+            if media_info:
                 image_data_b64 = media_info.get('data')
 
                 if image_data_b64:

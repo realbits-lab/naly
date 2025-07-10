@@ -216,3 +216,6 @@ ENV/
 env.bak/
 # Backup virtual environment directory
 venv.bak/
+
+examples/extract/outputs
+examples/extract/~$*
