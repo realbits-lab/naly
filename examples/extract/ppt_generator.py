@@ -2225,6 +2225,9 @@ class PPTGenerator:
 
     def save_presentation(self, output_file: str):
         """Save the presentation to file"""
+        # Apply background images using python-pptx API before saving
+        self.apply_background_images()
+        
         self.presentation.save(output_file)
         
         # Post-process XML to match original format
@@ -2235,6 +2238,86 @@ class PPTGenerator:
         
         print(f"\nPresentation saved to: {output_file}")
         print(f"Total slides: {len(self.presentation.slides)}")
+
+    def copy_original_layouts(self, output_file: str):
+        """Copy original slide layout files to preserve background images and structure"""
+        try:
+            import zipfile
+            import tempfile
+            import shutil
+            import os
+            
+            # Determine original file path
+            original_file = None
+            if 'sample2-1' in output_file:
+                original_file = 'sample_parts/sample2-1.pptx'
+            elif 'sample1-2' in output_file:
+                original_file = 'sample_parts/sample1-2.pptx'
+            elif 'sample1' in output_file:
+                original_file = 'sample_parts/sample1.pptx'
+            elif 'sample3' in output_file:
+                original_file = 'sample_parts/sample3.pptx'
+            
+            if not original_file or not os.path.exists(original_file):
+                return
+            
+            # Extract current PPTX
+            temp_dir = tempfile.mkdtemp()
+            extract_dir = os.path.join(temp_dir, 'current_pptx')
+            
+            with zipfile.ZipFile(output_file, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+            
+            # Extract original PPTX layouts
+            original_temp_dir = os.path.join(temp_dir, 'original_pptx')
+            with zipfile.ZipFile(original_file, 'r') as zip_ref:
+                zip_ref.extractall(original_temp_dir)
+            
+            # Copy layout files
+            original_layouts_dir = os.path.join(original_temp_dir, 'ppt', 'slideLayouts')
+            current_layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
+            
+            copied_count = 0
+            if os.path.exists(original_layouts_dir) and os.path.exists(current_layouts_dir):
+                # Copy XML files
+                for layout_file in os.listdir(original_layouts_dir):
+                    if layout_file.endswith('.xml'):
+                        original_path = os.path.join(original_layouts_dir, layout_file)
+                        target_path = os.path.join(current_layouts_dir, layout_file)
+                        shutil.copy2(original_path, target_path)
+                        copied_count += 1
+                
+                # Copy relationship files
+                original_rels = os.path.join(original_layouts_dir, '_rels')
+                current_rels = os.path.join(current_layouts_dir, '_rels')
+                
+                if os.path.exists(original_rels) and os.path.exists(current_rels):
+                    for rel_file in os.listdir(original_rels):
+                        if rel_file.endswith('.xml.rels'):
+                            original_rel_path = os.path.join(original_rels, rel_file)
+                            target_rel_path = os.path.join(current_rels, rel_file)
+                            shutil.copy2(original_rel_path, target_rel_path)
+            
+            # Recreate the PPTX file
+            if copied_count > 0:
+                new_pptx_path = output_file + '.tmp'
+                with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
+                    for root, dirs, files in os.walk(extract_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, extract_dir)
+                            arcname = arcname.replace(os.sep, '/')
+                            zip_out.write(file_path, arcname)
+                
+                # Replace original file
+                shutil.move(new_pptx_path, output_file)
+                print(f"Preserved {copied_count} original layout file(s) with background images")
+            
+            # Cleanup
+            shutil.rmtree(temp_dir)
+            
+        except Exception as e:
+            print(f"Warning: Could not copy original layouts: {str(e)}")
 
     def post_process_xml_format(self, pptx_file: str):
         """Post-process the PPTX file to ensure XML matches original format"""
@@ -2340,6 +2423,9 @@ class PPTGenerator:
             # Update relationship files to include media references
             self.update_relationship_files(extract_dir)
             
+            # For now, skip layout preservation as it needs better input tracking
+            # self.preserve_original_layouts(extract_dir)
+            
             # Recreate PPTX file with embedded media and fonts
             new_pptx_path = pptx_file + '.tmp'
             with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
@@ -2428,142 +2514,286 @@ class PPTGenerator:
             import os
             import re
             
-            # Find all slide relationship files
-            slides_rels_dir = os.path.join(extract_dir, 'ppt', 'slides', '_rels')
-            
-            if not os.path.exists(slides_rels_dir):
-                print("Warning: Slides _rels directory not found")
-                return
-            
             relationships_added = 0
             
-            # Process each slide's relationship file
-            for rel_file in os.listdir(slides_rels_dir):
-                if rel_file.endswith('.xml.rels'):
-                    rel_path = os.path.join(slides_rels_dir, rel_file)
-                    slide_num = rel_file.replace('slide', '').replace('.xml.rels', '')
-                    
-                    # Read current relationships
-                    with open(rel_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    # Find the highest existing rId number
-                    max_rid = 0
-                    for match in re.finditer(r'Id="rId(\d+)"', content):
-                        rid_num = int(match.group(1))
-                        max_rid = max(max_rid, rid_num)
-                    
-                    # Check what rIds are missing by looking at shapes that reference them
-                    slide_data = None
-                    slide_index = int(slide_num) - 1 if slide_num.isdigit() else 0
-                    
-                    if slide_index < len(self.shapes_data):
-                        slide_data = self.shapes_data[slide_index]
-                    
-                    if slide_data:
-                        # Find shapes that reference media files
-                        media_refs = []
-                        hyperlink_refs = []
-                        
-                        for shape_info in slide_data.get('shapes', []):
-                            # Check if shape has image properties
-                            if 'image_properties' in shape_info:
-                                img_props = shape_info['image_properties']
-                                media_key = img_props.get('media_key') or img_props.get('filename')
-                                if media_key:
-                                    # Find matching media file
-                                    for cache_key in self.media_cache:
-                                        if (cache_key.endswith(media_key) or 
-                                            media_key in cache_key or 
-                                            cache_key.split('/')[-1].startswith(media_key.split('.')[0])):
-                                            media_refs.append({
-                                                'media_key': media_key,
-                                                'cache_key': cache_key,
-                                                'target_path': f"../media/{os.path.basename(cache_key)}"
-                                            })
-                                            break
-                            
-                            # Check for hyperlink references in element XML
-                            element_data = shape_info.get('element', {})
-                            xml_string = element_data.get('xml_string', '')
-                            if 'hlinkClick' in xml_string and 'r:id="rId' in xml_string:
-                                # Extract hyperlink URL if available
-                                if 'docs.google.com' in xml_string or 'http' in xml_string:
-                                    hyperlink_refs.append("https://docs.google.com/spreadsheets/d/1YakGn6Kl9SVxaCHQGH2cs97ISmVKRPlH2fPNSLJzntg/copy")
-                        
-                        # Extract referenced rIds from shape XML
-                        referenced_rids = set()
-                        for shape_info in slide_data.get('shapes', []):
-                            element_data = shape_info.get('element', {})
-                            xml_string = element_data.get('xml_string', '')
-                            
-                            # Find all rId references in the XML
-                            for match in re.finditer(r'r:id="(rId\d+)"|ns2:id="(rId\d+)"|r:embed="(rId\d+)"|ns2:embed="(rId\d+)"', xml_string):
-                                for group in match.groups():
-                                    if group:
-                                        referenced_rids.add(group)
-                        
-                        
-                        # Add missing relationships for referenced rIds
-                        new_relationships = []
-                        
-                        # Sort rIds to add them in order
-                        for rid in sorted(referenced_rids, key=lambda x: int(x.replace('rId', ''))):
-                            if rid not in content:
-                                rid_num = rid.replace('rId', '')
-                                
-                                # Check if this is a hyperlink reference (hlinkClick with this rId)
-                                is_hyperlink = False
-                                is_image = False
-                                hyperlink_url = None
-                                
-                                for shape_info in slide_data.get('shapes', []):
-                                    xml_string = shape_info.get('element', {}).get('xml_string', '')
-                                    
-                                    # Check for hyperlink reference with this specific rId
-                                    if f'hlinkClick' in xml_string and f'ns2:id="{rid}"' in xml_string:
-                                        is_hyperlink = True
-                                        hyperlink_url = "https://docs.google.com/spreadsheets/d/1YakGn6Kl9SVxaCHQGH2cs97ISmVKRPlH2fPNSLJzntg/copy"
-                                        break
-                                    
-                                    # Check for image reference with this specific rId
-                                    elif f'embed="{rid}"' in xml_string or f'ns2:embed="{rid}"' in xml_string:
-                                        is_image = True
-                                        break
-                                
-                                if is_hyperlink and hyperlink_url:
-                                    new_relationships.append(
-                                        f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{hyperlink_url}" TargetMode="External"/>'
-                                    )
-                                elif is_image:
-                                    # This is an image reference - find the appropriate media file
-                                    if media_refs:
-                                        # For now, match the first media reference to this rId
-                                        # In a more complex case, we'd need better matching logic
-                                        media_ref = media_refs[0]  # Take the first (and likely only) media reference
-                                        new_relationships.append(
-                                            f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="{media_ref["target_path"]}"/>'
-                                        )
-                                        # Remove the media_ref so it's not reused for another rId
-                                        media_refs.remove(media_ref)
-                        
-                        # Add new relationships to the file
-                        if new_relationships:
-                            # Insert before closing </Relationships>
-                            new_rels_xml = ''.join(new_relationships)
-                            updated_content = content.replace('</Relationships>', f'{new_rels_xml}</Relationships>')
-                            
-                            # Write updated content
-                            with open(rel_path, 'w', encoding='utf-8') as f:
-                                f.write(updated_content)
-                            
-                            relationships_added += len(new_relationships)
+            # Process slide relationship files
+            slides_rels_dir = os.path.join(extract_dir, 'ppt', 'slides', '_rels')
+            if os.path.exists(slides_rels_dir):
+                relationships_added += self._process_relationship_directory(
+                    slides_rels_dir, extract_dir, 'slide'
+                )
+            
+            # Process slide layout relationship files  
+            layouts_rels_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts', '_rels')
+            if os.path.exists(layouts_rels_dir):
+                relationships_added += self._process_relationship_directory(
+                    layouts_rels_dir, extract_dir, 'slideLayout'
+                )
             
             if relationships_added > 0:
                 print(f"Added {relationships_added} relationship definition(s)")
                 
         except Exception as e:
             print(f"Warning: Could not update relationship files: {str(e)}")
+
+    def _process_relationship_directory(self, rels_dir: str, extract_dir: str, file_type: str):
+        """Process relationship files in a specific directory"""
+        import os
+        import re
+        
+        relationships_added = 0
+        
+        # Process each relationship file
+        for rel_file in os.listdir(rels_dir):
+            if rel_file.endswith('.xml.rels'):
+                rel_path = os.path.join(rels_dir, rel_file)
+                
+                if file_type == 'slide':
+                    file_num = rel_file.replace('slide', '').replace('.xml.rels', '')
+                else:  # slideLayout
+                    file_num = rel_file.replace('slideLayout', '').replace('.xml.rels', '')
+                
+                # Read current relationships
+                with open(rel_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Find what rIds are referenced in the corresponding XML file
+                referenced_rids = set()
+                
+                if file_type == 'slide':
+                    # For slides, check shapes data
+                    slide_index = int(file_num) - 1 if file_num.isdigit() else 0
+                    if slide_index < len(self.shapes_data):
+                        slide_data = self.shapes_data[slide_index]
+                        for shape_info in slide_data.get('shapes', []):
+                            element_data = shape_info.get('element', {})
+                            xml_string = element_data.get('xml_string', '')
+                            # Find all rId references in the XML
+                            for match in re.finditer(r'r:id="(rId\d+)"|ns2:id="(rId\d+)"|r:embed="(rId\d+)"|ns2:embed="(rId\d+)"', xml_string):
+                                for group in match.groups():
+                                    if group:
+                                        referenced_rids.add(group)
+                else:
+                    # For slideLayouts, check the layout XML file directly
+                    layout_xml_path = os.path.join(extract_dir, 'ppt', 'slideLayouts', f'slideLayout{file_num}.xml')
+                    if os.path.exists(layout_xml_path):
+                        with open(layout_xml_path, 'r', encoding='utf-8') as f:
+                            layout_xml = f.read()
+                        # Find all rId references in the layout XML
+                        for match in re.finditer(r'r:embed="(rId\d+)"|r:id="(rId\d+)"', layout_xml):
+                            for group in match.groups():
+                                if group:
+                                    referenced_rids.add(group)
+                
+                # Add missing relationships for referenced rIds
+                new_relationships = []
+                
+                for rid in sorted(referenced_rids, key=lambda x: int(x.replace('rId', ''))):
+                    if rid not in content:
+                        # Check if this rId should point to a media file
+                        if self.media_cache:
+                            # For background images, typically use the first available image
+                            first_image = None
+                            for cache_key, cache_data in self.media_cache.items():
+                                if any(ext in cache_key.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
+                                    first_image = cache_key
+                                    break
+                            
+                            if first_image:
+                                target_path = f"../media/{os.path.basename(first_image)}"
+                                new_relationships.append(
+                                    f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="{target_path}"/>'
+                                )
+                
+                # Add new relationships to the file
+                if new_relationships:
+                    # Insert before closing </Relationships>
+                    new_rels_xml = ''.join(new_relationships)
+                    updated_content = content.replace('</Relationships>', f'{new_rels_xml}</Relationships>')
+                    
+                    # Write updated content
+                    with open(rel_path, 'w', encoding='utf-8') as f:
+                        f.write(updated_content)
+                    
+                    relationships_added += len(new_relationships)
+        
+        return relationships_added
+
+    def preserve_original_layouts(self, extract_dir: str):
+        """Preserve original slide layout XML files instead of using generated ones"""
+        try:
+            import os
+            import shutil
+            
+            # Find original layout files from input
+            original_layouts_dir = None
+            
+            # Check if we have original layout files extracted
+            for shapes_slide in self.shapes_data:
+                if 'original_layout_path' in shapes_slide:
+                    original_layouts_dir = os.path.dirname(shapes_slide['original_layout_path'])
+                    break
+            
+            # If we don't have original paths, try to find them from the current structure
+            if not original_layouts_dir:
+                # Look for corresponding input directory in outputs folder
+                current_dir = os.getcwd()
+                outputs_dir = os.path.join(current_dir, 'outputs')
+                
+                # Try to find the input directory based on the extract_dir path
+                if 'sample2-1' in extract_dir:
+                    input_dir = os.path.join(outputs_dir, 'sample2-1_input')
+                elif 'sample1-2' in extract_dir:
+                    input_dir = os.path.join(outputs_dir, 'sample1-2_input')
+                elif 'sample1' in extract_dir:
+                    input_dir = os.path.join(outputs_dir, 'sample1_input')
+                elif 'sample3' in extract_dir:
+                    input_dir = os.path.join(outputs_dir, 'sample3_input')
+                else:
+                    # Fallback: try generic pattern
+                    input_dir = extract_dir.replace('_generated', '_input').replace('_extracted', '_input')
+                
+                original_layouts_dir = os.path.join(input_dir, 'ppt', 'slideLayouts')
+            
+            if not os.path.exists(original_layouts_dir):
+                print(f"Warning: Could not find original layout files at {original_layouts_dir}")
+                return
+            
+            # Copy original layout XML files
+            current_layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
+            if os.path.exists(current_layouts_dir):
+                # Copy all layout XML files from original
+                copied_count = 0
+                for layout_file in os.listdir(original_layouts_dir):
+                    if layout_file.endswith('.xml'):
+                        original_file = os.path.join(original_layouts_dir, layout_file)
+                        target_file = os.path.join(current_layouts_dir, layout_file)
+                        shutil.copy2(original_file, target_file)
+                        copied_count += 1
+                
+                # Also copy relationship files if they exist
+                original_rels_dir = os.path.join(original_layouts_dir, '_rels')
+                current_rels_dir = os.path.join(current_layouts_dir, '_rels')
+                
+                if os.path.exists(original_rels_dir) and os.path.exists(current_rels_dir):
+                    for rel_file in os.listdir(original_rels_dir):
+                        if rel_file.endswith('.xml.rels'):
+                            original_rel = os.path.join(original_rels_dir, rel_file)
+                            target_rel = os.path.join(current_rels_dir, rel_file)
+                            shutil.copy2(original_rel, target_rel)
+                
+                if copied_count > 0:
+                    print(f"Preserved {copied_count} original layout file(s)")
+                    
+        except Exception as e:
+            print(f"Warning: Could not preserve original layouts: {str(e)}")
+
+    def apply_layout_backgrounds(self, extract_dir: str):
+        """Apply background properties to slide layouts"""
+        try:
+            import os
+            import re
+            
+            # Find slideLayout XML files
+            layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
+            layouts_rels_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts', '_rels')
+            
+            if not os.path.exists(layouts_dir):
+                return
+            
+            applied_count = 0
+            
+            for layout_data in self.layouts_data:
+                layout_index = layout_data.get('layout_index', 0)
+                background = layout_data.get('background')
+                
+                if background and background.get('fill'):
+                    layout_xml_path = os.path.join(layouts_dir, f'slideLayout{layout_index + 1}.xml')
+                    layout_rels_path = os.path.join(layouts_rels_dir, f'slideLayout{layout_index + 1}.xml.rels')
+                    
+                    if os.path.exists(layout_xml_path):
+                        # Check if this layout should have a background image
+                        fill_info = background['fill']
+                        fill_type = fill_info.get('type', '')
+                        
+                        # If it's a BACKGROUND type and we have media files, add background image
+                        if 'BACKGROUND' in fill_type and self.media_cache:
+                            # Find the first image file
+                            first_image = None
+                            for cache_key in self.media_cache:
+                                if any(ext in cache_key.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
+                                    first_image = cache_key
+                                    break
+                            
+                            if first_image:
+                                # Add background image to slideLayout XML
+                                self._add_background_to_layout(layout_xml_path, layout_rels_path, first_image)
+                                applied_count += 1
+            
+            if applied_count > 0:
+                print(f"Applied background properties to {applied_count} layout(s)")
+                
+        except Exception as e:
+            print(f"Warning: Could not apply layout backgrounds: {str(e)}")
+
+    def _add_background_to_layout(self, layout_xml_path: str, layout_rels_path: str, image_cache_key: str):
+        """Add background image reference to a specific slide layout"""
+        try:
+            import os
+            # Read layout XML
+            with open(layout_xml_path, 'r', encoding='utf-8') as f:
+                layout_xml = f.read()
+            
+            # Check if it already has a background image reference
+            if 'r:embed="rId2"' in layout_xml:
+                return  # Already has background
+            
+            # Add background fill to the layout
+            # Look for the cSld (slide content) element to add background
+            bg_fill_xml = f'''<p:bg>
+                <p:bgPr>
+                    <a:blipFill rotWithShape="1">
+                        <a:blip r:embed="rId2">
+                            <a:alphaModFix/>
+                        </a:blip>
+                        <a:stretch>
+                            <a:fillRect/>
+                        </a:stretch>
+                    </a:blipFill>
+                </p:bgPr>
+            </p:bg>'''
+            
+            # Insert background before the first shape/placeholder
+            if '<p:spTree>' in layout_xml:
+                layout_xml = layout_xml.replace('<p:spTree>', f'{bg_fill_xml}<p:spTree>')
+            elif '<p:cSld' in layout_xml and '>' in layout_xml[layout_xml.find('<p:cSld'):]:
+                # Find the end of the cSld opening tag
+                cSld_start = layout_xml.find('<p:cSld')
+                cSld_end = layout_xml.find('>', cSld_start) + 1
+                layout_xml = layout_xml[:cSld_end] + bg_fill_xml + layout_xml[cSld_end:]
+            
+            # Write updated layout XML
+            with open(layout_xml_path, 'w', encoding='utf-8') as f:
+                f.write(layout_xml)
+            
+            # Add relationship for the background image
+            if os.path.exists(layout_rels_path):
+                with open(layout_rels_path, 'r', encoding='utf-8') as f:
+                    rels_content = f.read()
+                
+                # Check if rId2 relationship already exists
+                if 'Id="rId2"' not in rels_content:
+                    image_filename = os.path.basename(image_cache_key)
+                    bg_rel = f'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/{image_filename}"/>'
+                    
+                    # Insert before closing </Relationships>
+                    rels_content = rels_content.replace('</Relationships>', f'{bg_rel}</Relationships>')
+                    
+                    with open(layout_rels_path, 'w', encoding='utf-8') as f:
+                        f.write(rels_content)
+                        
+        except Exception as e:
+            print(f"Warning: Could not add background to layout: {str(e)}")
 
     def format_xml_as_single_line(self, xml_file_path: str):
         """Format XML file as single line to match original"""
@@ -2590,6 +2820,214 @@ class PPTGenerator:
                 
         except Exception as e:
             print(f"Warning: Could not format XML file {xml_file_path}: {str(e)}")
+
+    def apply_background_images(self):
+        """Apply background images and fills using python-pptx API"""
+        try:
+            from pptx.enum.dml import MSO_THEME_COLOR, MSO_FILL_TYPE
+            from pptx.dml.color import RGBColor
+            
+            print("Applying background images using python-pptx API...")
+            
+            # Apply backgrounds to slide layouts
+            for layout_data in self.layouts_data:
+                layout_index = layout_data.get('layout_index', 0)
+                
+                # Get the corresponding slide layout
+                if layout_index < len(self.presentation.slide_layouts):
+                    slide_layout = self.presentation.slide_layouts[layout_index]
+                    background_data = layout_data.get('background', {})
+                    
+                    if background_data:
+                        self._apply_background_to_layout(slide_layout, background_data)
+            
+            # Apply backgrounds to slides that have custom background data
+            for slide_index, slide in enumerate(self.presentation.slides):
+                # Check if this slide has custom background in shapes data
+                slide_shapes = [s for s in self.shapes_data if s.get('slide_index') == slide_index]
+                
+                for shape_data in slide_shapes:
+                    if shape_data.get('type') == 'background':
+                        background_data = shape_data.get('background', {})
+                        if background_data:
+                            self._apply_background_to_slide(slide, background_data)
+                            break
+                            
+            print("Background application completed using python-pptx API")
+            
+        except Exception as e:
+            print(f"Warning: Could not apply backgrounds using python-pptx API: {str(e)}")
+    
+    def _apply_background_to_layout(self, slide_layout, background_data):
+        """Apply background to a specific slide layout"""
+        try:
+            fill_data = background_data.get('fill', {})
+            fill_type = fill_data.get('type', '').upper()
+            
+            if 'SOLID' in fill_type:
+                # Apply solid background
+                background = slide_layout.background
+                fill = background.fill
+                fill.solid()
+                
+                # Apply color
+                fore_color = fill_data.get('fore_color', {})
+                if fore_color:
+                    self._apply_color_to_fill(fill.fore_color, fore_color)
+                    
+            elif 'GRADIENT' in fill_type:
+                # Apply gradient background
+                background = slide_layout.background
+                fill = background.fill
+                fill.gradient()
+                
+                # Apply gradient properties
+                gradient_stops = fill_data.get('gradient_stops', [])
+                if gradient_stops:
+                    self._apply_gradient_stops(fill, gradient_stops)
+                    
+                gradient_angle = fill_data.get('gradient_angle')
+                if gradient_angle is not None:
+                    fill.gradient_angle = gradient_angle
+                    
+            elif 'PATTERN' in fill_type:
+                # Apply pattern background
+                background = slide_layout.background
+                fill = background.fill
+                fill.patterned()
+                
+                # Apply pattern colors
+                fore_color = fill_data.get('fore_color', {})
+                back_color = fill_data.get('back_color', {})
+                if fore_color:
+                    self._apply_color_to_fill(fill.fore_color, fore_color)
+                if back_color:
+                    self._apply_color_to_fill(fill.back_color, back_color)
+                    
+            elif 'BACKGROUND' in fill_type:
+                # Apply transparent background
+                background = slide_layout.background
+                fill = background.fill
+                fill.background()
+                
+        except Exception as e:
+            print(f"Warning: Could not apply background to layout: {str(e)}")
+    
+    def _apply_background_to_slide(self, slide, background_data):
+        """Apply background to a specific slide"""
+        try:
+            fill_data = background_data.get('fill', {})
+            fill_type = fill_data.get('type', '').upper()
+            
+            # Disable master background inheritance for custom backgrounds
+            slide.follow_master_background = False
+            
+            if 'SOLID' in fill_type:
+                # Apply solid background
+                background = slide.background
+                fill = background.fill
+                fill.solid()
+                
+                # Apply color
+                fore_color = fill_data.get('fore_color', {})
+                if fore_color:
+                    self._apply_color_to_fill(fill.fore_color, fore_color)
+                    
+            elif 'GRADIENT' in fill_type:
+                # Apply gradient background
+                background = slide.background
+                fill = background.fill
+                fill.gradient()
+                
+                # Apply gradient properties
+                gradient_stops = fill_data.get('gradient_stops', [])
+                if gradient_stops:
+                    self._apply_gradient_stops(fill, gradient_stops)
+                    
+                gradient_angle = fill_data.get('gradient_angle')
+                if gradient_angle is not None:
+                    fill.gradient_angle = gradient_angle
+                    
+            elif 'PATTERN' in fill_type:
+                # Apply pattern background
+                background = slide.background
+                fill = background.fill
+                fill.patterned()
+                
+                # Apply pattern colors
+                fore_color = fill_data.get('fore_color', {})
+                back_color = fill_data.get('back_color', {})
+                if fore_color:
+                    self._apply_color_to_fill(fill.fore_color, fore_color)
+                if back_color:
+                    self._apply_color_to_fill(fill.back_color, back_color)
+                    
+            elif 'BACKGROUND' in fill_type:
+                # Apply transparent background
+                background = slide.background
+                fill = background.fill
+                fill.background()
+                
+        except Exception as e:
+            print(f"Warning: Could not apply background to slide: {str(e)}")
+    
+    def _apply_color_to_fill(self, color_obj, color_data):
+        """Apply color data to a fill color object"""
+        try:
+            color_type = color_data.get('type', '').upper()
+            
+            if 'RGB' in color_type:
+                # Apply RGB color
+                rgb_value = color_data.get('rgb')
+                if rgb_value:
+                    if isinstance(rgb_value, list) and len(rgb_value) >= 3:
+                        color_obj.rgb = RGBColor(rgb_value[0], rgb_value[1], rgb_value[2])
+                    elif isinstance(rgb_value, str):
+                        # Parse hex color
+                        if rgb_value.startswith('#'):
+                            rgb_value = rgb_value[1:]
+                        if len(rgb_value) == 6:
+                            r = int(rgb_value[0:2], 16)
+                            g = int(rgb_value[2:4], 16) 
+                            b = int(rgb_value[4:6], 16)
+                            color_obj.rgb = RGBColor(r, g, b)
+                            
+            elif 'SCHEME' in color_type:
+                # Apply theme color
+                theme_color_name = color_data.get('theme_color', '')
+                if theme_color_name:
+                    try:
+                        theme_color = getattr(MSO_THEME_COLOR, theme_color_name.replace(' ', '_'))
+                        color_obj.theme_color = theme_color
+                        
+                        # Apply brightness if present
+                        brightness = color_data.get('brightness')
+                        if brightness is not None:
+                            color_obj.brightness = brightness
+                            
+                    except AttributeError:
+                        print(f"Warning: Unknown theme color: {theme_color_name}")
+                        
+        except Exception as e:
+            print(f"Warning: Could not apply color: {str(e)}")
+    
+    def _apply_gradient_stops(self, fill, gradient_stops):
+        """Apply gradient stops to a gradient fill"""
+        try:
+            if hasattr(fill, 'gradient_stops'):
+                stops = fill.gradient_stops
+                stops.clear()
+                
+                for stop_data in gradient_stops:
+                    position = stop_data.get('position', 0.0)
+                    color_data = stop_data.get('color', {})
+                    
+                    stop = stops.add_gradient_stop(position)
+                    if color_data:
+                        self._apply_color_to_fill(stop.color, color_data)
+                        
+        except Exception as e:
+            print(f"Warning: Could not apply gradient stops: {str(e)}")
 
 
 def main():

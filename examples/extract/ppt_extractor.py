@@ -800,8 +800,16 @@ class PPTExtractor:
             layout_info = {
                 'layout_index': layout_idx,
                 'name': layout.name,
-                'placeholders': []
+                'placeholders': [],
+                'background': None
             }
+
+            # Extract background properties
+            try:
+                if hasattr(layout, 'background') and layout.background:
+                    layout_info['background'] = self.extract_background_properties(layout.background)
+            except Exception as e:
+                layout_info['background'] = {'error': f"Could not extract background: {str(e)}"}
 
             # Extract placeholder information
             for placeholder in layout.placeholders:
