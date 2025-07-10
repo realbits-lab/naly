@@ -134,6 +134,41 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     return [...new Set(textElements)].filter(text => text.trim().length > 0);
   };
 
+  const createArcPath = (shape: Shape, slideIndex: number): string => {
+    if (!shape.adjustments || shape.adjustments.length < 3) return "";
+    
+    const radius = 150; // Base radius for the arc
+    const innerRadius = 60; // Inner radius for donut hole
+    const centerX = 150;
+    const centerY = 150;
+    
+    // Use shape index to determine the arc segment
+    const shapeIndex = shape.shape_index || 0;
+    const segmentAngle = 90; // Each segment is 90 degrees
+    const startAngle = shapeIndex * segmentAngle - 90; // Start from top
+    const endAngle = startAngle + segmentAngle;
+    
+    // Convert to radians
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    
+    // Calculate outer arc points
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
+    
+    // Calculate inner arc points
+    const x3 = centerX + innerRadius * Math.cos(endRad);
+    const y3 = centerY + innerRadius * Math.sin(endRad);
+    const x4 = centerX + innerRadius * Math.cos(startRad);
+    const y4 = centerY + innerRadius * Math.sin(startRad);
+    
+    const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+    
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
+  };
+
   const getFillStyle = (fill: FillInfo | undefined): React.CSSProperties => {
     if (!fill) return {};
     
@@ -265,6 +300,9 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             // Check if it's a GROUP shape
             const isGroupShape = shape.shape_type && shape.shape_type.includes('GROUP');
             
+            // Check if it's a BLOCK_ARC shape (donut chart segment)
+            const isBlockArc = shape.auto_shape_type && shape.auto_shape_type.includes('BLOCK_ARC');
+            
             return (
               <div
                 key={index}
@@ -294,8 +332,25 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   </svg>
                 )}
                 
+                {/* Render BLOCK_ARC shapes as donut chart segments */}
+                {isBlockArc && (
+                  <svg
+                    width="100%"
+                    height="100%"
+                    viewBox="0 0 300 300"
+                    className="absolute inset-0"
+                    style={{ overflow: 'visible' }}
+                  >
+                    <path
+                      d={createArcPath(shape, slide.slide_index)}
+                      fill={fillColor}
+                      stroke="none"
+                    />
+                  </svg>
+                )}
+
                 {/* Render simple shapes without custom geometry and without text */}
-                {!pathData && !isTextShape && fillColor !== "transparent" && (
+                {!pathData && !isTextShape && !isBlockArc && fillColor !== "transparent" && (
                   <div
                     className="absolute inset-0"
                     style={{
