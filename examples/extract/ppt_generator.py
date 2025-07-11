@@ -350,8 +350,10 @@ class PPTGenerator:
             # Set slide size based on extracted properties or default to 16:9
             if hasattr(self, 'document_properties') and self.document_properties and 'slide_size' in self.document_properties:
                 slide_size = self.document_properties['slide_size']
-                self.presentation.slide_width = slide_size['width']  # EMU units
-                self.presentation.slide_height = slide_size['height']  # EMU units
+                # EMU units
+                self.presentation.slide_width = slide_size['width']
+                # EMU units
+                self.presentation.slide_height = slide_size['height']
             else:
                 # Default to proper 16:9 format (10" x 5.625")
                 self.presentation.slide_width = Inches(10)
@@ -390,22 +392,22 @@ class PPTGenerator:
                 if 'theme' in rel.reltype:
                     theme_part = rel.target_part
                     break
-            
+
             if not theme_part:
                 print("Warning: Could not find theme part in presentation")
                 return
 
             # Parse the theme XML
             theme_xml = theme_part.blob
-            
+
             # Register namespaces
             namespaces = {
                 'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'
             }
-            
+
             # Parse XML
             root = ET.fromstring(theme_xml)
-            
+
             # Find color scheme element
             color_scheme = root.find('.//a:clrScheme', namespaces)
             if color_scheme is None:
@@ -413,9 +415,11 @@ class PPTGenerator:
                 return
 
             # Apply extracted theme name if available
-            theme_name = self.theme_data.get('theme_name', 'Design Elements Infographics by Slidesgo')
+            theme_name = self.theme_data.get(
+                'theme_name', 'Design Elements Infographics by Slidesgo')
             root.set('name', theme_name)
-            color_scheme.set('name', theme_name.split(' by ')[0] if ' by ' in theme_name else theme_name)
+            color_scheme.set('name', theme_name.split(' by ')[
+                             0] if ' by ' in theme_name else theme_name)
 
             # Update accent colors with extracted values
             color_mapping = {
@@ -429,25 +433,28 @@ class PPTGenerator:
 
             # Apply extracted colors to theme XML
             for color_name, rgb_value in color_mapping.items():
-                accent_elem = color_scheme.find(f'.//a:{color_name}', namespaces)
+                accent_elem = color_scheme.find(
+                    f'.//a:{color_name}', namespaces)
                 if accent_elem is not None:
                     # Remove existing color element
                     for child in list(accent_elem):
                         accent_elem.remove(child)
-                    
+
                     # Add new srgbClr element with extracted color
-                    srgb_elem = ET.SubElement(accent_elem, f'{{{namespaces["a"]}}}srgbClr')
+                    srgb_elem = ET.SubElement(
+                        accent_elem, f'{{{namespaces["a"]}}}srgbClr')
                     srgb_elem.set('val', rgb_value.upper())
                     print(f"Applied theme color {color_name}: {rgb_value}")
 
             # Convert back to XML string
             ET.register_namespace('a', namespaces['a'])
             modified_xml = ET.tostring(root, encoding='unicode')
-            
+
             # Update the theme part with modified XML
             theme_part._blob = modified_xml.encode('utf-8')
-            
-            print(f"Successfully applied theme colors to theme XML with theme name: {theme_name}")
+
+            print(
+                f"Successfully applied theme colors to theme XML with theme name: {theme_name}")
 
         except Exception as e:
             print(f"Warning: Could not apply theme colors to XML: {str(e)}")
@@ -702,12 +709,13 @@ class PPTGenerator:
         height = Inches(self.emu_to_inches(shape_info['height']))
 
         # Prioritize auto_shape_type over generic shape_type for better accuracy
-        shape_type_str = shape_info.get('auto_shape_type', shape_info.get('shape_type', ''))
-        
+        shape_type_str = shape_info.get(
+            'auto_shape_type', shape_info.get('shape_type', ''))
+
         # Ensure shape_type_str is not None
         if shape_type_str is None:
             shape_type_str = ''
-            
+
         type_number, clean_name = self.parse_shape_type_info(shape_type_str)
 
         # Handle special shape types
@@ -727,7 +735,8 @@ class PPTGenerator:
             if 'FREEFORM' not in shape_type_str:
                 return self.create_custom_geometry_shape(slide, shape_info)
             else:
-                print(f"Skipping custom geometry for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
+                print(
+                    f"Skipping custom geometry for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
 
         # Create auto shape with enhanced mapping
         mso_shape = self.get_shape_type_enum(shape_type_str)
@@ -787,82 +796,93 @@ class PPTGenerator:
     def create_custom_geometry_shape(self, slide, shape_info: Dict[str, Any]):
         """Create shape with custom geometry using exact properties recreation"""
         custom_geom = shape_info.get('custom_geometry', {})
-        
+
         left = Inches(self.emu_to_inches(shape_info['left']))
         top = Inches(self.emu_to_inches(shape_info['top']))
         width = Inches(self.emu_to_inches(shape_info['width']))
         height = Inches(self.emu_to_inches(shape_info['height']))
 
         # Create a base rectangle shape and modify its XML to match original
-        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
-        
+        shape = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE, left, top, width, height)
+
         # Now modify the shape's XML to match the original exactly
         try:
             self.modify_shape_to_match_original(shape, shape_info)
         except Exception as e:
-            print(f"Warning: Could not modify shape to match original: {str(e)}")
+            print(
+                f"Warning: Could not modify shape to match original: {str(e)}")
 
-        print(f"Created custom geometry shape: {shape_info.get('name', 'Unknown')}")
+        print(
+            f"Created custom geometry shape: {shape_info.get('name', 'Unknown')}")
         return shape
 
     def modify_shape_to_match_original(self, shape, shape_info: Dict[str, Any]):
         """Modify shape XML structure to match original exactly"""
         # Skip XML modification for FREEFORM shapes to prevent corruption
-        shape_type_str = shape_info.get('auto_shape_type', shape_info.get('shape_type', ''))
+        shape_type_str = shape_info.get(
+            'auto_shape_type', shape_info.get('shape_type', ''))
         if 'FREEFORM' in str(shape_type_str):
-            print(f"Skipping XML modification for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
+            print(
+                f"Skipping XML modification for FREEFORM shape {shape_info.get('name', 'Unknown')} to prevent corruption")
             return
-            
+
         try:
             from lxml import etree
         except ImportError:
             import xml.etree.ElementTree as etree
-            
+
         # Get shape element
         shape_element = shape.element
-        
+
         # Validate shape element before modification
         if shape_element is None:
-            print(f"Warning: Invalid shape element for {shape_info.get('name', 'Unknown')}")
+            print(
+                f"Warning: Invalid shape element for {shape_info.get('name', 'Unknown')}")
             return
-        
+
         # Parse original XML to get the exact structure
         element_data = shape_info.get('element', {})
         xml_string = element_data.get('xml_string', '')
-        
+
         # Ensure xml_string is not None (handle case where key exists but value is None)
         if xml_string is None:
             xml_string = ''
-        
+
         if xml_string:
             original_element = etree.fromstring(xml_string.encode('utf-8'))
-            
+
             # Note: Removed manual shape ID setting to prevent conflicts
             # python-pptx automatically manages shape IDs to avoid corruption
             shape_name = shape_info.get('name', 'Unknown')
-            
+
             # Replace spPr with original geometry
-            spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
-            original_spPr = original_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
-            
+            spPr = shape_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+            original_spPr = original_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+
             if spPr is not None and original_spPr is not None:
                 # Remove existing spPr
                 shape_element.remove(spPr)
                 # Add original spPr
                 shape_element.insert(1, original_spPr)
-                
+
             # Replace txBody with original
-            txBody = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
-            original_txBody = original_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
-            
+            txBody = shape_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
+            original_txBody = original_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}txBody')
+
             if txBody is not None and original_txBody is not None:
                 # Remove existing txBody
                 shape_element.remove(txBody)
                 # Add original txBody
                 shape_element.append(original_txBody)
-                
+
             # Remove any style element that doesn't exist in original
-            style = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}style')
+            style = shape_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}style')
             if style is not None:
                 shape_element.remove(style)
 
@@ -873,21 +893,22 @@ class PPTGenerator:
         except ImportError:
             # Fallback to standard library
             import xml.etree.ElementTree as etree
-        
+
         # Parse the original shape XML using lxml
         shape_element = etree.fromstring(xml_string.encode('utf-8'))
-        
+
         # Get slide element to insert into
         slide_element = slide.element
-        
+
         # Find the spTree (shape tree) element
-        spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+        spTree = slide_element.find(
+            './/{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
         if spTree is None:
             raise ValueError("Could not find spTree element in slide")
-        
+
         # Insert the original shape element directly into the spTree
         spTree.append(shape_element)
-        
+
         # Find the newly added shape in the shapes collection
         # The shape should be the last one added
         shapes = slide.shapes
@@ -898,63 +919,67 @@ class PPTGenerator:
 
     def create_freeform_from_custom_geometry(self, slide, shape_info: Dict[str, Any], custom_geom: Dict[str, Any]):
         """Create freeform shape using FreeformBuilder from custom geometry data"""
-        
+
         # Get shape dimensions
         left = Inches(self.emu_to_inches(shape_info['left']))
         top = Inches(self.emu_to_inches(shape_info['top']))
         width = Inches(self.emu_to_inches(shape_info['width']))
         height = Inches(self.emu_to_inches(shape_info['height']))
-        
+
         # Process each path in the custom geometry
         paths = custom_geom.get('paths', [])
         if not paths:
             raise ValueError("No paths found in custom geometry")
-        
+
         # Use the first path (most shapes have only one path)
         path = paths[0]
         commands = path.get('commands', [])
-        
+
         if not commands:
             raise ValueError("No commands found in path")
-        
+
         # Get path dimensions for scaling
         path_width = float(path.get('width', 1))
         path_height = float(path.get('height', 1))
-        
+
         # Calculate scaling factors to fit the shape bounds
-        scale_x = width.inches / (path_width / 914400.0) if path_width > 0 else 1.0
-        scale_y = height.inches / (path_height / 914400.0) if path_height > 0 else 1.0
-        
+        scale_x = width.inches / \
+            (path_width / 914400.0) if path_width > 0 else 1.0
+        scale_y = height.inches / \
+            (path_height / 914400.0) if path_height > 0 else 1.0
+
         # Convert custom geometry commands to vertex list for FreeformBuilder
         vertices = []
         current_x, current_y = 0, 0
-        
+
         # Process commands to build vertex list
         for i, command in enumerate(commands):
             cmd_type = command.get('command')
-            
+
             if cmd_type == 'moveTo':
                 # Move to point
                 x = self.scale_coordinate(float(command.get('x', 0)), scale_x)
                 y = self.scale_coordinate(float(command.get('y', 0)), scale_y)
                 current_x, current_y = x, y
                 vertices.append((Inches(x), Inches(y)))
-                
+
             elif cmd_type == 'lnTo':
                 # Line to point
                 x = self.scale_coordinate(float(command.get('x', 0)), scale_x)
                 y = self.scale_coordinate(float(command.get('y', 0)), scale_y)
                 current_x, current_y = x, y
                 vertices.append((Inches(x), Inches(y)))
-                
+
             elif cmd_type == 'cubicBezTo':
                 # Cubic Bezier curve - approximate with line segments
                 points = command.get('points', [])
                 if len(points) >= 3:
                     # Get end point
-                    x3 = self.scale_coordinate(float(points[2].get('x', 0)), scale_x)
-                    y3 = self.scale_coordinate(float(points[2].get('y', 0)), scale_y)
-                    
+                    x3 = self.scale_coordinate(
+                        float(points[2].get('x', 0)), scale_x)
+                    y3 = self.scale_coordinate(
+                        float(points[2].get('y', 0)), scale_y)
+
                     # Approximate curve with intermediate points
                     num_segments = 5  # Number of line segments to approximate curve
                     for j in range(1, num_segments + 1):
@@ -963,17 +988,19 @@ class PPTGenerator:
                         x = current_x + t * (x3 - current_x)
                         y = current_y + t * (y3 - current_y)
                         vertices.append((Inches(x), Inches(y)))
-                    
+
                     current_x, current_y = x3, y3
-                    
+
             elif cmd_type == 'quadBezTo':
                 # Quadratic Bezier curve - approximate with line segments
                 points = command.get('points', [])
                 if len(points) >= 2:
                     # Get end point
-                    x2 = self.scale_coordinate(float(points[1].get('x', 0)), scale_x)
-                    y2 = self.scale_coordinate(float(points[1].get('y', 0)), scale_y)
-                    
+                    x2 = self.scale_coordinate(
+                        float(points[1].get('x', 0)), scale_x)
+                    y2 = self.scale_coordinate(
+                        float(points[1].get('y', 0)), scale_y)
+
                     # Approximate curve with intermediate points
                     num_segments = 3
                     for j in range(1, num_segments + 1):
@@ -981,36 +1008,39 @@ class PPTGenerator:
                         x = current_x + t * (x2 - current_x)
                         y = current_y + t * (y2 - current_y)
                         vertices.append((Inches(x), Inches(y)))
-                    
+
                     current_x, current_y = x2, y2
-                    
+
             elif cmd_type == 'arcTo':
                 # Arc - approximate with line segments
                 points = command.get('points', [])
                 if len(points) >= 1:
-                    x = self.scale_coordinate(float(points[0].get('x', 0)), scale_x)
-                    y = self.scale_coordinate(float(points[0].get('y', 0)), scale_y)
+                    x = self.scale_coordinate(
+                        float(points[0].get('x', 0)), scale_x)
+                    y = self.scale_coordinate(
+                        float(points[0].get('y', 0)), scale_y)
                     current_x, current_y = x, y
                     vertices.append((Inches(x), Inches(y)))
-                    
+
             elif cmd_type == 'close':
                 # Close the path - will be handled by close parameter
                 pass
-        
+
         # Create freeform shape using proper python-pptx API
         if len(vertices) < 2:
             raise ValueError("Not enough vertices to create freeform shape")
-        
+
         # Create the freeform builder
-        builder = slide.shapes.build_freeform(start_x=vertices[0][0], start_y=vertices[0][1], scale=1.0)
-        
+        builder = slide.shapes.build_freeform(
+            start_x=vertices[0][0], start_y=vertices[0][1], scale=1.0)
+
         # Add line segments
         if len(vertices) > 1:
             builder.add_line_segments(vertices[1:], close=True)
-        
+
         # Convert to shape and position it
         freeform = builder.convert_to_shape(origin_x=left, origin_y=top)
-        
+
         return freeform
 
     def scale_coordinate(self, coord_value: float, scale_factor: float) -> float:
@@ -1075,28 +1105,33 @@ class PPTGenerator:
         try:
             width_val = line_info.get('width')
             is_zero_width = width_val == 0
-            
+
             # Handle zero-width lines FIRST before accessing shape.line
             # This prevents python-pptx from initializing default line properties
             if is_zero_width:
                 try:
                     from lxml import etree
                     shape_element = shape.element
-                    spPr = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
+                    spPr = shape_element.find(
+                        './{http://schemas.openxmlformats.org/presentationml/2006/main}spPr')
                     if spPr is not None:
-                        ln = spPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
+                        ln = spPr.find(
+                            './{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
                         if ln is None:
                             # Create ln element if it doesn't exist using lxml
-                            ln = etree.SubElement(spPr, '{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
-                        
+                            ln = etree.SubElement(
+                                spPr, '{http://schemas.openxmlformats.org/drawingml/2006/main}ln')
+
                         # Clear all children and add noFill
                         ln.clear()
-                        noFill = etree.SubElement(ln, '{http://schemas.openxmlformats.org/drawingml/2006/main}noFill')
+                        noFill = etree.SubElement(
+                            ln, '{http://schemas.openxmlformats.org/drawingml/2006/main}noFill')
                         return  # Exit early for zero-width lines
                 except Exception as e:
-                    print(f"Warning: Could not apply noFill for zero-width line: {e}")
+                    print(
+                        f"Warning: Could not apply noFill for zero-width line: {e}")
                 return  # Exit early for zero-width lines
-            
+
             # Only access shape.line for non-zero-width lines
             line = shape.line
 
@@ -1138,7 +1173,6 @@ class PPTGenerator:
                 if fill_info and hasattr(line, 'fill'):
                     self.apply_enhanced_fill(line, fill_info)
 
-
         except Exception as e:
             print(
                 f"Warning: Could not apply enhanced line properties: {str(e)}")
@@ -1170,34 +1204,34 @@ class PPTGenerator:
             # Handle theme colors - use extracted theme colors if available
             elif 'theme_color' in color_info:
                 theme_color_str = color_info['theme_color'].upper()
-                
+
                 # Try to use extracted theme colors first
                 if hasattr(self, 'theme_colors') and self.theme_colors:
                     theme_rgb = None
-                    
+
                     # Map theme color names to our extracted colors
                     theme_color_mapping = {
                         'ACCENT_1': 'accent1',
-                        'ACCENT_2': 'accent2', 
+                        'ACCENT_2': 'accent2',
                         'ACCENT_3': 'accent3',
                         'ACCENT_4': 'accent4',
                         'ACCENT_5': 'accent5',
                         'ACCENT_6': 'accent6',
                         'DARK_1': 'dk1',
                         'DARK_2': 'dk2',
-                        'LIGHT_1': 'lt1', 
+                        'LIGHT_1': 'lt1',
                         'LIGHT_2': 'lt2',
                         'HYPERLINK': 'hlink',
                         'FOLLOWED_HYPERLINK': 'folHlink'
                     }
-                    
+
                     # Find matching theme color
                     for key, theme_key in theme_color_mapping.items():
                         if key in theme_color_str:
                             if theme_key in self.theme_colors and 'rgb' in self.theme_colors[theme_key]:
                                 theme_rgb = self.theme_colors[theme_key]['rgb']
                                 break
-                    
+
                     # Apply extracted theme color as RGB
                     if theme_rgb:
                         try:
@@ -1208,15 +1242,19 @@ class PPTGenerator:
                                 blue = int(hex_color[4:6], 16)
                                 color_obj.rgb = RGBColor(red, green, blue)
                         except Exception as e:
-                            print(f"Warning: Could not apply theme color {theme_rgb}: {str(e)}")
+                            print(
+                                f"Warning: Could not apply theme color {theme_rgb}: {str(e)}")
                             # Fallback to default theme color
-                            self._apply_fallback_theme_color(color_obj, theme_color_str)
+                            self._apply_fallback_theme_color(
+                                color_obj, theme_color_str)
                     else:
                         # Fallback to default theme color
-                        self._apply_fallback_theme_color(color_obj, theme_color_str)
+                        self._apply_fallback_theme_color(
+                            color_obj, theme_color_str)
                 else:
                     # Fallback to default theme color if no extracted colors
-                    self._apply_fallback_theme_color(color_obj, theme_color_str)
+                    self._apply_fallback_theme_color(
+                        color_obj, theme_color_str)
 
             # Apply brightness adjustment
             if 'brightness' in color_info and color_info['brightness'] is not None:
@@ -1276,7 +1314,7 @@ class PPTGenerator:
             p = text_frame.paragraphs[0]
         else:
             p = text_frame.add_paragraph()
-        
+
         # Clear any existing content and add run
         p.clear()
         run = p.add_run()
@@ -1600,7 +1638,8 @@ class PPTGenerator:
                 slide = self.presentation.slides[slide_index]
             else:
                 # Create new slide if needed
-                blank_layout = self.presentation.slide_layouts[-1]  # Usually blank layout
+                # Usually blank layout
+                blank_layout = self.presentation.slide_layouts[-1]
                 slide = self.presentation.slides.add_slide(blank_layout)
 
             # Generate slide with exact XML structure
@@ -1616,7 +1655,7 @@ class PPTGenerator:
         try:
             # Use direct XML replacement approach
             self.replace_slide_xml_content(slide, shapes)
-            
+
         except Exception as e:
             print(f"Warning: Could not recreate XML structure: {str(e)}")
             # Fallback to original method
@@ -1626,50 +1665,55 @@ class PPTGenerator:
                 try:
                     self.create_enhanced_shape(slide, shape_info)
                 except Exception as shape_error:
-                    print(f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(shape_error)}")
+                    print(
+                        f"Warning: Could not create shape {shape_info.get('name', 'Unknown')}: {str(shape_error)}")
 
     def replace_slide_xml_content(self, slide, shapes):
         """Replace entire slide XML content with reconstructed version"""
         try:
             from lxml import etree
-            
+
             # Build the complete slide XML from shape data
             slide_xml = self.build_complete_slide_xml(shapes)
-            
+
             # Clean the XML string to remove invalid characters
             import re
-            slide_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', slide_xml)
-            
+            slide_xml = re.sub(
+                r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', slide_xml)
+
             # Parse the complete XML
             complete_slide = etree.fromstring(slide_xml)
-            
+
             # Get the slide element and replace its content
             slide_element = slide.element
-            
+
             # Clear the current slide content
             slide_element.clear()
-            
+
             # Copy all attributes and content from complete slide
             slide_element.tag = complete_slide.tag
             slide_element.attrib.clear()
             slide_element.attrib.update(complete_slide.attrib)
             slide_element.text = complete_slide.text
             slide_element.tail = complete_slide.tail
-            
+
             # Copy all children
             for child in complete_slide:
                 slide_element.append(child)
-            
+
             # Handle fallback shapes that couldn't be added via XML
             if hasattr(self, 'fallback_shapes') and self.fallback_shapes:
-                print(f"Creating {len(self.fallback_shapes)} fallback shapes...")
+                print(
+                    f"Creating {len(self.fallback_shapes)} fallback shapes...")
                 for shape_info in self.fallback_shapes:
                     try:
                         self.create_enhanced_shape(slide, shape_info)
-                        print(f"  Created fallback shape: {shape_info.get('name', 'unknown')}")
+                        print(
+                            f"  Created fallback shape: {shape_info.get('name', 'unknown')}")
                     except Exception as fallback_error:
-                        print(f"  Warning: Could not create fallback shape {shape_info.get('name', 'unknown')}: {str(fallback_error)}")
-                
+                        print(
+                            f"  Warning: Could not create fallback shape {shape_info.get('name', 'unknown')}: {str(fallback_error)}")
+
         except Exception as e:
             print(f"Warning: Could not replace slide XML content: {str(e)}")
 
@@ -1684,7 +1728,7 @@ class PPTGenerator:
             else:
                 group_id = 1
                 group_name = ''
-            
+
             # Build the basic slide structure (without XML declaration for lxml parsing)
             slide_xml = f'''<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
     <p:cSld>
@@ -1702,18 +1746,19 @@ class PPTGenerator:
                     <a:chExt cx="0" cy="0"/>
                 </a:xfrm>
             </p:grpSpPr>'''
-            
+
             # Track shapes that need fallback creation
             self.fallback_shapes = []
-            
+
             # Add all shapes
             for shape_info in sorted(shapes, key=lambda x: x.get('shape_index', 0)):
                 element_data = shape_info.get('element', {})
                 xml_string = element_data.get('xml_string', '')
-                
+
                 if xml_string:
                     # Clean the XML string
-                    cleaned_xml = self.clean_relationship_references(xml_string)
+                    cleaned_xml = self.clean_relationship_references(
+                        xml_string)
                     if cleaned_xml.strip() and cleaned_xml not in ["USE_FALLBACK", "CREATE_PICTURE"]:
                         # Remove XML declaration if present
                         if cleaned_xml.startswith('<?xml'):
@@ -1721,13 +1766,15 @@ class PPTGenerator:
                         slide_xml += '\n            ' + cleaned_xml
                     elif cleaned_xml == "USE_FALLBACK":
                         # Track this shape for fallback creation
-                        print(f"Marking shape for fallback creation: {shape_info.get('name', 'unknown')}")
+                        print(
+                            f"Marking shape for fallback creation: {shape_info.get('name', 'unknown')}")
                         self.fallback_shapes.append(shape_info)
                     elif cleaned_xml == "CREATE_PICTURE":
                         # Track this shape for enhanced picture creation
-                        print(f"Marking shape for enhanced picture creation: {shape_info.get('name', 'unknown')}")
+                        print(
+                            f"Marking shape for enhanced picture creation: {shape_info.get('name', 'unknown')}")
                         self.fallback_shapes.append(shape_info)
-            
+
             # Close the slide structure
             slide_xml += '''
         </p:spTree>
@@ -1736,9 +1783,9 @@ class PPTGenerator:
         <a:masterClrMapping/>
     </p:clrMapOvr>
 </p:sld>'''
-            
+
             return slide_xml
-            
+
         except Exception as e:
             print(f"Warning: Could not build complete slide XML: {str(e)}")
             return None
@@ -1748,11 +1795,11 @@ class PPTGenerator:
         try:
             # Set namespaces using proper ElementTree method
             import xml.etree.ElementTree as ET
-            
+
             # Register namespaces
             namespaces = {
                 'a': "http://schemas.openxmlformats.org/drawingml/2006/main",
-                'r': "http://schemas.openxmlformats.org/officeDocument/2006/relationships", 
+                'r': "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
                 'mc': "http://schemas.openxmlformats.org/markup-compatibility/2006",
                 'mv': "urn:schemas-microsoft-com:mac:vml",
                 'p': "http://schemas.openxmlformats.org/presentationml/2006/main",
@@ -1766,18 +1813,18 @@ class PPTGenerator:
                 'p15': "http://schemas.microsoft.com/office/powerpoint/2012/main",
                 'ahyp': "http://schemas.microsoft.com/office/drawing/2018/hyperlinkcolor"
             }
-            
+
             # Register namespaces with ElementTree
             for prefix, uri in namespaces.items():
                 ET.register_namespace(prefix, uri)
-            
+
         except Exception as e:
             print(f"Warning: Could not set namespaces: {str(e)}")
 
     def clean_relationship_references(self, xml_string):
         """Clean XML to remove relationship references that cause corruption"""
         import re
-        
+
         # Only flag truly problematic references, not legitimate picture/media references
         # Picture shapes with rId3/rId4 are legitimate and should be preserved
         if '<p:pic' in xml_string and ('rId3' in xml_string or 'rId4' in xml_string):
@@ -1789,40 +1836,43 @@ class PPTGenerator:
             # but first let's see if this is actually problematic
             if '<p:grpSp' in xml_string or '<p:cxnSp' in xml_string:
                 # Group shapes and connector shapes with these references might be problematic
-                print(f"Found shape with potentially problematic relationship references (rId3/rId4) - will use fallback creation")
+                print(
+                    f"Found shape with potentially problematic relationship references (rId3/rId4) - will use fallback creation")
                 return "USE_FALLBACK"
-        
+
         return xml_string
 
     def _copy_element_recursive(self, parent, source_element, root_element):
         """Recursively copy XML element structure using compatible element creation"""
         try:
             # Create new element using parent's context
-            new_element = root_element.makeelement(source_element.tag, source_element.attrib)
+            new_element = root_element.makeelement(
+                source_element.tag, source_element.attrib)
             new_element.text = source_element.text
             new_element.tail = source_element.tail
-            
+
             # Copy all children recursively
             for child in source_element:
                 self._copy_element_recursive(new_element, child, root_element)
-            
+
             parent.append(new_element)
         except Exception as e:
-            print(f"Warning: Could not copy element {source_element.tag}: {str(e)}")
+            print(
+                f"Warning: Could not copy element {source_element.tag}: {str(e)}")
 
     def add_shape_from_xml(self, spTree, shape_info):
         """Add shape directly from XML string to preserve exact structure"""
         try:
             from lxml import etree as ET
-            
+
             # Get the original XML string from element data
             element_data = shape_info.get('element', {})
             xml_string = element_data.get('xml_string', '')
-            
+
             # Ensure xml_string is not None (handle case where key exists but value is None)
             if xml_string is None:
                 xml_string = ''
-            
+
             if xml_string:
                 # Parse the original XML
                 try:
@@ -1830,58 +1880,63 @@ class PPTGenerator:
                     xml_string = xml_string.strip()
                     if not xml_string.startswith('<'):
                         return
-                    
+
                     # Remove invalid characters that might cause parsing issues
                     import re
                     # Remove control characters except tab, newline, carriage return
-                    xml_string = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_string)
-                    
+                    xml_string = re.sub(
+                        r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_string)
+
                     # Clean relationship references that might cause corruption
                     xml_string = self.clean_relationship_references(xml_string)
-                    
+
                     # Skip if XML was cleaned to empty string (problematic shape)
                     if not xml_string.strip():
                         return
-                    
+
                     # Use fallback creation for shapes with problematic references
                     if xml_string == "USE_FALLBACK":
-                        print(f"Using fallback creation for shape: {shape_info.get('shape_type', 'unknown')}")
+                        print(
+                            f"Using fallback creation for shape: {shape_info.get('shape_type', 'unknown')}")
                         self.create_enhanced_shape(slide, shape_info)
                         return
                     elif xml_string == "CREATE_PICTURE":
-                        print(f"Using enhanced picture creation for shape: {shape_info.get('shape_type', 'unknown')}")
+                        print(
+                            f"Using enhanced picture creation for shape: {shape_info.get('shape_type', 'unknown')}")
                         self.create_enhanced_picture(slide, shape_info)
                         return
-                    
+
                     # Use python-pptx's internal XML handling approach
                     # Convert the XML string to ElementTree and inject it using lxml
                     from lxml import etree
-                    
+
                     # Parse the XML string using lxml first
                     temp_element = etree.fromstring(xml_string)
-                    
+
                     # Convert lxml element to string and re-parse with python-pptx compatible method
                     xml_str = etree.tostring(temp_element, encoding='unicode')
-                    
+
                     # Use spTree's underlying lxml parser to create compatible elements
                     doc = etree.fromstring(f"<root>{xml_str}</root>")
                     new_shape = doc[0]  # Get the first child (our shape)
-                    
+
                     # Append to spTree
                     spTree.append(new_shape)
-                    
-                    print(f"Added shape from XML: {shape_info.get('name', 'Unknown')}")
-                    
+
+                    print(
+                        f"Added shape from XML: {shape_info.get('name', 'Unknown')}")
+
                 except Exception as e:
-                    print(f"Warning: Could not parse XML for shape {shape_info.get('name', 'Unknown')}: {str(e)}")
+                    print(
+                        f"Warning: Could not parse XML for shape {shape_info.get('name', 'Unknown')}: {str(e)}")
                     # Fallback to enhanced shape creation
                     slide = self.presentation.slides[-1]  # Get current slide
                     self.create_enhanced_shape(slide, shape_info)
             else:
                 # Fallback if no XML string available
-                slide = self.presentation.slides[-1]  # Get current slide  
+                slide = self.presentation.slides[-1]  # Get current slide
                 self.create_enhanced_shape(slide, shape_info)
-                
+
         except Exception as e:
             print(f"Warning: Could not add shape from XML: {str(e)}")
             # Fallback to enhanced shape creation
@@ -1893,22 +1948,26 @@ class PPTGenerator:
         try:
             # Get slide element
             slide_element = slide.element
-            
-            # Find the spTree element  
-            spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+
+            # Find the spTree element
+            spTree = slide_element.find(
+                './/{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
             if spTree is None:
                 return
-                
+
             # Find nvGrpSpPr and grpSpPr elements
-            nvGrpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
-            grpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr')
-            
+            nvGrpSpPr = spTree.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
+            grpSpPr = spTree.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr')
+
             if nvGrpSpPr is not None:
                 # Fix the cNvPr name attribute
-                cNvPr = nvGrpSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
+                cNvPr = nvGrpSpPr.find(
+                    './{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
                 if cNvPr is not None:
                     cNvPr.set('name', 'Shape 54')
-                    
+
             if grpSpPr is not None:
                 # Create the xfrm XML string and parse it
                 xfrm_xml = '''<a:xfrm xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
@@ -1917,22 +1976,23 @@ class PPTGenerator:
                     <a:chOff x="0" y="0"/>
                     <a:chExt cx="0" cy="0"/>
                 </a:xfrm>'''
-                
+
                 try:
                     from lxml import etree
                 except ImportError:
                     import xml.etree.ElementTree as etree
-                    
+
                 xfrm_element = etree.fromstring(xfrm_xml.encode('utf-8'))
-                
+
                 # Remove any existing xfrm element
-                existing_xfrm = grpSpPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
+                existing_xfrm = grpSpPr.find(
+                    './{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
                 if existing_xfrm is not None:
                     grpSpPr.remove(existing_xfrm)
-                    
+
                 # Insert the new xfrm element
                 grpSpPr.insert(0, xfrm_element)
-                
+
         except Exception as e:
             print(f"Warning: Could not fix slide structure: {str(e)}")
 
@@ -1959,7 +2019,7 @@ class PPTGenerator:
         """Apply shape adjustment values for auto shapes"""
         if not adjustments or not hasattr(shape, 'adjustments'):
             return
-        
+
         try:
             # Adjustments is typically a list of float values
             if isinstance(adjustments, list) and len(adjustments) > 0:
@@ -1967,9 +2027,9 @@ class PPTGenerator:
                 for i, adj_value in enumerate(adjustments):
                     if i < len(shape.adjustments):
                         # For PIE shapes: empirical mapping to match exact target values
-                        # Target: 198.64621 -> 19864621, 0.7332 -> 73320 
+                        # Target: 198.64621 -> 19864621, 0.7332 -> 73320
                         # Empirical observation: system applies 100000x scaling, so we need adj_value / 10
-                        # Use round() for more precise conversion 
+                        # Use round() for more precise conversion
                         shape.adjustments[i] = round(adj_value)
         except Exception as e:
             print(f"Warning: Could not apply shape adjustments: {str(e)}")
@@ -1979,7 +2039,8 @@ class PPTGenerator:
         try:
             shape_element = shape.element
             # Remove p:style element if it exists
-            style = shape_element.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}style')
+            style = shape_element.find(
+                './{http://schemas.openxmlformats.org/presentationml/2006/main}style')
             if style is not None:
                 shape_element.remove(style)
         except Exception as e:
@@ -1989,49 +2050,60 @@ class PPTGenerator:
         """Fix slide group shape properties to match original format"""
         try:
             slide_element = slide.element
-            spTree = slide_element.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
+            spTree = slide_element.find(
+                './/{http://schemas.openxmlformats.org/presentationml/2006/main}spTree')
             if spTree is not None:
                 # Find the group shape properties
-                grpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr')
+                grpSpPr = spTree.find(
+                    './{http://schemas.openxmlformats.org/presentationml/2006/main}grpSpPr')
                 if grpSpPr is not None:
                     # Check if xfrm exists, if not create it
-                    xfrm = grpSpPr.find('./{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
+                    xfrm = grpSpPr.find(
+                        './{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
                     if xfrm is None:
                         # Create complete transform like original
                         import xml.etree.ElementTree as ET
-                        xfrm = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
-                        
+                        xfrm = ET.Element(
+                            '{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
+
                         # Add offset
-                        off = ET.SubElement(xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}off')
+                        off = ET.SubElement(
+                            xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}off')
                         off.set('x', '0')
                         off.set('y', '0')
-                        
-                        # Add extents  
-                        ext = ET.SubElement(xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}ext')
-                        ext.set('cx', '0') 
+
+                        # Add extents
+                        ext = ET.SubElement(
+                            xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}ext')
+                        ext.set('cx', '0')
                         ext.set('cy', '0')
-                        
+
                         # Add child offset
-                        chOff = ET.SubElement(xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}chOff')
+                        chOff = ET.SubElement(
+                            xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}chOff')
                         chOff.set('x', '0')
                         chOff.set('y', '0')
-                        
+
                         # Add child extents
-                        chExt = ET.SubElement(xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}chExt')
+                        chExt = ET.SubElement(
+                            xfrm, '{http://schemas.openxmlformats.org/drawingml/2006/main}chExt')
                         chExt.set('cx', '0')
                         chExt.set('cy', '0')
-                        
+
                         # Insert xfrm as first child
                         grpSpPr.insert(0, xfrm)
 
                 # Also update the group name to match original
-                nvGrpSpPr = spTree.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
+                nvGrpSpPr = spTree.find(
+                    './{http://schemas.openxmlformats.org/presentationml/2006/main}nvGrpSpPr')
                 if nvGrpSpPr is not None:
-                    cNvPr = nvGrpSpPr.find('./{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
+                    cNvPr = nvGrpSpPr.find(
+                        './{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
                     if cNvPr is not None:
-                        cNvPr.set('name', 'Shape 54')  # Match original group name
+                        # Match original group name
+                        cNvPr.set('name', 'Shape 54')
                         cNvPr.set('id', '1')  # Match original group ID
-                        
+
         except Exception as e:
             print(f"Warning: Could not fix slide group properties: {str(e)}")
 
@@ -2141,22 +2213,28 @@ class PPTGenerator:
                                 if cache_key.endswith(media_key):
                                     media_info = cache_value
                                     break
-                            
+
                             # If still not found, try fuzzy matching (e.g., "image.png" -> "image1.png")
                             if not media_info:
-                                media_key_base = media_key.split('.')[0] if '.' in media_key else media_key
-                                media_key_ext = media_key.split('.')[-1] if '.' in media_key else ''
+                                media_key_base = media_key.split(
+                                    '.')[0] if '.' in media_key else media_key
+                                media_key_ext = media_key.split(
+                                    '.')[-1] if '.' in media_key else ''
                                 for cache_key, cache_value in images.items():
-                                    cache_filename = cache_key.split('/')[-1]  # Get filename from path
-                                    cache_base = cache_filename.split('.')[0] if '.' in cache_filename else cache_filename
-                                    cache_ext = cache_filename.split('.')[-1] if '.' in cache_filename else ''
-                                    
+                                    cache_filename = cache_key.split(
+                                        '/')[-1]  # Get filename from path
+                                    cache_base = cache_filename.split(
+                                        '.')[0] if '.' in cache_filename else cache_filename
+                                    cache_ext = cache_filename.split(
+                                        '.')[-1] if '.' in cache_filename else ''
+
                                     # Match if base name is similar (e.g., "image" matches "image1")
                                     if (cache_base.startswith(media_key_base) or media_key_base.startswith(cache_base)) and cache_ext == media_key_ext:
                                         media_info = cache_value
-                                        print(f"Found fuzzy match: {media_key} -> {cache_key}")
+                                        print(
+                                            f"Found fuzzy match: {media_key} -> {cache_key}")
                                         break
-            
+
             if media_info:
                 image_data_b64 = media_info.get('data')
 
@@ -2227,15 +2305,15 @@ class PPTGenerator:
         """Save the presentation to file"""
         # Apply background images using python-pptx API before saving
         self.apply_background_images()
-        
+
         self.presentation.save(output_file)
-        
+
         # Post-process XML to match original format
         self.post_process_xml_format(output_file)
-        
+
         # Add media and font files to the PPTX structure
         self.embed_media_and_fonts(output_file)
-        
+
         print(f"\nPresentation saved to: {output_file}")
         print(f"Total slides: {len(self.presentation.slides)}")
 
@@ -2246,7 +2324,7 @@ class PPTGenerator:
             import tempfile
             import shutil
             import os
-            
+
             # Determine original file path
             original_file = None
             if 'sample2-1' in output_file:
@@ -2257,47 +2335,53 @@ class PPTGenerator:
                 original_file = 'sample_parts/sample1.pptx'
             elif 'sample3' in output_file:
                 original_file = 'sample_parts/sample3.pptx'
-            
+
             if not original_file or not os.path.exists(original_file):
                 return
-            
+
             # Extract current PPTX
             temp_dir = tempfile.mkdtemp()
             extract_dir = os.path.join(temp_dir, 'current_pptx')
-            
+
             with zipfile.ZipFile(output_file, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
-            
+
             # Extract original PPTX layouts
             original_temp_dir = os.path.join(temp_dir, 'original_pptx')
             with zipfile.ZipFile(original_file, 'r') as zip_ref:
                 zip_ref.extractall(original_temp_dir)
-            
+
             # Copy layout files
-            original_layouts_dir = os.path.join(original_temp_dir, 'ppt', 'slideLayouts')
-            current_layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
-            
+            original_layouts_dir = os.path.join(
+                original_temp_dir, 'ppt', 'slideLayouts')
+            current_layouts_dir = os.path.join(
+                extract_dir, 'ppt', 'slideLayouts')
+
             copied_count = 0
             if os.path.exists(original_layouts_dir) and os.path.exists(current_layouts_dir):
                 # Copy XML files
                 for layout_file in os.listdir(original_layouts_dir):
                     if layout_file.endswith('.xml'):
-                        original_path = os.path.join(original_layouts_dir, layout_file)
-                        target_path = os.path.join(current_layouts_dir, layout_file)
+                        original_path = os.path.join(
+                            original_layouts_dir, layout_file)
+                        target_path = os.path.join(
+                            current_layouts_dir, layout_file)
                         shutil.copy2(original_path, target_path)
                         copied_count += 1
-                
+
                 # Copy relationship files
                 original_rels = os.path.join(original_layouts_dir, '_rels')
                 current_rels = os.path.join(current_layouts_dir, '_rels')
-                
+
                 if os.path.exists(original_rels) and os.path.exists(current_rels):
                     for rel_file in os.listdir(original_rels):
                         if rel_file.endswith('.xml.rels'):
-                            original_rel_path = os.path.join(original_rels, rel_file)
-                            target_rel_path = os.path.join(current_rels, rel_file)
+                            original_rel_path = os.path.join(
+                                original_rels, rel_file)
+                            target_rel_path = os.path.join(
+                                current_rels, rel_file)
                             shutil.copy2(original_rel_path, target_rel_path)
-            
+
             # Recreate the PPTX file
             if copied_count > 0:
                 new_pptx_path = output_file + '.tmp'
@@ -2308,14 +2392,15 @@ class PPTGenerator:
                             arcname = os.path.relpath(file_path, extract_dir)
                             arcname = arcname.replace(os.sep, '/')
                             zip_out.write(file_path, arcname)
-                
+
                 # Replace original file
                 shutil.move(new_pptx_path, output_file)
-                print(f"Preserved {copied_count} original layout file(s) with background images")
-            
+                print(
+                    f"Preserved {copied_count} original layout file(s) with background images")
+
             # Cleanup
             shutil.rmtree(temp_dir)
-            
+
         except Exception as e:
             print(f"Warning: Could not copy original layouts: {str(e)}")
 
@@ -2326,14 +2411,14 @@ class PPTGenerator:
             import tempfile
             import shutil
             import os
-            
+
             # Extract PPTX to temp directory
             temp_dir = tempfile.mkdtemp()
             extract_dir = os.path.join(temp_dir, 'pptx_contents')
-            
+
             with zipfile.ZipFile(pptx_file, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
-            
+
             # Process all slide XML files
             slides_dir = os.path.join(extract_dir, 'ppt', 'slides')
             if os.path.exists(slides_dir):
@@ -2341,7 +2426,7 @@ class PPTGenerator:
                     if slide_file.endswith('.xml'):
                         slide_path = os.path.join(slides_dir, slide_file)
                         self.format_xml_as_single_line(slide_path)
-            
+
             # Recreate PPTX file
             new_pptx_path = pptx_file + '.tmp'
             with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
@@ -2350,13 +2435,13 @@ class PPTGenerator:
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, extract_dir)
                         zip_out.write(file_path, arcname)
-            
+
             # Replace original file
             shutil.move(new_pptx_path, pptx_file)
-            
+
             # Cleanup
             shutil.rmtree(temp_dir)
-            
+
         except Exception as e:
             print(f"Warning: Could not post-process XML format: {str(e)}")
 
@@ -2364,29 +2449,29 @@ class PPTGenerator:
         """Embed media and font files into the PPTX structure"""
         if not self.media_cache:
             return
-            
+
         try:
             import zipfile
             import tempfile
             import shutil
             import os
-            
+
             # Extract PPTX to temp directory
             temp_dir = tempfile.mkdtemp()
             extract_dir = os.path.join(temp_dir, 'pptx_contents')
-            
+
             with zipfile.ZipFile(pptx_file, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
-            
+
             # Create media and fonts directories
             ppt_dir = os.path.join(extract_dir, 'ppt')
             media_dir = os.path.join(ppt_dir, 'media')
             fonts_dir = os.path.join(ppt_dir, 'fonts')
-            
+
             # Create directories if they don't exist
             os.makedirs(media_dir, exist_ok=True)
             os.makedirs(fonts_dir, exist_ok=True)
-            
+
             # Embed media and font files
             embedded_count = 0
             for file_path, file_info in self.media_cache.items():
@@ -2394,38 +2479,43 @@ class PPTGenerator:
                     try:
                         # Decode base64 data
                         file_data = base64.b64decode(file_info['data'])
-                        
+
                         # Determine target path
                         if file_path.startswith('ppt/'):
-                            target_path = os.path.join(extract_dir, file_path.replace('/', os.sep))
+                            target_path = os.path.join(
+                                extract_dir, file_path.replace('/', os.sep))
                         else:
                             # Handle cases where the path doesn't start with ppt/
                             if 'font' in file_path.lower() or file_path.endswith('.fntdata'):
-                                target_path = os.path.join(fonts_dir, os.path.basename(file_path))
+                                target_path = os.path.join(
+                                    fonts_dir, os.path.basename(file_path))
                             else:
-                                target_path = os.path.join(media_dir, os.path.basename(file_path))
-                        
+                                target_path = os.path.join(
+                                    media_dir, os.path.basename(file_path))
+
                         # Create directory if needed
-                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                        
+                        os.makedirs(os.path.dirname(
+                            target_path), exist_ok=True)
+
                         # Write file
                         with open(target_path, 'wb') as f:
                             f.write(file_data)
-                        
+
                         embedded_count += 1
-                        
+
                     except Exception as e:
-                        print(f"Warning: Could not embed file {file_path}: {str(e)}")
-            
+                        print(
+                            f"Warning: Could not embed file {file_path}: {str(e)}")
+
             # Update Content_Types.xml to include media file types
             self.update_content_types(extract_dir)
-            
+
             # Update relationship files to include media references
             self.update_relationship_files(extract_dir)
-            
+
             # For now, skip layout preservation as it needs better input tracking
             # self.preserve_original_layouts(extract_dir)
-            
+
             # Recreate PPTX file with embedded media and fonts
             new_pptx_path = pptx_file + '.tmp'
             with zipfile.ZipFile(new_pptx_path, 'w', zipfile.ZIP_DEFLATED) as zip_out:
@@ -2436,16 +2526,17 @@ class PPTGenerator:
                         # Normalize path separators for ZIP format
                         arcname = arcname.replace(os.sep, '/')
                         zip_out.write(file_path, arcname)
-            
+
             # Replace original file
             shutil.move(new_pptx_path, pptx_file)
-            
+
             # Clean up
             shutil.rmtree(temp_dir)
-            
+
             if embedded_count > 0:
-                print(f"Successfully embedded {embedded_count} media/font file(s)")
-                
+                print(
+                    f"Successfully embedded {embedded_count} media/font file(s)")
+
         except Exception as e:
             print(f"Warning: Could not embed media and fonts: {str(e)}")
 
@@ -2453,16 +2544,17 @@ class PPTGenerator:
         """Update [Content_Types].xml to include media file content types"""
         try:
             import os
-            content_types_path = os.path.join(extract_dir, '[Content_Types].xml')
-            
+            content_types_path = os.path.join(
+                extract_dir, '[Content_Types].xml')
+
             if not os.path.exists(content_types_path):
                 print("Warning: [Content_Types].xml not found")
                 return
-            
+
             # Read existing content types
             with open(content_types_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             # Define content type mappings for common media types
             media_content_types = {
                 '.png': 'image/png',
@@ -2479,32 +2571,34 @@ class PPTGenerator:
                 '.mov': 'video/quicktime',
                 '.fntdata': 'application/x-font-data'
             }
-            
+
             # Check what extensions are already defined
             existing_extensions = []
             import re
             for match in re.finditer(r'<Default Extension="([^"]+)"', content):
                 existing_extensions.append(match.group(1))
-            
+
             # Add missing content type definitions
             additions = []
             for ext, content_type in media_content_types.items():
                 ext_clean = ext.lstrip('.')
                 if ext_clean not in existing_extensions:
-                    additions.append(f'  <Default Extension="{ext_clean}" ContentType="{content_type}"/>')
-            
+                    additions.append(
+                        f'  <Default Extension="{ext_clean}" ContentType="{content_type}"/>')
+
             if additions:
                 # Find the insertion point (before closing </Types>)
                 if '</Types>' in content:
                     new_defaults = '\n'.join(additions)
-                    content = content.replace('</Types>', f'{new_defaults}\n</Types>')
-                    
+                    content = content.replace(
+                        '</Types>', f'{new_defaults}\n</Types>')
+
                     # Write updated content
                     with open(content_types_path, 'w', encoding='utf-8') as f:
                         f.write(content)
-                    
+
                     print(f"Added {len(additions)} content type definition(s)")
-                
+
         except Exception as e:
             print(f"Warning: Could not update content types: {str(e)}")
 
@@ -2513,26 +2607,29 @@ class PPTGenerator:
         try:
             import os
             import re
-            
+
             relationships_added = 0
-            
+
             # Process slide relationship files
-            slides_rels_dir = os.path.join(extract_dir, 'ppt', 'slides', '_rels')
+            slides_rels_dir = os.path.join(
+                extract_dir, 'ppt', 'slides', '_rels')
             if os.path.exists(slides_rels_dir):
                 relationships_added += self._process_relationship_directory(
                     slides_rels_dir, extract_dir, 'slide'
                 )
-            
-            # Process slide layout relationship files  
-            layouts_rels_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts', '_rels')
+
+            # Process slide layout relationship files
+            layouts_rels_dir = os.path.join(
+                extract_dir, 'ppt', 'slideLayouts', '_rels')
             if os.path.exists(layouts_rels_dir):
                 relationships_added += self._process_relationship_directory(
                     layouts_rels_dir, extract_dir, 'slideLayout'
                 )
-            
+
             if relationships_added > 0:
-                print(f"Added {relationships_added} relationship definition(s)")
-                
+                print(
+                    f"Added {relationships_added} relationship definition(s)")
+
         except Exception as e:
             print(f"Warning: Could not update relationship files: {str(e)}")
 
@@ -2540,29 +2637,32 @@ class PPTGenerator:
         """Process relationship files in a specific directory"""
         import os
         import re
-        
+
         relationships_added = 0
-        
+
         # Process each relationship file
         for rel_file in os.listdir(rels_dir):
             if rel_file.endswith('.xml.rels'):
                 rel_path = os.path.join(rels_dir, rel_file)
-                
+
                 if file_type == 'slide':
-                    file_num = rel_file.replace('slide', '').replace('.xml.rels', '')
+                    file_num = rel_file.replace(
+                        'slide', '').replace('.xml.rels', '')
                 else:  # slideLayout
-                    file_num = rel_file.replace('slideLayout', '').replace('.xml.rels', '')
-                
+                    file_num = rel_file.replace(
+                        'slideLayout', '').replace('.xml.rels', '')
+
                 # Read current relationships
                 with open(rel_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
+
                 # Find what rIds are referenced in the corresponding XML file
                 referenced_rids = set()
-                
+
                 if file_type == 'slide':
                     # For slides, check shapes data
-                    slide_index = int(file_num) - 1 if file_num.isdigit() else 0
+                    slide_index = int(file_num) - \
+                        1 if file_num.isdigit() else 0
                     if slide_index < len(self.shapes_data):
                         slide_data = self.shapes_data[slide_index]
                         for shape_info in slide_data.get('shapes', []):
@@ -2575,7 +2675,8 @@ class PPTGenerator:
                                         referenced_rids.add(group)
                 else:
                     # For slideLayouts, check the layout XML file directly
-                    layout_xml_path = os.path.join(extract_dir, 'ppt', 'slideLayouts', f'slideLayout{file_num}.xml')
+                    layout_xml_path = os.path.join(
+                        extract_dir, 'ppt', 'slideLayouts', f'slideLayout{file_num}.xml')
                     if os.path.exists(layout_xml_path):
                         with open(layout_xml_path, 'r', encoding='utf-8') as f:
                             layout_xml = f.read()
@@ -2584,10 +2685,10 @@ class PPTGenerator:
                             for group in match.groups():
                                 if group:
                                     referenced_rids.add(group)
-                
+
                 # Add missing relationships for referenced rIds
                 new_relationships = []
-                
+
                 for rid in sorted(referenced_rids, key=lambda x: int(x.replace('rId', ''))):
                     if rid not in content:
                         # Check if this rId should point to a media file
@@ -2598,25 +2699,26 @@ class PPTGenerator:
                                 if any(ext in cache_key.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
                                     first_image = cache_key
                                     break
-                            
+
                             if first_image:
                                 target_path = f"../media/{os.path.basename(first_image)}"
                                 new_relationships.append(
                                     f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="{target_path}"/>'
                                 )
-                
+
                 # Add new relationships to the file
                 if new_relationships:
                     # Insert before closing </Relationships>
                     new_rels_xml = ''.join(new_relationships)
-                    updated_content = content.replace('</Relationships>', f'{new_rels_xml}</Relationships>')
-                    
+                    updated_content = content.replace(
+                        '</Relationships>', f'{new_rels_xml}</Relationships>')
+
                     # Write updated content
                     with open(rel_path, 'w', encoding='utf-8') as f:
                         f.write(updated_content)
-                    
+
                     relationships_added += len(new_relationships)
-        
+
         return relationships_added
 
     def preserve_original_layouts(self, extract_dir: str):
@@ -2624,22 +2726,23 @@ class PPTGenerator:
         try:
             import os
             import shutil
-            
+
             # Find original layout files from input
             original_layouts_dir = None
-            
+
             # Check if we have original layout files extracted
             for shapes_slide in self.shapes_data:
                 if 'original_layout_path' in shapes_slide:
-                    original_layouts_dir = os.path.dirname(shapes_slide['original_layout_path'])
+                    original_layouts_dir = os.path.dirname(
+                        shapes_slide['original_layout_path'])
                     break
-            
+
             # If we don't have original paths, try to find them from the current structure
             if not original_layouts_dir:
                 # Look for corresponding input directory in outputs folder
                 current_dir = os.getcwd()
                 outputs_dir = os.path.join(current_dir, 'outputs')
-                
+
                 # Try to find the input directory based on the extract_dir path
                 if 'sample2-1' in extract_dir:
                     input_dir = os.path.join(outputs_dir, 'sample2-1_input')
@@ -2651,40 +2754,48 @@ class PPTGenerator:
                     input_dir = os.path.join(outputs_dir, 'sample3_input')
                 else:
                     # Fallback: try generic pattern
-                    input_dir = extract_dir.replace('_generated', '_input').replace('_extracted', '_input')
-                
-                original_layouts_dir = os.path.join(input_dir, 'ppt', 'slideLayouts')
-            
+                    input_dir = extract_dir.replace(
+                        '_generated', '_input').replace('_extracted', '_input')
+
+                original_layouts_dir = os.path.join(
+                    input_dir, 'ppt', 'slideLayouts')
+
             if not os.path.exists(original_layouts_dir):
-                print(f"Warning: Could not find original layout files at {original_layouts_dir}")
+                print(
+                    f"Warning: Could not find original layout files at {original_layouts_dir}")
                 return
-            
+
             # Copy original layout XML files
-            current_layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
+            current_layouts_dir = os.path.join(
+                extract_dir, 'ppt', 'slideLayouts')
             if os.path.exists(current_layouts_dir):
                 # Copy all layout XML files from original
                 copied_count = 0
                 for layout_file in os.listdir(original_layouts_dir):
                     if layout_file.endswith('.xml'):
-                        original_file = os.path.join(original_layouts_dir, layout_file)
-                        target_file = os.path.join(current_layouts_dir, layout_file)
+                        original_file = os.path.join(
+                            original_layouts_dir, layout_file)
+                        target_file = os.path.join(
+                            current_layouts_dir, layout_file)
                         shutil.copy2(original_file, target_file)
                         copied_count += 1
-                
+
                 # Also copy relationship files if they exist
                 original_rels_dir = os.path.join(original_layouts_dir, '_rels')
                 current_rels_dir = os.path.join(current_layouts_dir, '_rels')
-                
+
                 if os.path.exists(original_rels_dir) and os.path.exists(current_rels_dir):
                     for rel_file in os.listdir(original_rels_dir):
                         if rel_file.endswith('.xml.rels'):
-                            original_rel = os.path.join(original_rels_dir, rel_file)
-                            target_rel = os.path.join(current_rels_dir, rel_file)
+                            original_rel = os.path.join(
+                                original_rels_dir, rel_file)
+                            target_rel = os.path.join(
+                                current_rels_dir, rel_file)
                             shutil.copy2(original_rel, target_rel)
-                
+
                 if copied_count > 0:
                     print(f"Preserved {copied_count} original layout file(s)")
-                    
+
         except Exception as e:
             print(f"Warning: Could not preserve original layouts: {str(e)}")
 
@@ -2693,29 +2804,32 @@ class PPTGenerator:
         try:
             import os
             import re
-            
+
             # Find slideLayout XML files
             layouts_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts')
-            layouts_rels_dir = os.path.join(extract_dir, 'ppt', 'slideLayouts', '_rels')
-            
+            layouts_rels_dir = os.path.join(
+                extract_dir, 'ppt', 'slideLayouts', '_rels')
+
             if not os.path.exists(layouts_dir):
                 return
-            
+
             applied_count = 0
-            
+
             for layout_data in self.layouts_data:
                 layout_index = layout_data.get('layout_index', 0)
                 background = layout_data.get('background')
-                
+
                 if background and background.get('fill'):
-                    layout_xml_path = os.path.join(layouts_dir, f'slideLayout{layout_index + 1}.xml')
-                    layout_rels_path = os.path.join(layouts_rels_dir, f'slideLayout{layout_index + 1}.xml.rels')
-                    
+                    layout_xml_path = os.path.join(
+                        layouts_dir, f'slideLayout{layout_index + 1}.xml')
+                    layout_rels_path = os.path.join(
+                        layouts_rels_dir, f'slideLayout{layout_index + 1}.xml.rels')
+
                     if os.path.exists(layout_xml_path):
                         # Check if this layout should have a background image
                         fill_info = background['fill']
                         fill_type = fill_info.get('type', '')
-                        
+
                         # If it's a BACKGROUND type and we have media files, add background image
                         if 'BACKGROUND' in fill_type and self.media_cache:
                             # Find the first image file
@@ -2724,15 +2838,17 @@ class PPTGenerator:
                                 if any(ext in cache_key.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
                                     first_image = cache_key
                                     break
-                            
+
                             if first_image:
                                 # Add background image to slideLayout XML
-                                self._add_background_to_layout(layout_xml_path, layout_rels_path, first_image)
+                                self._add_background_to_layout(
+                                    layout_xml_path, layout_rels_path, first_image)
                                 applied_count += 1
-            
+
             if applied_count > 0:
-                print(f"Applied background properties to {applied_count} layout(s)")
-                
+                print(
+                    f"Applied background properties to {applied_count} layout(s)")
+
         except Exception as e:
             print(f"Warning: Could not apply layout backgrounds: {str(e)}")
 
@@ -2743,11 +2859,11 @@ class PPTGenerator:
             # Read layout XML
             with open(layout_xml_path, 'r', encoding='utf-8') as f:
                 layout_xml = f.read()
-            
+
             # Check if it already has a background image reference
             if 'r:embed="rId2"' in layout_xml:
                 return  # Already has background
-            
+
             # Add background fill to the layout
             # Look for the cSld (slide content) element to add background
             bg_fill_xml = f'''<p:bg>
@@ -2762,36 +2878,39 @@ class PPTGenerator:
                     </a:blipFill>
                 </p:bgPr>
             </p:bg>'''
-            
+
             # Insert background before the first shape/placeholder
             if '<p:spTree>' in layout_xml:
-                layout_xml = layout_xml.replace('<p:spTree>', f'{bg_fill_xml}<p:spTree>')
+                layout_xml = layout_xml.replace(
+                    '<p:spTree>', f'{bg_fill_xml}<p:spTree>')
             elif '<p:cSld' in layout_xml and '>' in layout_xml[layout_xml.find('<p:cSld'):]:
                 # Find the end of the cSld opening tag
                 cSld_start = layout_xml.find('<p:cSld')
                 cSld_end = layout_xml.find('>', cSld_start) + 1
-                layout_xml = layout_xml[:cSld_end] + bg_fill_xml + layout_xml[cSld_end:]
-            
+                layout_xml = layout_xml[:cSld_end] + \
+                    bg_fill_xml + layout_xml[cSld_end:]
+
             # Write updated layout XML
             with open(layout_xml_path, 'w', encoding='utf-8') as f:
                 f.write(layout_xml)
-            
+
             # Add relationship for the background image
             if os.path.exists(layout_rels_path):
                 with open(layout_rels_path, 'r', encoding='utf-8') as f:
                     rels_content = f.read()
-                
+
                 # Check if rId2 relationship already exists
                 if 'Id="rId2"' not in rels_content:
                     image_filename = os.path.basename(image_cache_key)
                     bg_rel = f'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/{image_filename}"/>'
-                    
+
                     # Insert before closing </Relationships>
-                    rels_content = rels_content.replace('</Relationships>', f'{bg_rel}</Relationships>')
-                    
+                    rels_content = rels_content.replace(
+                        '</Relationships>', f'{bg_rel}</Relationships>')
+
                     with open(layout_rels_path, 'w', encoding='utf-8') as f:
                         f.write(rels_content)
-                        
+
         except Exception as e:
             print(f"Warning: Could not add background to layout: {str(e)}")
 
@@ -2800,102 +2919,107 @@ class PPTGenerator:
         try:
             with open(xml_file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             # Remove all newlines and extra whitespace between tags
             import re
-            
+
             # Remove newlines and extra spaces between tags
             content = re.sub(r'>\s+<', '><', content)
             content = re.sub(r'\n\s*', '', content)
             content = re.sub(r'\s+', ' ', content)
             content = re.sub(r'> <', '><', content)
-            
+
             # Ensure proper XML declaration format
             if content.startswith("<?xml version='1.0'"):
-                content = content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes'?>", 
-                                        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
-            
+                content = content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes'?>",
+                                          '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
+
             with open(xml_file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-                
+
         except Exception as e:
-            print(f"Warning: Could not format XML file {xml_file_path}: {str(e)}")
+            print(
+                f"Warning: Could not format XML file {xml_file_path}: {str(e)}")
 
     def apply_background_images(self):
         """Apply background images and fills using python-pptx API"""
         try:
             from pptx.enum.dml import MSO_THEME_COLOR, MSO_FILL_TYPE
             from pptx.dml.color import RGBColor
-            
+
             print("Applying background images using python-pptx API...")
-            
+
             # Apply backgrounds to slide layouts
             for layout_data in self.layouts_data:
                 layout_index = layout_data.get('layout_index', 0)
-                
+
                 # Get the corresponding slide layout
                 if layout_index < len(self.presentation.slide_layouts):
                     slide_layout = self.presentation.slide_layouts[layout_index]
                     background_data = layout_data.get('background', {})
-                    
+
                     if background_data:
-                        self._apply_background_to_layout(slide_layout, background_data)
-            
+                        self._apply_background_to_layout(
+                            slide_layout, background_data)
+
             # Apply backgrounds to slides that have custom background data
             for slide_index, slide in enumerate(self.presentation.slides):
                 # Check if this slide has custom background in shapes data
-                slide_shapes = [s for s in self.shapes_data if s.get('slide_index') == slide_index]
-                
+                slide_shapes = [s for s in self.shapes_data if s.get(
+                    'slide_index') == slide_index]
+
                 for shape_data in slide_shapes:
                     if shape_data.get('type') == 'background':
                         background_data = shape_data.get('background', {})
                         if background_data:
-                            self._apply_background_to_slide(slide, background_data)
+                            self._apply_background_to_slide(
+                                slide, background_data)
                             break
-                            
+
             print("Background application completed using python-pptx API")
-            
+
         except Exception as e:
-            print(f"Warning: Could not apply backgrounds using python-pptx API: {str(e)}")
-    
+            print(
+                f"Warning: Could not apply backgrounds using python-pptx API: {str(e)}")
+
     def _apply_background_to_layout(self, slide_layout, background_data):
         """Apply background to a specific slide layout"""
         try:
             fill_data = background_data.get('fill', {})
             fill_type = fill_data.get('type', '').upper()
-            
+
             if 'SOLID' in fill_type:
                 # Apply solid background
                 background = slide_layout.background
                 fill = background.fill
                 fill.solid()
-                
+
                 # Apply color
                 fore_color = fill_data.get('fore_color', {})
                 if fore_color:
                     self._apply_color_to_fill(fill.fore_color, fore_color)
-                    
+
             elif 'GRADIENT' in fill_type:
                 # Apply gradient background
                 background = slide_layout.background
                 fill = background.fill
                 fill.gradient()
-                
+
                 # Apply gradient properties
                 gradient_stops = fill_data.get('gradient_stops', [])
                 if gradient_stops:
                     self._apply_gradient_stops(fill, gradient_stops)
-                    
+
                 gradient_angle = fill_data.get('gradient_angle')
                 if gradient_angle is not None:
                     fill.gradient_angle = gradient_angle
-                    
+
             elif 'PATTERN' in fill_type:
                 # Apply pattern background
                 background = slide_layout.background
                 fill = background.fill
                 fill.patterned()
-                
+
                 # Apply pattern colors
                 fore_color = fill_data.get('fore_color', {})
                 back_color = fill_data.get('back_color', {})
@@ -2903,57 +3027,57 @@ class PPTGenerator:
                     self._apply_color_to_fill(fill.fore_color, fore_color)
                 if back_color:
                     self._apply_color_to_fill(fill.back_color, back_color)
-                    
+
             elif 'BACKGROUND' in fill_type:
                 # Apply transparent background
                 background = slide_layout.background
                 fill = background.fill
                 fill.background()
-                
+
         except Exception as e:
             print(f"Warning: Could not apply background to layout: {str(e)}")
-    
+
     def _apply_background_to_slide(self, slide, background_data):
         """Apply background to a specific slide"""
         try:
             fill_data = background_data.get('fill', {})
             fill_type = fill_data.get('type', '').upper()
-            
+
             # Disable master background inheritance for custom backgrounds
             slide.follow_master_background = False
-            
+
             if 'SOLID' in fill_type:
                 # Apply solid background
                 background = slide.background
                 fill = background.fill
                 fill.solid()
-                
+
                 # Apply color
                 fore_color = fill_data.get('fore_color', {})
                 if fore_color:
                     self._apply_color_to_fill(fill.fore_color, fore_color)
-                    
+
             elif 'GRADIENT' in fill_type:
                 # Apply gradient background
                 background = slide.background
                 fill = background.fill
                 fill.gradient()
-                
+
                 # Apply gradient properties
                 gradient_stops = fill_data.get('gradient_stops', [])
                 if gradient_stops:
                     self._apply_gradient_stops(fill, gradient_stops)
-                    
+
                 gradient_angle = fill_data.get('gradient_angle')
                 if gradient_angle is not None:
                     fill.gradient_angle = gradient_angle
-                    
+
             elif 'PATTERN' in fill_type:
                 # Apply pattern background
                 background = slide.background
                 fill = background.fill
                 fill.patterned()
-                
+
                 # Apply pattern colors
                 fore_color = fill_data.get('fore_color', {})
                 back_color = fill_data.get('back_color', {})
@@ -2961,71 +3085,74 @@ class PPTGenerator:
                     self._apply_color_to_fill(fill.fore_color, fore_color)
                 if back_color:
                     self._apply_color_to_fill(fill.back_color, back_color)
-                    
+
             elif 'BACKGROUND' in fill_type:
                 # Apply transparent background
                 background = slide.background
                 fill = background.fill
                 fill.background()
-                
+
         except Exception as e:
             print(f"Warning: Could not apply background to slide: {str(e)}")
-    
+
     def _apply_color_to_fill(self, color_obj, color_data):
         """Apply color data to a fill color object"""
         try:
             color_type = color_data.get('type', '').upper()
-            
+
             if 'RGB' in color_type:
                 # Apply RGB color
                 rgb_value = color_data.get('rgb')
                 if rgb_value:
                     if isinstance(rgb_value, list) and len(rgb_value) >= 3:
-                        color_obj.rgb = RGBColor(rgb_value[0], rgb_value[1], rgb_value[2])
+                        color_obj.rgb = RGBColor(
+                            rgb_value[0], rgb_value[1], rgb_value[2])
                     elif isinstance(rgb_value, str):
                         # Parse hex color
                         if rgb_value.startswith('#'):
                             rgb_value = rgb_value[1:]
                         if len(rgb_value) == 6:
                             r = int(rgb_value[0:2], 16)
-                            g = int(rgb_value[2:4], 16) 
+                            g = int(rgb_value[2:4], 16)
                             b = int(rgb_value[4:6], 16)
                             color_obj.rgb = RGBColor(r, g, b)
-                            
+
             elif 'SCHEME' in color_type:
                 # Apply theme color
                 theme_color_name = color_data.get('theme_color', '')
                 if theme_color_name:
                     try:
-                        theme_color = getattr(MSO_THEME_COLOR, theme_color_name.replace(' ', '_'))
+                        theme_color = getattr(
+                            MSO_THEME_COLOR, theme_color_name.replace(' ', '_'))
                         color_obj.theme_color = theme_color
-                        
+
                         # Apply brightness if present
                         brightness = color_data.get('brightness')
                         if brightness is not None:
                             color_obj.brightness = brightness
-                            
+
                     except AttributeError:
-                        print(f"Warning: Unknown theme color: {theme_color_name}")
-                        
+                        print(
+                            f"Warning: Unknown theme color: {theme_color_name}")
+
         except Exception as e:
             print(f"Warning: Could not apply color: {str(e)}")
-    
+
     def _apply_gradient_stops(self, fill, gradient_stops):
         """Apply gradient stops to a gradient fill"""
         try:
             if hasattr(fill, 'gradient_stops'):
                 stops = fill.gradient_stops
                 stops.clear()
-                
+
                 for stop_data in gradient_stops:
                     position = stop_data.get('position', 0.0)
                     color_data = stop_data.get('color', {})
-                    
+
                     stop = stops.add_gradient_stop(position)
                     if color_data:
                         self._apply_color_to_fill(stop.color, color_data)
-                        
+
         except Exception as e:
             print(f"Warning: Could not apply gradient stops: {str(e)}")
 

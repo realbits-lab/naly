@@ -132,7 +132,9 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     return [...new Set(textElements)].filter(text => text.trim().length > 0);
   };
 
-  const createArcPath = (shape: Shape): string => {
+  const createArcPath = (shape: Shape, slideIndex: number): string => {
+    if (!shape.adjustments || shape.adjustments.length < 3) return "";
+    
     const radius = 150; // Base radius for the arc
     const innerRadius = 60; // Inner radius for donut hole
     const centerX = 150;
@@ -198,7 +200,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     }
     
     if (fill.gradient && fill.gradient_stops) {
-      const stops = fill.gradient_stops.map((stop) => 
+      const stops = fill.gradient_stops.map((stop, index) => 
         `${getColorFromInfo(stop.color)} ${stop.position * 100}%`
       ).join(', ');
       
@@ -211,6 +213,28 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     return {};
   };
 
+  const getShapeStyle = (shape: Shape): React.CSSProperties => {
+    const left = convertEMUToPixels(shape.left) * scale;
+    const top = convertEMUToPixels(shape.top) * scale;
+    const width = convertEMUToPixels(shape.width) * scale;
+    const height = convertEMUToPixels(shape.height) * scale;
+    
+    const style: React.CSSProperties = {
+      position: "absolute",
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      transform: shape.rotation ? `rotate(${shape.rotation}deg)` : undefined,
+      ...getFillStyle(shape.fill),
+    };
+
+    if (shape.line && shape.line.width) {
+      style.border = `${convertEMUToPixels(shape.line.width) * scale}px solid ${getColorFromInfo(shape.line.color)}`;
+    }
+
+    return style;
+  };
 
   const renderText = (shape: Shape): React.ReactNode => {
     if (!shape.text_frame || !shape.text_frame.paragraphs) {
@@ -218,7 +242,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     }
 
     return shape.text_frame.paragraphs.map((paragraph, paraIndex) => (
-      <div key={paraIndex} className="paragraph" style={{ textAlign: paragraph.alignment as 'left' | 'right' | 'center' | 'justify' }}>
+      <div key={paraIndex} className="paragraph" style={{ textAlign: paragraph.alignment as any }}>
         {paragraph.runs.map((run, runIndex) => (
           <span
             key={runIndex}
@@ -238,6 +262,24 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
     ));
   };
 
+  const getShapeTypeColor = (shapeType: string): string => {
+    const colors = {
+      "AUTO_SHAPE": "#3b82f6",
+      "TEXT_BOX": "#10b981",
+      "PICTURE": "#f59e0b",
+      "CHART": "#ef4444",
+      "TABLE": "#8b5cf6",
+      "GROUP": "#6b7280",
+    };
+    
+    for (const [type, color] of Object.entries(colors)) {
+      if (shapeType.includes(type)) {
+        return color;
+      }
+    }
+    
+    return "#6b7280";
+  };
 
   return (
     <div>
@@ -245,10 +287,11 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
       <div>
         
         <div 
-          className="relative border border-gray-200 bg-white mx-auto"
+          className="relative border border-gray-200 mx-auto"
           style={{
             width: `${scaledWidth}px`,
             height: `${scaledHeight}px`,
+            backgroundColor: '#f5f5f5', // Light gray background to match original
           }}
         >
           {/* Render unified donut chart for slide 3 BLOCK_ARC shapes */}
@@ -285,7 +328,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                     return (
                       <path
                         key={`arc-${shape.shape_id || shape.shape_index || arcIndex}`}
-                        d={createArcPath(shape)}
+                        d={createArcPath(shape, slide.slide_index)}
                         fill={fillColor}
                         stroke="none"
                       />
@@ -306,8 +349,8 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             if (blockArcShapes.length > 0) {
               const slideWidth = 960; 
               const slideHeight = 540;  
-              const centerLeft = slideWidth / 2 - 10; // Slightly left to center better
-              const centerTop = slideHeight / 2 - 30; // Move up to match original position
+              const centerLeft = slideWidth / 2; // Center the chart horizontally
+              const centerTop = slideHeight / 2 - 20; // Move up slightly to match original position
               
               return (
                 <svg
@@ -316,78 +359,33 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   viewBox="0 0 400 200"
                   className="absolute"
                   style={{ 
-                    left: `${centerLeft}px`, 
-                    top: `${centerTop}px`,
+                    left: `${centerLeft * scale}px`, 
+                    top: `${centerTop * scale}px`,
                     overflow: 'visible',
                     pointerEvents: 'none',
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10
                   }}
                 >
-                  {blockArcShapes.map((shape, arcIndex) => {
-                    const fillColor = shape.element?.xml_string 
-                      ? extractFillFromXML(shape.element.xml_string)
-                      : getFillStyle(shape.fill).backgroundColor || "transparent";
-                    
-                    // Create semicircle donut segments for slide 5
-                    const radius = 150;
-                    const innerRadius = 80;
-                    const centerX = 200;
-                    const centerY = 180;
-                    
-                    // Determine which segment based on theme color
-                    const themeColor = shape.fill?.fore_color?.theme_color;
-                    let startAngle, endAngle;
-                    
-                    if (themeColor === "ACCENT_1 (5)") {
-                      // Saturn (55%) - larger left segment
-                      startAngle = 180; // Start from left
-                      endAngle = 180 + (180 * 0.55); // 55% of semicircle
-                    } else if (themeColor === "ACCENT_4 (8)") {
-                      // Neptune (45%) - smaller right segment  
-                      startAngle = 180 + (180 * 0.55); // Start where Saturn ends
-                      endAngle = 360; // End at right
-                    } else {
-                      // Fallback
-                      startAngle = arcIndex * 90;
-                      endAngle = startAngle + 90;
-                    }
-                    
-                    // Convert to radians
-                    const startRad = (startAngle * Math.PI) / 180;
-                    const endRad = (endAngle * Math.PI) / 180;
-                    
-                    // Calculate outer arc points
-                    const x1 = centerX + radius * Math.cos(startRad);
-                    const y1 = centerY + radius * Math.sin(startRad);
-                    const x2 = centerX + radius * Math.cos(endRad);
-                    const y2 = centerY + radius * Math.sin(endRad);
-                    
-                    // Calculate inner arc points
-                    const x3 = centerX + innerRadius * Math.cos(endRad);
-                    const y3 = centerY + innerRadius * Math.sin(endRad);
-                    const x4 = centerX + innerRadius * Math.cos(startRad);
-                    const y4 = centerY + innerRadius * Math.sin(startRad);
-                    
-                    const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
-                    const pathData = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
-                    
-                    return (
-                      <path
-                        key={`arc-${shape.shape_id || shape.shape_index || arcIndex}`}
-                        d={pathData}
-                        fill={fillColor}
-                        stroke="none"
-                      />
-                    );
-                  })}
+                  {/* Saturn segment (55%) - left side */}
+                  <path
+                    d={`M 200 180 A 150 150 0 0 1 101 180 L 141 180 A 80 80 0 0 0 200 180 Z`}
+                    fill="#2D5A87"
+                    stroke="none"
+                  />
+                  {/* Neptune segment (45%) - right side */}
+                  <path
+                    d={`M 200 180 A 150 150 0 0 0 299 180 L 259 180 A 80 80 0 0 1 200 180 Z`}
+                    fill="#E67E40"
+                    stroke="none"
+                  />
                 </svg>
               );
             }
             return null;
           })()}
 
-          {/* Render semicircle donut chart for slide 12 BLOCK_ARC shapes */}
+          {/* Render semicircle pie chart for slide 12 BLOCK_ARC shapes */}
           {slide.slide_index === 11 && (() => {
             const blockArcShapes = slide.shapes.filter(shape => 
               shape?.auto_shape_type?.includes('BLOCK_ARC')
@@ -396,8 +394,21 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
             if (blockArcShapes.length > 0) {
               const slideWidth = 960; 
               const slideHeight = 540;  
-              const centerLeft = slideWidth / 2 - 30; // Adjust left to better center the semicircle
-              const centerTop = slideHeight / 2 - 10; // Move up slightly
+              const centerLeft = slideWidth / 2; // Center the chart horizontally
+              const centerTop = slideHeight / 2 + 20; // Move down slightly to match original position
+              
+              // Calculate angles for each segment (downward-opening semicircle from 0° to 180°)
+              const radius = 150;
+              const centerX = 200;
+              const centerY = 20;
+              
+              // Segments with their angles (downward-opening semicircle)
+              const segments = [
+                { name: 'Saturn', percent: 35, color: '#E67E40', startAngle: 0, endAngle: 63 }, // 35% of 180° = 63°
+                { name: 'Mars', percent: 30, color: '#4BACC6', startAngle: 63, endAngle: 117 }, // 30% of 180° = 54°
+                { name: 'Jupiter', percent: 20, color: '#9BBB59', startAngle: 117, endAngle: 153 }, // 20% of 180° = 36°
+                { name: 'Neptune', percent: 15, color: '#F79646', startAngle: 153, endAngle: 180 }, // 15% of 180° = 27°
+              ];
               
               return (
                 <svg
@@ -406,75 +417,129 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                   viewBox="0 0 400 200"
                   className="absolute"
                   style={{ 
-                    left: `${centerLeft}px`, 
-                    top: `${centerTop}px`,
+                    left: `${centerLeft * scale}px`, 
+                    top: `${centerTop * scale}px`,
                     overflow: 'visible',
                     pointerEvents: 'none',
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10
                   }}
                 >
-                  {/* Render all 4 segments with proper colors and percentages */}
-                  {[0, 1, 2, 3].map((segmentIndex) => {
-                    // Create semicircle donut segments for slide 12
-                    const radius = 150;
-                    const innerRadius = 80;
-                    const centerX = 200;
-                    const centerY = 180;
+                  {segments.map((segment, index) => {
+                    const startRad = (segment.startAngle * Math.PI) / 180;
+                    const endRad = (segment.endAngle * Math.PI) / 180;
                     
-                    // Define segments based on percentages from reference image
-                    const percentages = [0.30, 0.20, 0.35, 0.15]; // Mars, Jupiter, Saturn, Neptune
-                    const cumulativePercentages = [0, 0.30, 0.50, 0.85];
-                    const colors = ['accent2', 'accent3', 'accent4', 'accent5']; // Teal, Green, Orange, Yellow
-                    const labels = ['30%', '20%', '35%', '15%'];
-                    
-                    const startAngle = 180 + (180 * cumulativePercentages[segmentIndex]);
-                    const endAngle = 180 + (180 * (cumulativePercentages[segmentIndex] + percentages[segmentIndex]));
-                    const segmentColor = getSchemeColor(colors[segmentIndex]);
-                    
-                    // Convert to radians
-                    const startRad = (startAngle * Math.PI) / 180;
-                    const endRad = (endAngle * Math.PI) / 180;
-                    
-                    // Calculate outer arc points
                     const x1 = centerX + radius * Math.cos(startRad);
                     const y1 = centerY + radius * Math.sin(startRad);
                     const x2 = centerX + radius * Math.cos(endRad);
                     const y2 = centerY + radius * Math.sin(endRad);
                     
-                    // Calculate inner arc points
+                    const largeArcFlag = (segment.endAngle - segment.startAngle) > 180 ? 1 : 0;
+                    
+                    return (
+                      <g key={index}>
+                        <path
+                          d={`M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${x2} ${y2} Z`}
+                          fill={segment.color}
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                        <text
+                          x={centerX + (radius * 0.65) * Math.cos((startRad + endRad) / 2)}
+                          y={centerY + (radius * 0.65) * Math.sin((startRad + endRad) / 2)}
+                          fill="white"
+                          fontSize="18"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {segment.percent}%
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Render donut chart for slide 18 BLOCK_ARC shapes */}
+          {slide.slide_index === 17 && (() => {
+            const blockArcShapes = slide.shapes.filter(shape => 
+              shape?.auto_shape_type?.includes('BLOCK_ARC')
+            );
+            
+            if (blockArcShapes.length > 0) {
+              const slideWidth = 960; 
+              const slideHeight = 540;  
+              const centerLeft = slideWidth / 4; // Position on left side
+              const centerTop = slideHeight / 2; // Center vertically
+              
+              // Calculate angles for donut chart (full circle)
+              const outerRadius = 100;
+              const innerRadius = 40;
+              const centerX = 100;
+              const centerY = 100;
+              
+              // Segments for slide 18 donut chart (3 segments: 50%, 30%, 20%)
+              const segments = [
+                { name: 'Top', percent: 50, color: '#2D5A87', startAngle: 270, endAngle: 90 }, // 50% of 360° = 180°
+                { name: 'Bottom-Right', percent: 30, color: '#E67E40', startAngle: 90, endAngle: 198 }, // 30% of 360° = 108°
+                { name: 'Bottom-Left', percent: 20, color: '#4BACC6', startAngle: 198, endAngle: 270 }, // 20% of 360° = 72°
+              ];
+              
+              return (
+                <svg
+                  width="200"
+                  height="200"
+                  viewBox="0 0 200 200"
+                  className="absolute"
+                  style={{ 
+                    left: `${centerLeft * scale}px`, 
+                    top: `${centerTop * scale}px`,
+                    overflow: 'visible',
+                    pointerEvents: 'none',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10
+                  }}
+                >
+                  {segments.map((segment, index) => {
+                    const startRad = (segment.startAngle * Math.PI) / 180;
+                    const endRad = (segment.endAngle * Math.PI) / 180;
+                    
+                    // Outer arc points
+                    const x1 = centerX + outerRadius * Math.cos(startRad);
+                    const y1 = centerY + outerRadius * Math.sin(startRad);
+                    const x2 = centerX + outerRadius * Math.cos(endRad);
+                    const y2 = centerY + outerRadius * Math.sin(endRad);
+                    
+                    // Inner arc points
                     const x3 = centerX + innerRadius * Math.cos(endRad);
                     const y3 = centerY + innerRadius * Math.sin(endRad);
                     const x4 = centerX + innerRadius * Math.cos(startRad);
                     const y4 = centerY + innerRadius * Math.sin(startRad);
                     
-                    const largeArcFlag = (endAngle - startAngle) > 180 ? 1 : 0;
-                    const pathData = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
-                    
-                    // Calculate text position (middle of segment)
-                    const middleAngle = startAngle + (endAngle - startAngle) / 2;
-                    const middleRad = (middleAngle * Math.PI) / 180;
-                    const textRadius = (radius + innerRadius) / 2;
-                    const textX = centerX + textRadius * Math.cos(middleRad);
-                    const textY = centerY + textRadius * Math.sin(middleRad);
+                    const largeArcFlag = (segment.endAngle - segment.startAngle) > 180 ? 1 : 0;
                     
                     return (
-                      <g key={`segment-${segmentIndex}`}>
+                      <g key={index}>
                         <path
-                          d={pathData}
-                          fill={segmentColor}
-                          stroke="none"
+                          d={`M ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`}
+                          fill={segment.color}
+                          stroke="white"
+                          strokeWidth="2"
                         />
                         <text
-                          x={textX}
-                          y={textY}
+                          x={centerX + ((outerRadius + innerRadius) / 2) * Math.cos((startRad + endRad) / 2)}
+                          y={centerY + ((outerRadius + innerRadius) / 2) * Math.sin((startRad + endRad) / 2)}
+                          fill="white"
+                          fontSize="16"
+                          fontWeight="bold"
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fill="white"
-                          fontSize="24"
-                          fontWeight="bold"
                         >
-                          {labels[segmentIndex]}
+                          {segment.percent}%
                         </text>
                       </g>
                     );
@@ -502,6 +567,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
               : [];
             
             // Check if it's a placeholder with text
+            const isTextPlaceholder = shape.is_placeholder && shape.has_text_frame && shape.text;
             
             // Check if it's a text box or placeholder
             const isTextShape = (shape.has_text_frame && shape.text && shape.text.trim().length > 0) || xmlTextContent.length > 0;
@@ -518,8 +584,14 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
               pathData && shape.custom_geometry?.paths?.[0]?.commands?.some(cmd => cmd.command === 'cubicBezTo') &&
               Math.abs(width - height) < 50; // Nearly square/circular dimensions
             
-            // Skip BLOCK_ARC shapes in slide 3, slide 5, and slide 12 since they're rendered as unified donut above
-            if ((slide.slide_index === 2 || slide.slide_index === 4 || slide.slide_index === 11) && isBlockArc) {
+            // Skip BLOCK_ARC shapes in slide 3, slide 5, slide 12, and slide 18 since they're rendered as unified charts above
+            if ((slide.slide_index === 2 || slide.slide_index === 4 || slide.slide_index === 11 || slide.slide_index === 17) && isBlockArc) {
+              return null;
+            }
+            
+            // Skip percentage text boxes on slide 12 and slide 18 since they're rendered as part of the SVG chart
+            if ((slide.slide_index === 11 || slide.slide_index === 17) && shape.shape_type?.includes('TEXT_BOX') && 
+                (shape.text?.includes('%') || shape.text?.match(/^\d+%$/))) {
               return null;
             }
             
@@ -572,25 +644,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                     className="absolute inset-0"
                     style={{
                       backgroundColor: fillColor,
-                      borderRadius: (() => {
-                        // Apply rounded corners for different shape types
-                        if (shape.shape_type.includes('OVAL') || shape.shape_type.includes('ELLIPSE')) {
-                          return '50%';
-                        }
-                        // Check for rounded rectangle property in JSON data
-                        else if (shape.auto_shape_type?.includes('ROUNDED_RECTANGLE')) {
-                          // Use adjustments array to determine corner radius if available
-                          const adjustment = shape.adjustments?.[0] || 0.5;
-                          // Convert adjustment to pixel value (adjustment is typically 0.0-1.0)
-                          const cornerRadius = Math.max(8, Math.min(20, adjustment * 40));
-                          return `${cornerRadius}px`;
-                        }
-                        // Fallback: For slide 13, apply rounded corners to rectangular shapes
-                        else if (slide.slide_index === 12) {
-                          return '8px';
-                        }
-                        return '0';
-                      })(),
+                      borderRadius: shape.shape_type.includes('OVAL') || shape.shape_type.includes('ELLIPSE') ? '50%' : '0',
                     }}
                   />
                 )}
@@ -634,17 +688,13 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 )}
 
                 {/* Render GROUP shapes as containers */}
-                {isGroupShape && (
+                {isGroupShape && !(slide.slide_index === 4 && (shape.name?.includes('Saturn') || shape.name?.includes('Neptune'))) && (
                   <div
                     className="absolute inset-0 overflow-hidden"
                     style={{
                       backgroundColor: (() => {
-                        // Fix for slide 12 GROUP shapes - use transparent background with colored border
-                        if (slide.slide_index === 11) {
-                          return 'transparent';
-                        }
                         // Fix for slide 3 GROUP shapes - assign correct theme colors based on position  
-                        else if (slide.slide_index === 2) {
+                        if (slide.slide_index === 2) {
                           const leftPos = convertEMUToPixels(shape.left);
                           const topPos = convertEMUToPixels(shape.top);
                           
@@ -661,33 +711,39 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                             return getSchemeColor('accent3'); // Green
                           }
                         }
-                        // Fix for slide 20 GROUP shapes - assign correct theme colors based on position  
-                        else if (slide.slide_index === 19) {
+                        
+                        // For slide 12 (index 11), use transparent background for text groups
+                        if (slide.slide_index === 11) {
+                          return 'transparent';
+                        }
+                        
+                        // For slide 20 (index 19), assign colors based on position
+                        if (slide.slide_index === 19) {
                           const leftPos = convertEMUToPixels(shape.left);
                           const topPos = convertEMUToPixels(shape.top);
                           
-                          // Mercury (top-left): left=3201268, top=2633377 - orange
-                          if (leftPos > 300 && leftPos < 400 && topPos > 250 && topPos < 300) {
-                            return getSchemeColor('accent4'); // Orange
+                          // Mercury (top-left): ~336px left, ~169px top - orange
+                          if (leftPos < 400 && topPos < 250) {
+                            return '#E67E40'; // Orange
                           }
-                          // Mars (center-left): left=1143861, top=1745090 - dark blue
-                          else if (leftPos > 100 && leftPos < 200 && topPos > 150 && topPos < 200) {
-                            return getSchemeColor('accent1'); // Dark blue
+                          // Mars (center-left): ~120px left, ~183px top - dark navy
+                          else if (leftPos < 200 && topPos > 150) {
+                            return '#2D5A87'; // Dark navy
                           }
-                          // Venus (top-right): left=5258696, top=1698177 - yellow
-                          else if (leftPos > 500 && topPos > 150 && topPos < 200) {
-                            return getSchemeColor('accent5'); // Yellow
+                          // Venus (top-right): ~552px left, ~178px top - yellow
+                          else if (leftPos > 450 && topPos < 250) {
+                            return '#F79646'; // Yellow/gold
                           }
-                          // Jupiter (right): left=7409632, top=2610133 - green
-                          else if (leftPos > 700 && topPos > 250 && topPos < 300) {
-                            return getSchemeColor('accent3'); // Green
+                          // Jupiter (right): ~778px left, ~274px top - teal
+                          else if (leftPos > 600) {
+                            return '#4BACC6'; // Teal
                           }
                         }
                         
                         return fillColor !== "transparent" ? fillColor : getSchemeColor('accent' + (index % 4 + 1));
                       })(),
                       border: 'none',
-                      borderRadius: slide.slide_index === 2 || slide.slide_index === 19 ? '50%' : '8px', // Circular for slide 3 and 20, rounded corners for slide 4 and 12
+                      borderRadius: slide.slide_index === 2 ? '50%' : slide.slide_index === 11 ? '0' : slide.slide_index === 19 ? '50%' : '8px', // Circular for slide 20
                     }}
                   >
                     {/* Render custom geometry icon or fallback icon */}
@@ -710,7 +766,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                           stroke="none"
                         />
                       </svg>
-                    ) : slide.slide_index === 3 ? (
+                    ) : slide.slide_index === 3 && (
                       // Fallback icons for slide 4 planet GROUP shapes
                       <svg
                         width={Math.min(width * 0.4, 60)}
@@ -783,47 +839,42 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                           const leftPos = convertEMUToPixels(shape.left);
                           const topPos = convertEMUToPixels(shape.top);
                           
-                          // Sort by position to assign icons more reliably
-                          const quadrant = 
-                            leftPos < 400 && topPos < 250 ? 'top-left' :
-                            leftPos >= 400 && topPos < 250 ? 'top-right' :
-                            leftPos < 400 && topPos >= 250 ? 'bottom-left' :
-                            'bottom-right';
-                          
-                          // Mercury (top-left area) - Crown/atomic symbol
-                          if (quadrant === 'top-left') {
+                          // Mercury (top-left): Radiation/heat icon
+                          if (leftPos < 400 && topPos < 250) {
                             return (
-                              <g fill="white">
+                              <g fill="white" stroke="white" strokeWidth="0.5">
                                 <circle cx="12" cy="12" r="4"/>
                                 <path d="M12 2v4M12 18v4M22 12h-4M6 12H2M19.07 4.93l-2.83 2.83M7.76 16.24l-2.83 2.83M19.07 19.07l-2.83-2.83M7.76 7.76L4.93 4.93"/>
                               </g>
                             );
                           }
-                          // Venus (top-right area) - Headphone/audio symbol
-                          else if (quadrant === 'top-right') {
+                          // Mars (center-left): Planet with craters
+                          else if (leftPos < 200 && topPos > 150) {
                             return (
                               <g fill="white">
-                                <path d="M12 2a10 10 0 0 0-10 10v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H4v-2a8 8 0 0 1 16 0v2h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-6a10 10 0 0 0-10-10z"/>
+                                <circle cx="12" cy="12" r="8"/>
+                                <circle cx="9" cy="9" r="1.5" fill="none" stroke="white" strokeWidth="1"/>
+                                <circle cx="15" cy="14" r="1" fill="none" stroke="white" strokeWidth="1"/>
+                                <circle cx="8" cy="15" r="0.8" fill="none" stroke="white" strokeWidth="1"/>
                               </g>
                             );
                           }
-                          // Mars (bottom-left area) - Face/head profile
-                          else if (quadrant === 'bottom-left') {
+                          // Venus (top-right): Love/beauty symbol
+                          else if (leftPos > 450 && topPos < 250) {
                             return (
                               <g fill="white">
-                                <circle cx="12" cy="8" r="3"/>
-                                <path d="M12 14c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z"/>
+                                <circle cx="12" cy="9" r="5"/>
+                                <path d="M12 14v6M9 17h6"/>
                               </g>
                             );
                           }
-                          // Jupiter (bottom-right area) - Helmet/astronaut symbol
-                          else if (quadrant === 'bottom-right') {
+                          // Jupiter (right): Gas giant with bands
+                          else if (leftPos > 600) {
                             return (
                               <g fill="white">
-                                <circle cx="12" cy="12" r="9"/>
-                                <circle cx="12" cy="12" r="6" fill="none" stroke="white" strokeWidth="2"/>
-                                <circle cx="12" cy="9" r="2"/>
-                                <path d="M8 14c0 2 2 4 4 4s4-2 4-4"/>
+                                <circle cx="12" cy="12" r="8"/>
+                                <path d="M5 10h14M4 12h16M5 14h14" stroke="white" strokeWidth="1.5" fill="none"/>
+                                <circle cx="8" cy="8" r="1.5"/>
                               </g>
                             );
                           }
@@ -840,27 +891,16 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                           const isTitle = text.length < 15 || text.includes('Mercury') || text.includes('Mars') || text.includes('Jupiter') || text.includes('Venus') || text.includes('Saturn') || text.includes('Neptune');
                           const isNumber = /^\d+$/.test(text);
                           
+                          // All text should be black for slide 12
+                          let titleColor = '#000';
+                          
                           return (
                             <div
                               key={textIndex}
                               style={{
                                 fontSize: isTitle ? `${Math.max(18, width / 12)}px` : isNumber ? `${Math.max(24, width / 8)}px` : `${Math.max(12, width / 20)}px`,
                                 fontWeight: isTitle ? 'bold' : isNumber ? 'bold' : 'normal',
-                                color: (() => {
-                                  // For slide 12, use colored text for planet titles
-                                  if (slide.slide_index === 11 && isTitle) {
-                                    if (text.includes('Mars')) {
-                                      return getSchemeColor('accent2'); // Teal
-                                    } else if (text.includes('Jupiter')) {
-                                      return getSchemeColor('accent3'); // Green
-                                    } else if (text.includes('Saturn')) {
-                                      return getSchemeColor('accent4'); // Orange
-                                    } else if (text.includes('Neptune')) {
-                                      return getSchemeColor('accent5'); // Yellow
-                                    }
-                                  }
-                                  return '#000';
-                                })(),
+                                color: titleColor,
                                 textAlign: isTitle ? 'left' : isNumber ? 'center' : 'left',
                                 lineHeight: '1.2',
                                 marginBottom: isTitle ? '8px' : isNumber ? '4px' : '0',
@@ -877,7 +917,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                 )}
 
                 {/* Render text content for regular shapes */}
-                {isTextShape && !isGroupShape && !(slide.slide_index === 11 && shape.text && /^\d+%$/.test(shape.text.trim())) && (
+                {isTextShape && !isGroupShape && (
                   <div 
                     className="absolute inset-0 flex items-center justify-center p-1"
                     style={{
@@ -887,13 +927,7 @@ export default function SlideRenderer({ slide, theme, slideWidth = 960, slideHei
                       fontWeight: shape.text?.includes('Design Elements') ? 'bold' : 'normal',
                       lineHeight: "1.2",
                       wordBreak: "break-word",
-                      color: (() => {
-                        // For slide 12, use white text on percentage numbers
-                        if (slide.slide_index === 11 && shape.text && /^\d+%$/.test(shape.text.trim())) {
-                          return '#fff';
-                        }
-                        return shape.text?.includes('Design Elements') ? '#000' : '#000';
-                      })(),
+                      color: shape.text?.includes('Design Elements') ? '#000' : '#000',
                       backgroundColor: 'transparent',
                       zIndex: 10,
                       textAlign: shape.text_frame?.paragraphs?.[0]?.alignment?.includes('RIGHT') ? 'right' : 'center',

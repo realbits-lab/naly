@@ -196,7 +196,7 @@ class PPTExtractor:
             from pptx.enum.shapes import MSO_SHAPE_TYPE
             if hasattr(shape, 'shape_type') and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                 return None
-            
+
             if hasattr(shape, 'click_action') and shape.click_action:
                 return str(shape.click_action)
         except Exception:
@@ -220,14 +220,14 @@ class PPTExtractor:
                 MSO_SHAPE_TYPE.WEB_VIDEO,
                 MSO_SHAPE_TYPE.MEDIA
             ]
-            
+
             if hasattr(shape, 'shape_type') and shape.shape_type in unsupported_types:
                 return False
-                
+
             # Additional check for GraphicFrame shapes (which can be charts, tables, etc.)
             if hasattr(shape, '__class__') and 'GraphicFrame' in str(shape.__class__):
                 return False
-                
+
             return True
         except Exception:
             return False
@@ -489,7 +489,7 @@ class PPTExtractor:
             # Check if shape supports shadow properties
             if not self._shape_supports_shadow(shape):
                 return None
-            
+
             # Check if shape has shadow attribute
             if hasattr(shape, 'shadow') and shape.shadow is not None:
                 return self.extract_shadow_properties(shape.shadow)
@@ -598,7 +598,7 @@ class PPTExtractor:
                             media_info['video'][file_info.filename] = media_entry
                         else:
                             media_info['embedded_objects'][file_info.filename] = media_entry
-                    
+
                     # Extract font files
                     elif file_info.filename.startswith('ppt/fonts/'):
                         font_data = zip_ref.read(file_info.filename)
@@ -807,9 +807,11 @@ class PPTExtractor:
             # Extract background properties
             try:
                 if hasattr(layout, 'background') and layout.background:
-                    layout_info['background'] = self.extract_background_properties(layout.background)
+                    layout_info['background'] = self.extract_background_properties(
+                        layout.background)
             except Exception as e:
-                layout_info['background'] = {'error': f"Could not extract background: {str(e)}"}
+                layout_info['background'] = {
+                    'error': f"Could not extract background: {str(e)}"}
 
             # Extract placeholder information
             for placeholder in layout.placeholders:
@@ -878,15 +880,17 @@ class PPTExtractor:
         try:
             theme_colors = {}
             detected_theme_colors = {}
-            
+
             # Scan through all shapes to find theme color usage and extract actual values
             for slide in self.presentation.slides:
                 for shape in slide.shapes:
                     try:
                         if hasattr(shape, 'fill') and shape.fill:
-                            fill_color = self.extract_color_properties(shape.fill.fore_color)
+                            fill_color = self.extract_color_properties(
+                                shape.fill.fore_color)
                             if fill_color and fill_color.get('type') == 'SCHEME (2)':
-                                theme_color_name = fill_color.get('theme_color', '')
+                                theme_color_name = fill_color.get(
+                                    'theme_color', '')
                                 # Map theme color names to standard names
                                 if 'ACCENT_1' in theme_color_name:
                                     detected_theme_colors['accent1'] = True
@@ -902,33 +906,34 @@ class PPTExtractor:
                                     detected_theme_colors['accent6'] = True
                     except:
                         continue
-            
+
             # Try to access theme colors through the presentation's OOXML structure
             try:
                 # Get the presentation's package to access raw parts
                 package = self.presentation.part.package
                 theme_part = None
-                
+
                 # Find the theme part by examining all parts
                 for part_name, part in package.parts.items():
                     if 'theme' in str(part_name) and 'theme1.xml' in str(part_name):
                         theme_part = part
                         break
-                
+
                 if theme_part and hasattr(theme_part, 'blob'):
                     # Parse the raw XML from the theme part
                     import xml.etree.ElementTree as ET
                     theme_xml_text = theme_part.blob.decode('utf-8')
                     theme_root = ET.fromstring(theme_xml_text)
-                    
+
                     # Define namespace
                     ns = {'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'}
-                    
+
                     # Find color scheme
                     clr_scheme = theme_root.find('.//a:clrScheme', ns)
                     if clr_scheme is not None:
-                        theme_data['theme_name'] = clr_scheme.get('name', 'Default Theme')
-                        
+                        theme_data['theme_name'] = clr_scheme.get(
+                            'name', 'Default Theme')
+
                         # Extract all colors
                         color_mapping = {
                             'dk1': 'dk1', 'lt1': 'lt1', 'dk2': 'dk2', 'lt2': 'lt2',
@@ -936,7 +941,7 @@ class PPTExtractor:
                             'accent4': 'accent4', 'accent5': 'accent5', 'accent6': 'accent6',
                             'hlink': 'hlink', 'folHlink': 'folHlink'
                         }
-                        
+
                         for xml_name, json_name in color_mapping.items():
                             color_elem = clr_scheme.find(f'a:{xml_name}', ns)
                             if color_elem is not None:
@@ -955,13 +960,13 @@ class PPTExtractor:
                                             'rgb': sys_elem.get('lastClr', sys_elem.get('val')),
                                             'type': 'system'
                                         }
-                        
+
                         theme_data['color_scheme'] = theme_colors
                     else:
                         raise Exception('No color scheme found in theme XML')
                 else:
                     raise Exception('Could not access theme part blob')
-                    
+
             except Exception as e:
                 # Fallback: Use detected theme colors with the correct color scheme for this presentation
                 if detected_theme_colors:
@@ -971,23 +976,27 @@ class PPTExtractor:
                         'lt1': {'rgb': 'FFFFFF', 'type': 'srgb'},
                         'dk2': {'rgb': '595959', 'type': 'srgb'},
                         'lt2': {'rgb': 'EEEEEE', 'type': 'srgb'},
-                        'accent1': {'rgb': '264653', 'type': 'srgb'},  # Dark green
+                        # Dark green
+                        'accent1': {'rgb': '264653', 'type': 'srgb'},
                         'accent2': {'rgb': '2A9D8F', 'type': 'srgb'},  # Teal
-                        'accent3': {'rgb': '8AB17D', 'type': 'srgb'},  # Light green
-                        'accent4': {'rgb': 'E76F51', 'type': 'srgb'},  # Orange/red
+                        # Light green
+                        'accent3': {'rgb': '8AB17D', 'type': 'srgb'},
+                        # Orange/red
+                        'accent4': {'rgb': 'E76F51', 'type': 'srgb'},
                         'accent5': {'rgb': 'F4A261', 'type': 'srgb'},  # Orange
                         'accent6': {'rgb': 'E9C46A', 'type': 'srgb'},  # Yellow
                         'hlink': {'rgb': '000000', 'type': 'srgb'},
                         'folHlink': {'rgb': '0097A7', 'type': 'srgb'}
                     }
                     theme_data['color_scheme'] = fallback_colors
-                    theme_data['color_scheme']['_extraction_note'] = f'Correct theme colors applied. Theme colors detected: {list(detected_theme_colors.keys())}'
+                    theme_data['color_scheme'][
+                        '_extraction_note'] = f'Correct theme colors applied. Theme colors detected: {list(detected_theme_colors.keys())}'
                     theme_data['theme_name'] = 'Design Elements Infographics by Slidesgo'
                 else:
                     theme_data['color_scheme'] = {
                         'error': f'Could not extract theme colors: {str(e)}'
                     }
-                    
+
         except Exception as e:
             theme_data['color_scheme'] = {
                 'error': f'Theme color extraction failed: {str(e)}'
@@ -997,18 +1006,18 @@ class PPTExtractor:
         try:
             # Try multiple ways to access font scheme
             font_scheme = None
-            
+
             # Method 1: Try via slide master theme
             if hasattr(slide_master, 'theme') and slide_master.theme:
                 font_scheme = slide_master.theme.font_scheme
-            
+
             # Method 2: Try via presentation part theme
             elif hasattr(self.presentation, 'part') and hasattr(self.presentation.part, 'theme_part'):
                 theme_part = self.presentation.part.theme_part
                 if theme_part and hasattr(theme_part, 'font_scheme'):
                     font_scheme = theme_part.font_scheme
-            
-            # Method 3: Try via presentation theme_part directly  
+
+            # Method 3: Try via presentation theme_part directly
             elif hasattr(self.presentation, 'theme_part') and self.presentation.theme_part:
                 font_scheme = self.presentation.theme_part.font_scheme
 
@@ -1034,7 +1043,7 @@ class PPTExtractor:
         # Extract effect scheme if available
         try:
             effect_scheme = None
-            
+
             # Try multiple ways to access effect scheme
             if hasattr(slide_master, 'theme') and slide_master.theme and hasattr(slide_master.theme, 'effect_scheme'):
                 effect_scheme = slide_master.theme.effect_scheme
@@ -1042,11 +1051,12 @@ class PPTExtractor:
                 theme_part = self.presentation.part.theme_part
                 if theme_part and hasattr(theme_part, 'effect_scheme'):
                     effect_scheme = theme_part.effect_scheme
-            
+
             if effect_scheme:
                 theme_data['effect_scheme'] = str(effect_scheme)
             else:
-                theme_data['effect_scheme'] = {'error': 'No effect scheme found'}
+                theme_data['effect_scheme'] = {
+                    'error': 'No effect scheme found'}
         except Exception as e:
             theme_data['effect_scheme'] = {
                 'error': f'Could not extract effect scheme: {str(e)}'}
@@ -1083,11 +1093,11 @@ class PPTExtractor:
             # Extract all attributes
             if hasattr(element, 'attrib'):
                 element_info['attributes'] = dict(element.attrib)
-            
+
             # Extract namespace info
             if hasattr(element, 'nsmap'):
                 element_info['namespace'] = element.nsmap
-            
+
             # Extract children elements (non-recursive to avoid deep nesting)
             if hasattr(element, '__iter__'):
                 for child in element:
@@ -1098,16 +1108,19 @@ class PPTExtractor:
                         'children_count': len(list(child)) if hasattr(child, '__iter__') else 0
                     }
                     element_info['children'].append(child_info)
-            
+
             # Extract XML string representation
             try:
                 import xml.etree.ElementTree as ET
-                element_info['xml_string'] = ET.tostring(element, encoding='unicode') if element is not None else None
+                element_info['xml_string'] = ET.tostring(
+                    element, encoding='unicode') if element is not None else None
             except Exception:
-                element_info['xml_string'] = str(element) if element is not None else None
+                element_info['xml_string'] = str(
+                    element) if element is not None else None
 
         except Exception as e:
-            element_info['extraction_error'] = f"Could not extract element attributes: {str(e)}"
+            element_info[
+                'extraction_error'] = f"Could not extract element attributes: {str(e)}"
 
         return element_info
 
@@ -1132,10 +1145,10 @@ class PPTExtractor:
 
             # Find custGeom element
             custGeom = element.find('.//a:custGeom', namespaces)
-            
+
             if custGeom is not None:
                 custom_geometry['has_custom_geometry'] = True
-                
+
                 # Extract adjustment values (avLst)
                 avLst = custGeom.find('./a:avLst', namespaces)
                 if avLst is not None:
@@ -1144,7 +1157,7 @@ class PPTExtractor:
                             'name': gd.get('name'),
                             'fmla': gd.get('fmla')
                         })
-                
+
                 # Extract guides (gdLst)
                 gdLst = custGeom.find('./a:gdLst', namespaces)
                 if gdLst is not None:
@@ -1153,7 +1166,7 @@ class PPTExtractor:
                             'name': gd.get('name'),
                             'fmla': gd.get('fmla')
                         })
-                
+
                 # Extract adjustment handles (ahLst)
                 ahLst = custGeom.find('./a:ahLst', namespaces)
                 if ahLst is not None:
@@ -1173,8 +1186,9 @@ class PPTExtractor:
                                 'x': pos.get('x'),
                                 'y': pos.get('y')
                             }
-                        custom_geometry['adjustment_handles'].append(handle_info)
-                
+                        custom_geometry['adjustment_handles'].append(
+                            handle_info)
+
                 # Extract connections (cxnLst)
                 cxnLst = custGeom.find('./a:cxnLst', namespaces)
                 if cxnLst is not None:
@@ -1190,7 +1204,7 @@ class PPTExtractor:
                                 'y': pos.get('y')
                             }
                         custom_geometry['connections'].append(connection_info)
-                
+
                 # Extract text rectangle (rect)
                 rect = custGeom.find('./a:rect', namespaces)
                 if rect is not None:
@@ -1200,16 +1214,18 @@ class PPTExtractor:
                         'r': rect.get('r'),
                         'b': rect.get('b')
                     }
-                
+
                 # Extract paths (pathLst)
                 pathLst = custGeom.find('./a:pathLst', namespaces)
                 if pathLst is not None:
                     for path in pathLst.findall('./a:path', namespaces):
-                        path_data = self.extract_path_commands(path, namespaces)
+                        path_data = self.extract_path_commands(
+                            path, namespaces)
                         custom_geometry['paths'].append(path_data)
 
         except Exception as e:
-            custom_geometry['extraction_error'] = f"Could not extract custom geometry: {str(e)}"
+            custom_geometry[
+                'extraction_error'] = f"Could not extract custom geometry: {str(e)}"
 
         return custom_geometry
 
@@ -1227,8 +1243,9 @@ class PPTExtractor:
         try:
             # Extract all path commands
             for child in path_element:
-                tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-                
+                tag = child.tag.split(
+                    '}')[-1] if '}' in child.tag else child.tag
+
                 if tag == 'moveTo':
                     pt = child.find('./a:pt', namespaces)
                     if pt is not None:
@@ -1237,7 +1254,7 @@ class PPTExtractor:
                             'x': pt.get('x'),
                             'y': pt.get('y')
                         })
-                
+
                 elif tag == 'lnTo':
                     pt = child.find('./a:pt', namespaces)
                     if pt is not None:
@@ -1246,7 +1263,7 @@ class PPTExtractor:
                             'x': pt.get('x'),
                             'y': pt.get('y')
                         })
-                
+
                 elif tag == 'cubicBezTo':
                     points = []
                     for pt in child.findall('./a:pt', namespaces):
@@ -1258,7 +1275,7 @@ class PPTExtractor:
                         'command': 'cubicBezTo',
                         'points': points
                     })
-                
+
                 elif tag == 'quadBezTo':
                     points = []
                     for pt in child.findall('./a:pt', namespaces):
@@ -1270,7 +1287,7 @@ class PPTExtractor:
                         'command': 'quadBezTo',
                         'points': points
                     })
-                
+
                 elif tag == 'arcTo':
                     path_data['commands'].append({
                         'command': 'arcTo',
@@ -1279,7 +1296,7 @@ class PPTExtractor:
                         'stAng': child.get('stAng'),
                         'swAng': child.get('swAng')
                     })
-                
+
                 elif tag == 'close':
                     path_data['commands'].append({
                         'command': 'close'
