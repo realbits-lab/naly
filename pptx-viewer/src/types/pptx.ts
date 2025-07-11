@@ -113,6 +113,8 @@ export interface Shape {
   placeholder_format?: any;
   custom_geometry?: CustomGeometry;
   element?: ShapeElement;
+  auto_shape_type?: string;
+  adjustments?: number[];
 }
 
 export interface SlideData {
