@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
     let sections;
 
     if (search) {
-      sections = await db.searchSections(search);
+      sections = await db.searchSections(search, limit, offset);
     } else if (depth) {
-      sections = await db.getSectionsByDepth(parseInt(depth));
+      sections = await db.getSectionsByDepth(parseInt(depth), limit, offset);
     } else {
       sections = await db.getSections(limit, offset);
     }

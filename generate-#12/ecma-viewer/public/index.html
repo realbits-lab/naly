@@ -32,6 +32,10 @@
         .status-healthy { background: #d4edda; color: #155724; }
         .status-error { background: #f8d7da; color: #721c24; }
         .load-more { text-align: center; padding: 20px; }
+        .pagination-controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 24px; text-align: center; }
+        .pagination-info { margin-bottom: 16px; color: #666; font-size: 14px; }
+        .pagination-buttons { display: flex; gap: 12px; justify-content: center; align-items: center; }
+        .btn-disabled { background: #e9ecef; color: #6c757d; cursor: not-allowed; }
         .depth-1 { background: #fee; color: #c33; }
         .depth-2 { background: #eef; color: #33c; }
         .depth-3 { background: #efe; color: #3c3; }
@@ -108,6 +112,16 @@
                 <button onclick="loadMore()" class="btn btn-outline">Load More</button>
             </div>
         </div>
+
+        <!-- Pagination Controls -->
+        <div id="pagination-controls" class="pagination-controls" style="display: none;">
+            <div id="pagination-info" class="pagination-info"></div>
+            <div class="pagination-buttons">
+                <button id="prev-btn" onclick="previousPage()" class="btn btn-outline">Previous</button>
+                <span id="page-info" style="margin: 0 16px; font-weight: 500;"></span>
+                <button id="next-btn" onclick="nextPage()" class="btn btn-outline">Next</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -116,6 +130,13 @@
         let currentSearch = '';
         let currentDepth = null;
         let hasMore = true;
+        
+        // Pagination state
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalSections = 0;
+        let pageSize = 50;
+        let isPaginating = false;
 
         // Initialize
         async function init() {
@@ -229,9 +250,11 @@
             loadSections(true);
         }
 
-        // Filter by depth
-        function filterDepth(depth) {
+        // Filter by depth with pagination
+        async function filterDepth(depth) {
             currentDepth = depth;
+            currentPage = 1;
+            isPaginating = depth !== null;
             
             // Update button states
             document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
@@ -245,7 +268,106 @@
             activeBtn.classList.add('active');
             activeBtn.classList.remove('btn-outline');
 
-            loadSections(true);
+            if (isPaginating) {
+                await loadSectionsWithPagination();
+            } else {
+                loadSections(true);
+            }
+        }
+
+        // Load sections with pagination
+        async function loadSectionsWithPagination() {
+            const params = new URLSearchParams();
+            params.set('limit', pageSize.toString());
+            params.set('offset', ((currentPage - 1) * pageSize).toString());
+            
+            if (currentSearch) params.set('search', currentSearch);
+            if (currentDepth !== null) params.set('depth', currentDepth.toString());
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('sections-table').style.display = 'none';
+                
+                const response = await fetch(`/api/sections?${params.toString()}`);
+                const data = await response.json();
+                
+                currentSections = data.sections;
+                
+                // Get total count for pagination
+                const countParams = new URLSearchParams();
+                if (currentSearch) countParams.set('search', currentSearch);
+                if (currentDepth !== null) countParams.set('depth', currentDepth.toString());
+                countParams.set('limit', '1');
+                countParams.set('offset', '0');
+                
+                // Use a large limit to get total count (we'll improve this later)
+                const countResponse = await fetch(`/api/sections?${countParams.toString()}&limit=10000`);
+                const countData = await countResponse.json();
+                totalSections = countData.sections.length;
+                totalPages = Math.ceil(totalSections / pageSize);
+                
+                renderSections();
+                updatePaginationUI();
+                
+                // Hide load more button and show pagination
+                document.getElementById('load-more').style.display = 'none';
+                document.getElementById('pagination-controls').style.display = 'block';
+
+            } catch (error) {
+                console.error('Failed to load sections with pagination:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('sections-table').style.display = 'table';
+            }
+        }
+
+        // Update pagination UI
+        function updatePaginationUI() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const pageInfo = document.getElementById('page-info');
+            const paginationInfo = document.getElementById('pagination-info');
+            
+            // Update page info
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+            
+            // Update pagination info
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, totalSections);
+            paginationInfo.textContent = `Showing ${startItem}-${endItem} of ${totalSections.toLocaleString()} sections`;
+            
+            // Update button states
+            if (currentPage <= 1) {
+                prevBtn.classList.add('btn-disabled');
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.classList.remove('btn-disabled');
+                prevBtn.disabled = false;
+            }
+            
+            if (currentPage >= totalPages) {
+                nextBtn.classList.add('btn-disabled');
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.classList.remove('btn-disabled');
+                nextBtn.disabled = false;
+            }
+        }
+
+        // Previous page
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadSectionsWithPagination();
+            }
+        }
+
+        // Next page
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadSectionsWithPagination();
+            }
         }
 
         // Load more

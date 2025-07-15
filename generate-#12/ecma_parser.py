@@ -43,14 +43,18 @@ class EcmaParser:
         self.sections: List[Section] = []
         self.section_hierarchy: Dict[str, str] = {}  # Maps section numbers to parent section numbers
         
-        # Regular expressions for parsing
+        # Regular expressions for parsing - more restrictive patterns
         self.section_patterns = [
-            # Pattern for numbered sections with titles like "20.1.2.2.1  bldChart (Build Chart) .... 2728"
-            r'^(\d+(?:\.\d+){0,4})\s\s+(.+?)(?:\s+\.{3,}\s*(\d+))?$',
-            # Pattern for numbered sections with titles (no page numbers)
-            r'^(\d+(?:\.\d+){0,4})\s\s+(.+?)$',
-            # Pattern for sections with element names in parentheses
-            r'^(\d+(?:\.\d+){0,4})\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]+)\).*?$',
+            # Pattern for main sections like "1.  Scope .... 1"
+            r'^(\d+)\.\s\s+([A-Z][A-Za-z\s]+?)(?:\s+\.{3,}\s*(\d+))?$',
+            # Pattern for subsections like "8.4  WordprocessingML .... 16"
+            r'^(\d+\.\d+)\s\s+([A-Z][A-Za-z\s\-()]+?)(?:\s+\.{3,}\s*(\d+))?$',
+            # Pattern for detailed sections like "11.3.10  Main Document Part .... 432"
+            r'^(\d+\.\d+\.\d+)\s\s+([A-Z][A-Za-z\s\-()]+?)(?:\s+\.{3,}\s*(\d+))?$',
+            # Pattern for deep sections like "17.3.1.1  mirrorIndents .... 232"
+            r'^(\d+\.\d+\.\d+\.\d+)\s\s+([A-Za-z][A-Za-z\s\-()]+?)(?:\s+\.{3,}\s*(\d+))?$',
+            # Pattern for deepest sections like "20.1.2.2.1  bldChart (Build Chart) .... 2728"
+            r'^(\d+\.\d+\.\d+\.\d+\.\d+)\s\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]+)\)(?:\s+\.{3,}\s*(\d+))?$',
         ]
         
         # Pattern to extract page numbers
@@ -117,21 +121,25 @@ class EcmaParser:
                 section_number = match.group(1)
                 
                 # Handle different pattern formats
-                if i == 2:  # Element pattern with parentheses
+                if i == 4:  # Level 5 pattern with parentheses: "20.1.2.2.1  bldChart (Build Chart)"
                     element_name = match.group(2).strip()
                     description = match.group(3).strip()
                     title = f"{element_name} ({description})"
-                    page_ref = None
+                    page_ref = match.group(4) if len(match.groups()) > 3 and match.group(4) else None
                 else:
                     title = match.group(2).strip() if len(match.groups()) > 1 and match.group(2) else ""
                     page_ref = match.group(3) if len(match.groups()) > 2 and match.group(3) else None
                 
-                # Skip standalone section numbers (likely from table of contents)
+                # Skip if title is empty
                 if not title:
                     continue
                 
                 # Skip if title is too short (likely not a real section)
                 if len(title.strip()) < 3:
+                    continue
+                
+                # Validate section number format
+                if not self._is_valid_section_number(section_number):
                     continue
                 
                 return self._create_section(section_number, title, page_ref)

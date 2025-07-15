@@ -13,10 +13,14 @@ def check_and_install_dependencies():
     """Check and install required dependencies"""
     
     dependencies = [
-        ('python-pptx', 'pptx'),
-        ('Pillow', 'PIL'),
-        ('opencv-python', 'cv2'),
-        ('numpy', 'numpy')
+        ('python-pptx>=0.6.21', 'pptx'),
+        ('Pillow>=9.0.0', 'PIL'),
+        ('opencv-python>=4.5.0,<4.10.0', 'cv2'),
+        ('numpy>=1.21.0,<2.0', 'numpy'),
+        ('pdf2image>=1.16.0', 'pdf2image'),
+        ('PyMuPDF>=1.20.0', 'fitz'),
+        ('scikit-image>=0.19.0', 'skimage'),
+        ('comtypes>=1.1.0', 'comtypes')
     ]
     
     print("🔧 Checking dependencies...")
@@ -65,7 +69,33 @@ def check_and_install_dependencies():
         print("❌ python-pptx import failed")
         return False
     
-    print("\n🎉 All dependencies are properly installed!")
+    # Test new feedback loop dependencies
+    try:
+        from pdf2image import convert_from_path
+        print("✅ pdf2image import successful")
+    except ImportError:
+        print("⚠️  pdf2image import failed (PDF conversion may not work)")
+    
+    try:
+        import fitz
+        print("✅ PyMuPDF import successful")
+    except ImportError:
+        print("⚠️  PyMuPDF import failed (PDF processing may not work)")
+    
+    try:
+        from skimage.metrics import structural_similarity
+        print("✅ scikit-image import successful")
+    except ImportError:
+        print("⚠️  scikit-image import failed (advanced image comparison may not work)")
+    
+    try:
+        import comtypes.client
+        print("✅ comtypes import successful")
+    except ImportError:
+        print("⚠️  comtypes import failed (Windows PowerPoint automation not available)")
+    
+    print("\n🎉 All core dependencies are properly installed!")
+    print("⚠️  Some optional dependencies for feedback loop may not be available")
     return True
 
 def test_system():
@@ -90,6 +120,8 @@ if __name__ == "__main__":
             print("\n✨ Setup completed successfully!")
             print("\nYou can now run:")
             print("  python multimodal_chat.py --interactive")
+            print("  python multimodal_chat.py -i image.png -o output.pptx")
+            print("  python multimodal_chat.py -i image.png -o output.pptx --feedback --verbose")
         else:
             print("\n❌ Setup completed but system test failed")
             sys.exit(1)
