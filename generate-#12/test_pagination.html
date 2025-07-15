@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pagination Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .pending { background-color: #fff3cd; }
+        .pagination-demo { margin: 20px 0; padding: 20px; border: 2px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>ECMA-376 Pagination Test</h1>
+    <div id="results"></div>
+    
+    <div class="pagination-demo">
+        <h2>Pagination Demo</h2>
+        <div>
+            <button onclick="testLevel(1)">Test Level 1</button>
+            <button onclick="testLevel(2)">Test Level 2</button>
+            <button onclick="testLevel(3)">Test Level 3</button>
+            <button onclick="testLevel(4)">Test Level 4</button>
+            <button onclick="testLevel(5)">Test Level 5</button>
+        </div>
+        <div id="pagination-results"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const paginationDiv = document.getElementById('pagination-results');
+        
+        function addResult(message, type = 'pending') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+            return div;
+        }
+        
+        async function testPagination() {
+            const tests = [
+                { name: 'API Health Check', url: '/api/health' },
+                { name: 'Database Statistics', url: '/api/stats' },
+                { name: 'Level 1 First Page (50 items)', url: '/api/sections?depth=1&limit=50&offset=0' },
+                { name: 'Level 1 Second Page (50 items)', url: '/api/sections?depth=1&limit=50&offset=50' },
+                { name: 'Level 4 First Page (50 items)', url: '/api/sections?depth=4&limit=50&offset=0' },
+                { name: 'Level 5 All Items', url: '/api/sections?depth=5&limit=50&offset=0' }
+            ];
+            
+            for (const test of tests) {
+                const resultDiv = addResult(`Testing: ${test.name}...`);
+                
+                try {
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const count = data.sections ? data.sections.length : 'N/A';
+                        resultDiv.innerHTML = `✅ ${test.name}: ${count} sections returned`;
+                        resultDiv.className = 'test-result success';
+                    } else {
+                        resultDiv.innerHTML = `❌ ${test.name}: ${data.error || 'Unknown error'}`;
+                        resultDiv.className = 'test-result error';
+                    }
+                } catch (error) {
+                    resultDiv.innerHTML = `❌ ${test.name}: ${error.message}`;
+                    resultDiv.className = 'test-result error';
+                }
+                
+                // Wait a bit between requests
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        async function testLevel(level) {
+            paginationDiv.innerHTML = '<p>Testing pagination for Level ' + level + '...</p>';
+            
+            try {
+                // Test first page
+                const page1 = await fetch(`/api/sections?depth=${level}&limit=50&offset=0`);
+                const data1 = await page1.json();
+                
+                // Test second page
+                const page2 = await fetch(`/api/sections?depth=${level}&limit=50&offset=50`);
+                const data2 = await page2.json();
+                
+                // Get total count
+                const stats = await fetch('/api/stats');
+                const statsData = await stats.json();
+                const totalCount = statsData.depth_distribution[level] || 0;
+                
+                paginationDiv.innerHTML = `
+                    <h3>Level ${level} Pagination Results:</h3>
+                    <p><strong>Total Sections:</strong> ${totalCount}</p>
+                    <p><strong>Expected Pages:</strong> ${Math.ceil(totalCount / 50)}</p>
+                    <p><strong>Page 1 Results:</strong> ${data1.sections ? data1.sections.length : 'Error'}</p>
+                    <p><strong>Page 2 Results:</strong> ${data2.sections ? data2.sections.length : 'Error'}</p>
+                    <p><strong>Status:</strong> ${data1.sections && data2.sections ? 'SUCCESS' : 'ERROR'}</p>
+                `;
+                
+            } catch (error) {
+                paginationDiv.innerHTML = `<p>Error testing Level ${level}: ${error.message}</p>`;
+            }
+        }
+        
+        // Run tests automatically
+        window.onload = () => {
+            testPagination();
+        };
+    </script>
+</body>
+</html>

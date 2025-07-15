@@ -1,0 +1,42 @@
+{
+  "name": "pptx-ai-generator",
+  "version": "1.0.0",
+  "description": "AI-powered PowerPoint shape generator using OpenXML",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "rag": "node rag-system.js",
+    "rag:demo": "node demo-rag.js demo",
+    "rag:interactive": "node demo-rag.js interactive",
+    "rag:test": "node test-rag.js",
+    "rag:process": "node rag-system.js --process-only",
+    "rag:chat": "node rag-system.js --chat-only",
+    "rag:stats": "node rag-system.js --stats",
+    "rag:fast": "node rag-system-fast.js",
+    "rag:fast50": "node rag-system-fast.js 50",
+    "rag:fast200": "node rag-system-fast.js 200",
+    "rag:basic": "node test-basic.js",
+    "rag:simple": "node rag-simple.js",
+    "rag:demo": "node rag-simple.js demo"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^0.0.14",
+    "@langchain/openai": "^0.5.18",
+    "@types/pdf-parse": "^1.1.5",
+    "ai": "^3.0.0",
+    "dotenv": "^16.0.0",
+    "faiss-node": "^0.5.1",
+    "jszip": "^3.10.1",
+    "langchain": "^0.3.29",
+    "pdf-parse": "^1.1.1",
+    "vectordb": "^0.21.1",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

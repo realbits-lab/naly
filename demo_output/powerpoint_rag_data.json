@@ -1,0 +1,62 @@
+{
+  "documents": [
+    {
+      "id": "slide_0_description",
+      "text": "Slide 1: This slide contains various shapes and elements that need to be analyzed by an LLM to provide a meaningful description. The slide includes text, graphics, and formatting elements that contribute to the overall presentation content.",
+      "metadata": {
+        "type": "slide_description",
+        "slide_index": 0,
+        "source_file": "examples/extract/sample_parts/sample1-1.pptx",
+        "pdf_page": 1
+      }
+    },
+    {
+      "id": "slide_0_shape_1",
+      "text": "Here is where this template begins",
+      "metadata": {
+        "type": "shape_text",
+        "slide_index": 0,
+        "shape_index": 1,
+        "shape_type": "PLACEHOLDER (14) (14)",
+        "shape_name": "Google Shape;56;p15",
+        "source_file": "examples/extract/sample_parts/sample1-1.pptx",
+        "pdf_page": 1,
+        "shape_data": {
+          "left": 5032425,
+          "top": 3493438,
+          "width": 3654300,
+          "height": 405600,
+          "xml_content": ""
+        }
+      }
+    },
+    {
+      "id": "slide_0_shape_2",
+      "text": "Design Elements Infographics",
+      "metadata": {
+        "type": "shape_text",
+        "slide_index": 0,
+        "shape_index": 2,
+        "shape_type": "PLACEHOLDER (14) (14)",
+        "shape_name": "Google Shape;57;p15",
+        "source_file": "examples/extract/sample_parts/sample1-1.pptx",
+        "pdf_page": 1,
+        "shape_data": {
+          "left": 5032550,
+          "top": 1244463,
+          "width": 3654300,
+          "height": 2172900,
+          "xml_content": ""
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "created_at": "/Users/thomasjeon/GitHub/@dev.realbits/naly",
+    "total_entries": 3,
+    "entry_types": {
+      "slide_description": 1,
+      "shape_text": 2
+    }
+  }
+}
