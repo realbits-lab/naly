@@ -20,7 +20,8 @@ def check_and_install_dependencies():
         ('pdf2image>=1.16.0', 'pdf2image'),
         ('PyMuPDF>=1.20.0', 'fitz'),
         ('scikit-image>=0.19.0', 'skimage'),
-        ('comtypes>=1.1.0', 'comtypes')
+        ('comtypes>=1.1.0', 'comtypes'),
+        ('openai>=1.12.0', 'openai')
     ]
     
     print("🔧 Checking dependencies...")
@@ -93,6 +94,13 @@ def check_and_install_dependencies():
         print("✅ comtypes import successful")
     except ImportError:
         print("⚠️  comtypes import failed (Windows PowerPoint automation not available)")
+    
+    try:
+        import openai
+        from openai import OpenAI
+        print("✅ OpenAI import successful")
+    except ImportError:
+        print("⚠️  OpenAI import failed (multimodal image comparison not available)")
     
     print("\n🎉 All core dependencies are properly installed!")
     print("⚠️  Some optional dependencies for feedback loop may not be available")

@@ -73,9 +73,21 @@ With verbose feedback analysis:
 python multimodal_chat.py --image path/to/image.png --output result.pptx --feedback --verbose
 ```
 
-Custom iteration count:
+**NEW: OpenAI Multimodal Analysis (Recommended)**
 ```bash
-python multimodal_chat.py --image path/to/image.png --output result.pptx --feedback --max-iterations 5
+# Uses GPT-4 Vision for intelligent image comparison
+python multimodal_chat.py --image path/to/image.png --output result.pptx --feedback --verbose --use-openai
+```
+
+**Traditional Computer Vision Mode**
+```bash
+# Uses traditional CV methods (SSIM, histograms, edge detection)
+python multimodal_chat.py --image path/to/image.png --output result.pptx --feedback --verbose --no-openai
+```
+
+Custom iteration count with OpenAI:
+```bash
+python multimodal_chat.py --image path/to/image.png --output result.pptx --feedback --max-iterations 5 --openai-api-key your_key_here
 ```
 
 ### Interactive Mode
@@ -101,6 +113,9 @@ Then simply provide image paths:
 - `--quiet`, `-q`: Minimal output mode
 - `--feedback`, `-f`: **NEW!** Enable iterative improvement using visual feedback
 - `--max-iterations`, `-m`: Maximum iterations for feedback loop (default: 3)
+- `--use-openai`: **NEW!** Use OpenAI multimodal LLM for image comparison (default: True)
+- `--no-openai`: **NEW!** Disable OpenAI and use traditional computer vision
+- `--openai-api-key`: **NEW!** OpenAI API key (or set OPENAI_API_KEY environment variable)
 
 ### Example Output
 
@@ -119,13 +134,14 @@ python multimodal_chat.py -i photo.png -o result.pptx --verbose
 
 ### NEW: Feedback Loop Example Output
 
+#### Traditional Computer Vision Mode
 ```bash
-python multimodal_chat.py -i photo.png -o result.pptx --feedback --verbose
+python multimodal_chat.py -i photo.png -o result.pptx --feedback --verbose --no-openai
 ```
 
 ```
 🔄 Starting Iterative Improvement Process
-============================================================
+📊 Using traditional computer vision for image comparison
 This will iteratively improve the shape by comparing with the original image
 
 🔄 Iteration 1/3
@@ -141,28 +157,65 @@ This will iteratively improve the shape by comparing with the original image
 🔍 Analyzing differences...
 📊 Similarity Score: 0.65
 💡 Suggestions: The generated shape partially matches the original but could be improved. Missing colors from original: red, yellow
+```
+
+#### NEW: OpenAI Multimodal Analysis Mode
+```bash
+python multimodal_chat.py -i photo.png -o result.pptx --feedback --verbose --use-openai
+```
+
+```
+🔄 Starting Iterative Improvement Process
+🤖 Using OpenAI multimodal LLM for intelligent image comparison
+This will iteratively improve the shape by comparing with the original image
+
+🔄 Iteration 1/3
+----------------------------------------
+📊 Analyzing original image...
+🖼️  Analyzing image: photo.png
+📊 IMAGE ANALYSIS: 1920x1080 pixels, 84% circular shapes detected
+🔍 RECOMMENDATION: Circle shape with red color
+✅ Generated: result.pptx
+
+📄 Converting to PDF...
+🖼️  Converting to PNG...
+🤖 OpenAI multimodal analysis in progress...
+
+🤖 OpenAI MULTIMODAL ANALYSIS:
+============================================================
+SIMILARITY_SCORE: 0.25
+
+SHAPE_FEEDBACK: The generated red circle is too simple compared to the original image which contains complex charts and data visualizations. Consider using multiple shapes or a more complex geometric pattern.
+
+COLOR_FEEDBACK: The red color partially matches the original's color scheme, but the image also contains significant blue, green, and yellow elements that should be incorporated.
+
+OVERALL_FEEDBACK: The single red circle doesn't capture the complexity and information density of the original chart. The original appears to be a business dashboard with multiple data elements.
+
+IMPROVEMENT_SUGGESTIONS: Try a more complex shape type like a star or organic shape to better represent the data complexity. Incorporate multiple colors especially blue and green which are prominent in the original.
+============================================================
+
+🔺 Shape Feedback: The generated red circle is too simple compared to the original image which contains complex charts and data visualizations. Consider using multiple shapes or a more complex geometric pattern.
+🎨 Color Feedback: The red color partially matches the original's color scheme, but the image also contains significant blue, green, and yellow elements that should be incorporated.
+📋 Overall Feedback: The single red circle doesn't capture the complexity and information density of the original chart. The original appears to be a business dashboard with multiple data elements.
+📊 Similarity Score: 0.25
+💡 Suggestions: Try a more complex shape type like a star or organic shape to better represent the data complexity. Incorporate multiple colors especially blue and green which are prominent in the original.
 
 🔄 Iteration 2/3
 ----------------------------------------
 🔄 Regenerating based on feedback...
 🔧 Modified parameters based on feedback:
-   Shape: circle
-   Colors: ['red', 'yellow']
-   Reasoning: Feedback suggests color adjustment: Missing colors from original: red, yellow
+   Shape: star
+   Colors: ['blue', 'green']
+   Reasoning: OpenAI suggests star shape: Try a more complex shape type like a star or organic shape to better represent the data complexity. Incorporate multiple colors especially blue and green which are prominent in the original.
 ✅ Generated: result_iter2.pptx
 
 📄 Converting to PDF...
 🖼️  Converting to PNG...
-🔍 Analyzing differences...
-📊 Similarity Score: 0.87
+🤖 OpenAI multimodal analysis in progress...
+📊 Similarity Score: 0.75
 ⭐ New best result!
-🎉 Satisfactory result achieved!
 
-🏆 Best Result: result_iter2.pptx (Similarity: 0.87)
-
-============================================================
-🎉 Feedback Loop Generation Complete!
-📁 Final Result: result_iter2.pptx
+🏆 Best Result: result_iter2.pptx (Similarity: 0.75)
 ```
 
 ## Intelligent Shape Generation

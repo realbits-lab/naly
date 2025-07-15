@@ -14,6 +14,15 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import tempfile
 import shutil
+import re
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✅ Loaded environment variables from .env file")
+except ImportError:
+    print("Warning: python-dotenv not installed. .env file not loaded.")
 
 try:
     from PIL import Image
@@ -73,7 +82,90 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
     print("Warning: OpenAI not installed. Multimodal image comparison not available.")
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("Warning: Google Gemini not installed. Multimodal analysis with large context not available.")
+
+
+class ECMA376ContextLoader:
+    """Loads relevant ECMA-376 specification sections for DrawingML generation"""
     
+    def __init__(self, ecma_file_path: str = "../generate-#12/ecma-376.md"):
+        self.ecma_file_path = ecma_file_path
+        self.drawingml_sections = {}
+        self._load_drawingml_sections()
+    
+    def _load_drawingml_sections(self):
+        """Load key DrawingML sections from ECMA-376"""
+        try:
+            ecma_path = Path(__file__).parent / self.ecma_file_path
+            with open(ecma_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract custGeom section
+            custgeom_match = re.search(
+                r'custGeom \(Custom Geometry\).*?(?=^\d+\.\d+\.\d+\.\d+|\n20\.\d+\.\d+|\nend note\])',
+                content, re.MULTILINE | re.DOTALL
+            )
+            if custgeom_match:
+                self.drawingml_sections['custGeom'] = custgeom_match.group(0)
+            
+            # Extract path elements section
+            path_elements = ['moveTo', 'lnTo', 'arcTo', 'close', 'cubicBezTo', 'quadBezTo']
+            for element in path_elements:
+                pattern = f'{element} \\([^)]+\\).*?(?=^\\d+\\.\\d+\\.\\d+\\.\\d+|\\n20\\.\\d+\\.\\d+|\\nend note\\])'
+                match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+                if match:
+                    self.drawingml_sections[element] = match.group(0)
+            
+            # Extract guide and adjust value sections
+            guide_elements = ['avLst', 'gdLst', 'pathLst', 'gd', 'pt']
+            for element in guide_elements:
+                pattern = f'{element} \\([^)]+\\).*?(?=^\\d+\\.\\d+\\.\\d+\\.\\d+|\\n20\\.\\d+\\.\\d+|\\nend note\\])'
+                match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+                if match:
+                    self.drawingml_sections[element] = match.group(0)
+                    
+            print(f"✅ Loaded {len(self.drawingml_sections)} ECMA-376 DrawingML sections")
+            
+        except Exception as e:
+            print(f"Warning: Could not load ECMA-376 file: {e}")
+            self.drawingml_sections = {}
+    
+    def get_context_for_shape(self, shape_type: str) -> str:
+        """Get relevant ECMA-376 context for a specific shape type"""
+        context_parts = []
+        
+        # Always include custGeom specification
+        if 'custGeom' in self.drawingml_sections:
+            context_parts.append("=== ECMA-376 Custom Geometry Specification ===")
+            context_parts.append(self.drawingml_sections['custGeom'])
+        
+        # Include relevant path elements
+        path_elements = ['moveTo', 'lnTo', 'close']
+        if shape_type == 'circle':
+            path_elements.append('arcTo')
+        elif shape_type in ['organic', 'star']:
+            path_elements.extend(['cubicBezTo', 'quadBezTo'])
+        
+        for element in path_elements:
+            if element in self.drawingml_sections:
+                context_parts.append(f"=== {element} Element ===")
+                context_parts.append(self.drawingml_sections[element])
+        
+        # Include guide sections
+        guide_elements = ['avLst', 'gdLst', 'pathLst', 'gd', 'pt']
+        for element in guide_elements:
+            if element in self.drawingml_sections:
+                context_parts.append(f"=== {element} Element ===")
+                context_parts.append(self.drawingml_sections[element])
+        
+        return "\n\n".join(context_parts)
+
 
 class ImageAnalyzer:
     """Analyzes input images to extract visual features for shape generation"""
@@ -281,6 +373,12 @@ class ImageAnalyzer:
                     else:
                         recommendations['shape_type'] = 'diamond'
                         recommendations['reasoning'] = f'Low-medium complexity with {total_shapes} shapes suggests diamond'
+                
+                # Check for pie chart characteristics
+                pie_slice_score = self._detect_pie_chart_features(contours, features)
+                if pie_slice_score > 0.5:  # Threshold for pie chart detection
+                    recommendations['shape_type'] = 'pie_slice'
+                    recommendations['reasoning'] = f'Detected pie chart features (score: {pie_slice_score:.2f})'
         else:
             # No contour data - use color and aspect ratio
             if aspect_ratio > 1.5:
@@ -414,6 +512,49 @@ class ImageAnalyzer:
             print(f"Shape extraction failed: {e}")
         
         return edges, contours
+    
+    def _detect_pie_chart_features(self, contours: List[Dict], features: Dict[str, Any]) -> float:
+        """Detect pie chart characteristics in the image
+        
+        Returns a score from 0.0 to 1.0 indicating likelihood of pie chart content
+        """
+        pie_score = 0.0
+        
+        if not contours:
+            return pie_score
+        
+        # Look for wedge/sector shapes
+        wedge_count = 0
+        for contour in contours:
+            vertices = contour.get('vertices', 0)
+            area = contour.get('area', 0)
+            
+            # Pie slices often have 3-5 vertices (sector approximation)
+            if 3 <= vertices <= 5 and area > 1000:
+                pie_score += 0.2
+                wedge_count += 1
+        
+        # Multiple wedge-like shapes suggest pie chart
+        if wedge_count >= 3:
+            pie_score += 0.3
+        elif wedge_count >= 2:
+            pie_score += 0.2
+        
+        # Look for circular arrangement of shapes
+        if len(contours) >= 3:  # Multiple slices
+            pie_score += 0.2
+        
+        # Check aspect ratio (pie charts tend to be roughly circular)
+        aspect_ratio = features.get('aspect_ratio', 1.0)
+        if 0.7 <= aspect_ratio <= 1.3:
+            pie_score += 0.2
+        
+        # Look for central clustering (pie charts have central convergence)
+        total_area = sum(c.get('area', 0) for c in contours)
+        if total_area > 5000:  # Substantial shape content
+            pie_score += 0.1
+        
+        return min(pie_score, 1.0)
 
 
 class ImageBasedShapeDecider:
@@ -477,6 +618,8 @@ class DrawingMLGenerator:
             return self._generate_diamond(colors, style_hints)
         elif shape_type == 'organic':
             return self._generate_organic_shape(image_features, colors, style_hints)
+        elif shape_type == 'pie_slice':
+            return self._generate_pie_slice(colors, style_hints)
         else:
             return self._generate_custom_polygon(image_features, colors, style_hints)
     
@@ -498,17 +641,21 @@ class DrawingMLGenerator:
         <a:custGeom>
             <a:avLst/>
             <a:gdLst>
-                <a:gd name="w" fmla="*/ ss 1 1"/>
-                <a:gd name="h" fmla="*/ ss 1 1"/>
+                <a:gd name="w" fmla="*/ w 1 1"/>
+                <a:gd name="h" fmla="*/ h 1 1"/>
                 <a:gd name="hc" fmla="*/ w 1 2"/>
                 <a:gd name="vc" fmla="*/ h 1 2"/>
+                <a:gd name="r" fmla="*/ w 1 2"/>
             </a:gdLst>
             <a:pathLst>
                 <a:path w="2000000" h="2000000">
                     <a:moveTo>
-                        <a:pt x="2000000" y="1000000"/>
+                        <a:pt x="1000000" y="0"/>
                     </a:moveTo>
-                    <a:arcTo wR="1000000" hR="1000000" stAng="0" swAng="21600000"/>
+                    <a:arcTo wR="1000000" hR="1000000" stAng="0" swAng="5400000"/>
+                    <a:arcTo wR="1000000" hR="1000000" stAng="5400000" swAng="5400000"/>
+                    <a:arcTo wR="1000000" hR="1000000" stAng="10800000" swAng="5400000"/>
+                    <a:arcTo wR="1000000" hR="1000000" stAng="16200000" swAng="5400000"/>
                     <a:close/>
                 </a:path>
             </a:pathLst>
@@ -840,6 +987,79 @@ class DrawingMLGenerator:
                     <a:lnTo>
                         {points_xml}
                     </a:lnTo>
+                    <a:close/>
+                </a:path>
+            </a:pathLst>
+        </a:custGeom>
+        <a:solidFill>
+            <a:srgbClr val="{color}"/>
+        </a:solidFill>
+    </p:spPr>
+</p:sp>'''
+    
+    def _generate_pie_slice(self, colors: List[str], style_hints: Dict[str, Any]) -> str:
+        """Generate a pie chart slice with precise EMU calculations
+        
+        Implements Gemini's recommendations for ECMA-376 specification compliance:
+        - Precise angle calculations in EMU units (1 degree = 60000 EMUs)
+        - Proper custGeom structure with pathLst and arcTo elements
+        - Center point at (1000000, 1000000) with radius calculations
+        """
+        import math
+        
+        color = self._get_rgb_color(colors[0] if colors else 'red')
+        
+        # Pie slice parameters (can be made configurable)
+        start_angle_deg = 0      # Starting angle in degrees
+        sweep_angle_deg = 144    # Sweep angle in degrees (Gemini's example)
+        
+        # Convert to EMU units: 1 degree = 60000 EMUs
+        start_angle_emu = start_angle_deg * 60000
+        sweep_angle_emu = sweep_angle_deg * 60000  # 144 degrees = 8640000 EMUs
+        
+        # Center coordinates and radius in EMU
+        center_x, center_y = 1000000, 1000000
+        radius = 800000
+        
+        # Calculate start point on circle edge
+        start_angle_rad = math.radians(start_angle_deg)
+        start_x = center_x + radius * math.cos(start_angle_rad)
+        start_y = center_y + radius * math.sin(start_angle_rad)
+        
+        return f'''<p:sp>
+    <p:nvSpPr>
+        <p:cNvPr id="2" name="CustomPieSlice"/>
+        <p:cNvSpPr/>
+        <p:nvPr/>
+    </p:nvSpPr>
+    <p:spPr>
+        <a:xfrm>
+            <a:off x="200000" y="200000"/>
+            <a:ext cx="1600000" cy="1600000"/>
+        </a:xfrm>
+        <a:custGeom>
+            <a:avLst>
+                <a:gd name="stAng" fmla="val {start_angle_emu}"/>
+                <a:gd name="swAng" fmla="val {sweep_angle_emu}"/>
+            </a:avLst>
+            <a:gdLst>
+                <a:gd name="w" fmla="*/ w 1 1"/>
+                <a:gd name="h" fmla="*/ h 1 1"/>
+                <a:gd name="hc" fmla="*/ w 1 2"/>
+                <a:gd name="vc" fmla="*/ h 1 2"/>
+                <a:gd name="r" fmla="*/ w 1 2"/>
+                <a:gd name="stX" fmla="val {int(start_x)}"/>
+                <a:gd name="stY" fmla="val {int(start_y)}"/>
+            </a:gdLst>
+            <a:pathLst>
+                <a:path w="2000000" h="2000000">
+                    <a:moveTo>
+                        <a:pt x="{center_x}" y="{center_y}"/>
+                    </a:moveTo>
+                    <a:lnTo>
+                        <a:pt x="{int(start_x)}" y="{int(start_y)}"/>
+                    </a:lnTo>
+                    <a:arcTo wR="{radius}" hR="{radius}" stAng="{start_angle_emu}" swAng="{sweep_angle_emu}"/>
                     <a:close/>
                 </a:path>
             </a:pathLst>
@@ -1571,7 +1791,7 @@ class OpenAIImageComparator:
             
             # Call OpenAI API
             response = self.client.chat.completions.create(
-                model="gpt-4-vision-preview",
+                model="gpt-4o",
                 messages=[
                     {
                         "role": "user",
@@ -1745,30 +1965,203 @@ Be specific and actionable in your feedback."""
         return result
 
 
+class GeminiImageComparator:
+    """Uses Google Gemini's multimodal LLM with large context for image comparison and ECMA-376 specification analysis"""
+    
+    def __init__(self, api_key: str = None):
+        if not GEMINI_AVAILABLE:
+            raise ImportError("Google Gemini library not available. Install with: pip install google-generativeai")
+        
+        # Configure Gemini
+        api_key = api_key or os.getenv('GOOGLE_API_KEY')
+        if not api_key:
+            raise ValueError("Google API key not found. Set GOOGLE_API_KEY environment variable.")
+        
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        
+        # Initialize ECMA-376 context loader
+        self.ecma_loader = ECMA376ContextLoader()
+        
+    def compare_images(self, original_path: str, generated_path: str, shape_type: str = "circle") -> Dict[str, Any]:
+        """Compare images using Gemini with ECMA-376 specification context"""
+        try:
+            # Prepare images
+            original_image = self._load_image(original_path)
+            generated_image = self._load_image(generated_path)
+            
+            # Get ECMA-376 context for this shape type
+            ecma_context = self.ecma_loader.get_context_for_shape(shape_type)
+            
+            # Create comprehensive prompt with ECMA-376 specification
+            prompt = self._create_comparison_prompt_with_ecma(shape_type, ecma_context)
+            
+            # Call Gemini API with large context
+            response = self.model.generate_content([
+                prompt,
+                original_image,
+                generated_image
+            ])
+            
+            # Parse response
+            result = self._parse_gemini_response(response.text)
+            result['similarity_score'] = float(result.get('similarity_score', 0.0))
+            
+            return result
+            
+        except Exception as e:
+            print(f"Gemini image comparison failed: {e}")
+            return {
+                'similarity_score': 0.0,
+                'shape_feedback': f"Gemini comparison failed: {e}",
+                'color_feedback': "Check API key and network connection",
+                'overall_feedback': f"Gemini comparison failed: {e}",
+                'improvement_suggestions': "Falling back to traditional analysis"
+            }
+    
+    def _load_image(self, image_path: str):
+        """Load image for Gemini analysis"""
+        try:
+            if not PIL_AVAILABLE:
+                raise ImportError("PIL required for image loading")
+            
+            from PIL import Image
+            return Image.open(image_path)
+            
+        except Exception as e:
+            raise ValueError(f"Could not load image {image_path}: {e}")
+    
+    def _create_comparison_prompt_with_ecma(self, shape_type: str, ecma_context: str) -> str:
+        """Create comprehensive prompt with ECMA-376 specification context"""
+        return f"""You are an expert in ECMA-376 DrawingML specification and PowerPoint shape generation. 
+
+TASK: Compare the original image with the generated PowerPoint shape image and provide detailed feedback for improving the DrawingML XML generation to better match the original.
+
+ECMA-376 SPECIFICATION CONTEXT:
+{ecma_context}
+
+ANALYSIS INSTRUCTIONS:
+1. Compare the two images semantically and visually
+2. Analyze how well the generated shape represents the original image
+3. Provide specific recommendations using ECMA-376 DrawingML elements
+4. Focus on shape geometry, colors, proportions, and overall visual similarity
+5. Suggest specific DrawingML improvements (path elements, guides, adjust values)
+
+Current shape type being generated: {shape_type}
+
+REQUIRED OUTPUT FORMAT:
+SIMILARITY_SCORE: [0.0-1.0 decimal score]
+
+SHAPE_FEEDBACK: [Detailed analysis of shape geometry, size, proportions, and how to improve using ECMA-376 elements like custGeom, pathLst, moveTo, lnTo, arcTo, etc.]
+
+COLOR_FEEDBACK: [Analysis of color matching and recommendations for solidFill, gradFill, or other color elements]
+
+ECMA_COMPLIANCE: [Assessment of current DrawingML compliance and specific ECMA-376 improvements needed]
+
+OVERALL_FEEDBACK: [Comprehensive assessment of the match quality and key areas for improvement]
+
+IMPROVEMENT_SUGGESTIONS: [Specific actionable recommendations for better shape generation, referencing ECMA-376 elements and best practices]
+
+Be specific about ECMA-376 elements and provide actionable guidance for improving the DrawingML XML generation."""
+
+    def _parse_gemini_response(self, response: str) -> Dict[str, Any]:
+        """Parse Gemini response into structured feedback"""
+        result = {
+            'similarity_score': 0.0,
+            'shape_feedback': '',
+            'color_feedback': '',
+            'ecma_compliance': '',
+            'overall_feedback': '',
+            'improvement_suggestions': ''
+        }
+        
+        try:
+            lines = response.strip().split('\n')
+            current_section = None
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                # Parse similarity score
+                if line.startswith('SIMILARITY_SCORE:'):
+                    score_text = line.split(':', 1)[1].strip()
+                    try:
+                        result['similarity_score'] = float(score_text)
+                    except:
+                        result['similarity_score'] = 0.0
+                
+                # Parse feedback sections
+                elif line.startswith('SHAPE_FEEDBACK:'):
+                    current_section = 'shape_feedback'
+                    result[current_section] = line.split(':', 1)[1].strip()
+                elif line.startswith('COLOR_FEEDBACK:'):
+                    current_section = 'color_feedback'
+                    result[current_section] = line.split(':', 1)[1].strip()
+                elif line.startswith('ECMA_COMPLIANCE:'):
+                    current_section = 'ecma_compliance'
+                    result[current_section] = line.split(':', 1)[1].strip()
+                elif line.startswith('OVERALL_FEEDBACK:'):
+                    current_section = 'overall_feedback'
+                    result[current_section] = line.split(':', 1)[1].strip()
+                elif line.startswith('IMPROVEMENT_SUGGESTIONS:'):
+                    current_section = 'improvement_suggestions'
+                    result[current_section] = line.split(':', 1)[1].strip()
+                elif current_section and line:
+                    # Continue previous section
+                    if result[current_section]:
+                        result[current_section] += " " + line
+                    else:
+                        result[current_section] = line
+                        
+        except Exception as e:
+            result['improvement_suggestions'] = f"Failed to parse Gemini response: {e}. Raw response: {response}"
+        
+        return result
+
+
 class FeedbackLoopGenerator:
     """Orchestrates the iterative improvement process using visual feedback"""
     
-    def __init__(self, template_path: str, max_iterations: int = 3, use_openai: bool = True, openai_api_key: str = None):
+    def __init__(self, template_path: str, max_iterations: int = 3, use_openai: bool = True, use_gemini: bool = False, 
+                 openai_api_key: str = None, gemini_api_key: str = None):
         self.template_path = template_path
         self.max_iterations = max_iterations
         self.ppt_converter = PowerPointConverter()
         self.pdf_converter = PDFToImageConverter()
         self.use_openai = use_openai
+        self.use_gemini = use_gemini
         
         # Choose image comparator based on availability and preference
-        if use_openai and OPENAI_AVAILABLE:
+        if use_gemini and GEMINI_AVAILABLE:
+            try:
+                self.image_comparator = GeminiImageComparator(api_key=gemini_api_key)
+                print("🔮 Using Google Gemini multimodal comparison with ECMA-376 context")
+                self.use_multimodal = True
+            except Exception as e:
+                print(f"⚠️  Gemini setup failed: {e}")
+                print("🔄 Falling back to OpenAI or traditional comparison")
+                self.use_gemini = False
+                self.use_multimodal = False
+        elif use_openai and OPENAI_AVAILABLE:
             try:
                 self.image_comparator = OpenAIImageComparator(api_key=openai_api_key)
                 print("🤖 Using OpenAI multimodal comparison")
+                self.use_multimodal = True
             except Exception as e:
                 print(f"⚠️  OpenAI setup failed: {e}")
                 print("🔄 Falling back to traditional image comparison")
                 self.image_comparator = ImageComparator()
                 self.use_openai = False
+                self.use_multimodal = False
         else:
             self.image_comparator = ImageComparator()
+            self.use_multimodal = False
             if use_openai:
                 print("⚠️  OpenAI not available, using traditional image comparison")
+            if use_gemini:
+                print("⚠️  Gemini not available, using traditional image comparison")
         
         self.base_generator = None
     
@@ -1786,6 +2179,7 @@ class FeedbackLoopGenerator:
         current_pptx = output_path
         best_pptx = output_path
         best_similarity = 0.0
+        current_shape_type = "circle"  # Default, will be updated
         
         for iteration in range(self.max_iterations):
             if verbose:
@@ -1801,6 +2195,8 @@ class FeedbackLoopGenerator:
                     current_pptx = self.base_generator.generate_shape_from_image(
                         original_image_path, current_pptx, verbose=verbose
                     )
+                    # TODO: Capture shape type from generation for better ECMA-376 context
+                    # For now, use circle as default
                 else:
                     # Subsequent iterations: use feedback from comparison
                     if verbose:
@@ -1859,13 +2255,22 @@ class FeedbackLoopGenerator:
                 
                 # Compare with original image
                 if verbose:
-                    if self.use_openai:
+                    if self.use_gemini:
+                        print("🔮 Google Gemini multimodal analysis with ECMA-376 context in progress...")
+                    elif self.use_openai:
                         print("🤖 OpenAI multimodal analysis in progress...")
                     else:
                         print("🔍 Analyzing differences...")
-                comparison_result = self.image_comparator.compare_images(
-                    original_image_path, generated_png
-                )
+                
+                # Call comparison with shape_type for Gemini
+                if hasattr(self.image_comparator, '__class__') and 'Gemini' in self.image_comparator.__class__.__name__:
+                    comparison_result = self.image_comparator.compare_images(
+                        original_image_path, generated_png, shape_type=current_shape_type
+                    )
+                else:
+                    comparison_result = self.image_comparator.compare_images(
+                        original_image_path, generated_png
+                    )
                 
                 # Calculate overall similarity score
                 similarity = self._calculate_overall_similarity(comparison_result)
@@ -1921,6 +2326,14 @@ class FeedbackLoopGenerator:
     
     def _calculate_overall_similarity(self, comparison_result: Dict[str, Any]) -> float:
         """Calculate overall similarity score from comparison results"""
+        
+        # If OpenAI provided a direct similarity score, use it
+        if 'similarity_score' in comparison_result and comparison_result['similarity_score'] is not None:
+            openai_score = comparison_result['similarity_score']
+            if isinstance(openai_score, (int, float)) and 0 <= openai_score <= 1:
+                return float(openai_score)
+        
+        # Fall back to traditional calculation for non-OpenAI comparators
         scores = []
         
         # Structural similarity (most important)
@@ -1980,41 +2393,95 @@ class FeedbackLoopGenerator:
         modified_features = features.copy()
         
         feedback_lower = feedback.lower()
+        recommendations = modified_features.get('shape_recommendations', {})
+        current_shape = recommendations.get('shape_type', 'circle')
         
-        # Analyze feedback for shape type changes
-        if "missing shapes" in feedback_lower or "simpler" in feedback_lower:
-            # Try a more complex shape
-            recommendations = modified_features.get('shape_recommendations', {})
-            current_shape = recommendations.get('shape_type', 'circle')
-            
-            if current_shape == 'circle':
-                recommendations['shape_type'] = 'organic'
-            elif current_shape == 'rectangle':
-                recommendations['shape_type'] = 'star'
-            
-            recommendations['reasoning'] = f"Feedback suggests more complexity: {feedback}"
-            
-        elif "extra shapes" in feedback_lower or "complex" in feedback_lower:
-            # Try a simpler shape
-            recommendations = modified_features.get('shape_recommendations', {})
-            current_shape = recommendations.get('shape_type', 'circle')
-            
-            if current_shape == 'organic':
-                recommendations['shape_type'] = 'circle'
-            elif current_shape == 'star':
-                recommendations['shape_type'] = 'rectangle'
-            
-            recommendations['reasoning'] = f"Feedback suggests simplification: {feedback}"
+        # Handle OpenAI multimodal feedback more intelligently
         
-        # Analyze feedback for color changes
-        if "missing colors" in feedback_lower:
-            # Extract color names from feedback
-            color_words = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'black', 'white']
-            missing_colors = [color for color in color_words if color in feedback_lower]
-            
-            if missing_colors:
-                recommendations = modified_features.get('shape_recommendations', {})
-                recommendations['colors'] = missing_colors[:2]  # Take first 2 colors
+        # 1. Shape type modifications based on feedback
+        if any(word in feedback_lower for word in ['rectangle', 'square', 'box', 'angular']):
+            recommendations['shape_type'] = 'rectangle'
+            recommendations['reasoning'] = f"OpenAI suggests rectangular shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['circle', 'round', 'circular', 'curved']):
+            recommendations['shape_type'] = 'circle'
+            recommendations['reasoning'] = f"OpenAI suggests circular shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['triangle', 'triangular', 'pointed', 'sharp']):
+            recommendations['shape_type'] = 'triangle'
+            recommendations['reasoning'] = f"OpenAI suggests triangular shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['star', 'pointed', 'complex', 'detailed']):
+            recommendations['shape_type'] = 'star'
+            recommendations['reasoning'] = f"OpenAI suggests star shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['organic', 'natural', 'flowing', 'curved']):
+            recommendations['shape_type'] = 'organic'
+            recommendations['reasoning'] = f"OpenAI suggests organic shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['diamond', 'rhombus']):
+            recommendations['shape_type'] = 'diamond'
+            recommendations['reasoning'] = f"OpenAI suggests diamond shape: {feedback}"
+        
+        elif any(word in feedback_lower for word in ['pie', 'slice', 'wedge', 'sector', 'chart']):
+            recommendations['shape_type'] = 'pie_slice'
+            recommendations['reasoning'] = f"OpenAI suggests pie chart shape: {feedback}"
+        
+        # 2. Color modifications based on feedback
+        color_suggestions = []
+        color_mapping = {
+            'red': ['red', 'crimson', 'scarlet', 'burgundy'],
+            'blue': ['blue', 'azure', 'navy', 'cobalt'],
+            'green': ['green', 'emerald', 'forest', 'lime'],
+            'yellow': ['yellow', 'gold', 'amber', 'lemon'],
+            'orange': ['orange', 'tangerine', 'peach', 'coral'],
+            'purple': ['purple', 'violet', 'magenta', 'lavender'],
+            'black': ['black', 'dark', 'charcoal', 'ebony'],
+            'white': ['white', 'ivory', 'cream', 'pearl'],
+            'gray': ['gray', 'grey', 'silver', 'slate']
+        }
+        
+        for color_name, color_words in color_mapping.items():
+            if any(word in feedback_lower for word in color_words):
+                color_suggestions.append(color_name)
+        
+        if color_suggestions:
+            # Remove duplicates while preserving order
+            unique_colors = []
+            for color in color_suggestions:
+                if color not in unique_colors:
+                    unique_colors.append(color)
+            recommendations['colors'] = unique_colors[:2]  # Take first 2
+        
+        # 3. Size modifications based on feedback
+        if any(word in feedback_lower for word in ['larger', 'bigger', 'increase', 'expand']):
+            recommendations['size_hints'] = {'relative_size': 'large'}
+        elif any(word in feedback_lower for word in ['smaller', 'reduce', 'shrink', 'decrease']):
+            recommendations['size_hints'] = {'relative_size': 'small'}
+        elif any(word in feedback_lower for word in ['medium', 'moderate', 'balanced']):
+            recommendations['size_hints'] = {'relative_size': 'medium'}
+        
+        # 4. Style modifications based on feedback
+        if any(word in feedback_lower for word in ['smooth', 'curved', 'rounded', 'soft']):
+            recommendations['style_hints'] = {'edges': 'smooth'}
+        elif any(word in feedback_lower for word in ['sharp', 'angular', 'pointed', 'crisp']):
+            recommendations['style_hints'] = {'edges': 'sharp'}
+        
+        # 5. Fallback: if feedback suggests major changes but no specific shape mentioned
+        if any(word in feedback_lower for word in ['completely different', 'totally wrong', 'entirely', 'drastically']):
+            # Try the opposite of current shape
+            shape_progression = ['circle', 'rectangle', 'triangle', 'star', 'diamond', 'organic', 'pie_slice']
+            current_index = shape_progression.index(current_shape) if current_shape in shape_progression else 0
+            new_index = (current_index + 3) % len(shape_progression)  # Jump to opposite
+            recommendations['shape_type'] = shape_progression[new_index]
+            recommendations['reasoning'] = f"OpenAI suggests major change: {feedback}"
+        
+        # 6. Handle blank/invisible feedback
+        if any(word in feedback_lower for word in ['blank', 'invisible', 'empty', 'white', 'missing']):
+            # Force visible colors and ensure shape is prominent
+            recommendations['colors'] = ['red', 'blue']  # High contrast colors
+            recommendations['size_hints'] = {'relative_size': 'large'}
+            recommendations['reasoning'] = f"OpenAI detected visibility issues: {feedback}"
         
         return modified_features
 
@@ -2079,11 +2546,19 @@ class MultimodalChatGenerator:
         return output_path
     
     def generate_shape_with_feedback(self, image_path: str, output_path: str = "output.pptx", 
-                                   verbose: bool = False, max_iterations: int = 3) -> str:
+                                   verbose: bool = False, max_iterations: int = 3, 
+                                   use_openai: bool = True, use_gemini: bool = False,
+                                   openai_api_key: str = None, gemini_api_key: str = None) -> str:
         """Generate shape with iterative improvement using visual feedback"""
         
         if verbose:
             print("🔄 Starting Feedback Loop Generation")
+            if use_gemini:
+                print("🔮 Using Google Gemini multimodal LLM with ECMA-376 context")
+            elif use_openai:
+                print("🤖 Using OpenAI multimodal LLM for intelligent image comparison")
+            else:
+                print("📊 Using traditional computer vision for image comparison")
             print("This will iteratively improve the shape by comparing with the original image")
             print("=" * 80)
         
@@ -2091,7 +2566,11 @@ class MultimodalChatGenerator:
             # Initialize feedback loop generator
             feedback_generator = FeedbackLoopGenerator(
                 template_path=self.template_path,
-                max_iterations=max_iterations
+                max_iterations=max_iterations,
+                use_openai=use_openai,
+                use_gemini=use_gemini,
+                openai_api_key=openai_api_key,
+                gemini_api_key=gemini_api_key
             )
             
             # Generate with feedback
@@ -2166,6 +2645,16 @@ def main():
                        help="Enable iterative improvement using visual feedback")
     parser.add_argument("--max-iterations", "-m", type=int, default=3,
                        help="Maximum iterations for feedback loop (default: 3)")
+    parser.add_argument("--use-openai", action="store_true", 
+                       help="Use OpenAI multimodal LLM for image comparison")
+    parser.add_argument("--no-openai", action="store_true",
+                       help="Disable OpenAI and use traditional computer vision")
+    parser.add_argument("--openai-api-key", type=str,
+                       help="OpenAI API key (or set OPENAI_API_KEY environment variable)")
+    parser.add_argument("--use-gemini", action="store_true", default=False,
+                       help="Use Google Gemini multimodal LLM with ECMA-376 context (recommended)")
+    parser.add_argument("--gemini-api-key", type=str,
+                       help="Google API key (or set GOOGLE_API_KEY environment variable)")
     
     args = parser.parse_args()
     
@@ -2175,12 +2664,18 @@ def main():
         # Determine verbosity
         verbose = args.verbose and not args.quiet
         
+        # Determine AI model usage
+        use_openai = args.use_openai and not args.no_openai
+        use_gemini = args.use_gemini
+        
         if args.interactive:
             generator.interactive_chat()
         elif args.image:
             if args.feedback:
                 generator.generate_shape_with_feedback(
-                    args.image, args.output, verbose=verbose, max_iterations=args.max_iterations
+                    args.image, args.output, verbose=verbose, max_iterations=args.max_iterations,
+                    use_openai=use_openai, use_gemini=use_gemini,
+                    openai_api_key=args.openai_api_key, gemini_api_key=args.gemini_api_key
                 )
             else:
                 generator.generate_shape_from_image(args.image, args.output, verbose=verbose)

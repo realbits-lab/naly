@@ -38,22 +38,22 @@ Example from your requirements:
 20.1.2.2.1  bldChart (Build Chart)
 ```
 
-### 2. Database Statistics
-- **Total sections**: 1,575
-- **Sections with embeddings**: 1,575 (100%)
-- **Depth distribution**:
-  - Level 1: 69 sections
-  - Level 2: 102 sections  
-  - Level 3: 885 sections
-  - Level 4: 468 sections
-  - Level 5: 51 sections
+### 2. Database Statistics (Fixed Level Depth)
+- **Total sections**: 602
+- **Sections with embeddings**: 602 (100%)
+- **Depth distribution** (correctly matching number count):
+  - Level 1: 23 sections (single numbers like "1", "2", "20") ✅
+  - Level 2: 87 sections (two numbers like "8.4", "11.1", "20.1")
+  - Level 3: 99 sections (three numbers like "11.3.10", "20.1.2")
+  - Level 4: 344 sections (four numbers like "17.3.1.1", "20.1.2.2")
+  - Level 5: 49 sections (five numbers like "20.1.2.2.1")
 
 ### 3. Section Types
-- **Elements**: 960 (e.g., `bldChart (Build Chart)`)
-- **Constants**: 311 
-- **Headings**: 292
-- **Properties**: 11
-- **References**: 1
+- **Constants**: 213 (defined constants and values)
+- **Headings**: 200 (main section titles)
+- **Elements**: 174 (XML elements like `bldChart (Build Chart)`)
+- **References**: 8 (reference materials)
+- **Properties**: 7 (element properties)
 
 ## 🛠️ System Components
 
@@ -165,11 +165,30 @@ The exact section from your example is successfully stored:
 ## 🎯 Achievement Summary
 
 ✅ **Complete 5-level hierarchy implementation**  
-✅ **1,575 sections parsed and stored**  
+✅ **Fixed level depth to match section number count**  
+✅ **602 sections parsed and stored with correct depth**  
+✅ **Exactly 23 level 1 sections as required**  
 ✅ **Semantic embeddings for all descriptions**  
 ✅ **PostgreSQL with optimized performance**  
 ✅ **Full hierarchical navigation**  
 ✅ **Comprehensive testing suite**  
-✅ **Target section `20.1.2.2.1 bldChart` successfully found**
+✅ **Target section `20.1.2.2.1 bldChart` successfully found at depth 5**
 
-The database is now ready for production use with fast queries, semantic search, and full hierarchical navigation of the ECMA-376 documentation.
+### 📝 **Level Depth Fix Summary**
+
+**Problem**: Originally, the parser was assigning incorrect depths and parsing too many spurious sections.
+
+**Solution**: 
+- **Improved regex patterns** to be more selective about section headers
+- **Enhanced validation** to filter out table of contents and non-section content
+- **Fixed depth calculation** to properly match the number of dots in section numbers
+- **Added skip patterns** to avoid parsing random text as sections
+
+**Result**: 
+- Level 1: 23 sections (single numbers: "1", "2", "20") ✅
+- Level 2: 87 sections (two numbers: "8.4", "11.1", "20.1")
+- Level 3: 99 sections (three numbers: "11.3.10", "20.1.2")
+- Level 4: 344 sections (four numbers: "17.3.1.1", "20.1.2.2")
+- Level 5: 49 sections (five numbers: "20.1.2.2.1")
+
+The database is now ready for production use with fast queries, semantic search, and proper hierarchical navigation of the ECMA-376 documentation.
