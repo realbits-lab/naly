@@ -1,0 +1,37 @@
+{
+  "name": "web-diagram",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "@google/generative-ai": "^0.24.1",
+    "@types/d3": "^7.4.3",
+    "@types/fabric": "^5.3.10",
+    "@types/node": "^24.0.14",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "ai": "^4.3.19",
+    "autoprefixer": "^10.4.21",
+    "d3": "^7.9.0",
+    "eslint": "^9.31.0",
+    "eslint-config-next": "^15.4.1",
+    "fabric": "^6.7.0",
+    "mermaid": "^11.9.0",
+    "next": "^15.4.1",
+    "postcss": "^8.5.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3"
+  }
+}
