@@ -146,8 +146,8 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
         canvas.add(fabricObject);
 
         // Add text label if specified
-        if (shape.text && shape.type !== "text") {
-          const text = new fabric.Text(shape.text, {
+        if ((shape.text || shape.label) && shape.type !== "text") {
+          const text = new fabric.Text(shape.text || shape.label, {
             left: (fabricObject.left || 0) + (fabricObject.width || 0) / 2,
             top: (fabricObject.top || 0) + (fabricObject.height || 0) / 2,
             fontSize: 12,
@@ -271,10 +271,12 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
     <div className="flex flex-col h-full">
       <div className="p-4 border-b bg-white">
         <div className="flex items-center space-x-2">
-          <h2 className="text-lg font-semibold">Canvas</h2>
-          <p className="text-sm text-muted-foreground">
-            Your generated diagram will appear here
-          </p>
+          <div>
+            <h2 className="text-lg font-semibold">Canvas</h2>
+            <p className="text-sm text-muted-foreground">
+              Your generated diagram will appear here
+            </p>
+          </div>
         </div>
       </div>
 
