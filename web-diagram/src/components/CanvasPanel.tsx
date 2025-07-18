@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { fabric } from 'fabric'
+import * as fabric from 'fabric'
 import mermaid from 'mermaid'
 
 interface CanvasPanelProps {
@@ -16,6 +16,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
   useEffect(() => {
     if (!canvasRef.current) return
 
+    console.log('Initializing Fabric.js canvas')
     // Initialize Fabric.js canvas
     const canvas = new fabric.Canvas(canvasRef.current, {
       width: 800,
@@ -25,6 +26,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
 
     fabricCanvasRef.current = canvas
     setIsReady(true)
+    console.log('Canvas initialized successfully')
 
     // Initialize Mermaid
     mermaid.initialize({ 
@@ -41,6 +43,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
   useEffect(() => {
     if (!diagram || !fabricCanvasRef.current || !isReady) return
 
+    console.log('CanvasPanel received diagram:', diagram)
     const canvas = fabricCanvasRef.current
     canvas.clear()
 
@@ -48,6 +51,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
     if (diagram.type === 'mermaid') {
       renderMermaidDiagram(diagram.content)
     } else if (diagram.type === 'shapes') {
+      console.log('Rendering shapes diagram with content:', diagram.content)
       renderShapeDiagram(diagram.content)
     } else if (diagram.type === 'flowchart') {
       renderFlowchartDiagram(diagram.content)
@@ -61,7 +65,9 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
       // Convert SVG to Fabric.js object
       fabric.loadSVGFromString(svg, (objects, options) => {
         if (fabricCanvasRef.current) {
-          const group = new fabric.Group(objects, options)
+          // Ensure objects is always an array
+          const groupObjects = Array.isArray(objects) ? objects : [objects]
+          const group = new fabric.Group(groupObjects as any[], options)
           group.set({
             left: 100,
             top: 100,
@@ -78,11 +84,17 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
   }
 
   const renderShapeDiagram = (shapes: any[]) => {
-    if (!fabricCanvasRef.current) return
+    console.log('renderShapeDiagram called with shapes:', shapes)
+    if (!fabricCanvasRef.current) {
+      console.log('No fabric canvas reference')
+      return
+    }
 
     const canvas = fabricCanvasRef.current
+    console.log('Canvas reference found, adding shapes')
     
     shapes.forEach((shape, index) => {
+      console.log('Processing shape:', shape)
       let fabricObject: fabric.Object | null = null
 
       switch (shape.type) {
@@ -130,6 +142,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
       }
 
       if (fabricObject) {
+        console.log('Adding fabric object to canvas:', fabricObject)
         canvas.add(fabricObject)
         
         // Add text label if specified
@@ -149,6 +162,7 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
       }
     })
 
+    console.log('Rendering canvas')
     canvas.renderAll()
   }
 
@@ -264,19 +278,12 @@ export default function CanvasPanel({ diagram }: CanvasPanelProps) {
       
       <div className="flex-1 p-4 overflow-auto">
         <div className="w-full h-full flex items-center justify-center">
-          {!diagram ? (
-            <div className="text-center text-muted-foreground">
-              <p>No diagram generated yet</p>
-              <p className="text-sm mt-2">
-                Start by describing your diagram in the chat panel
-              </p>
-            </div>
-          ) : (
-            <canvas
-              ref={canvasRef}
-              className="border border-gray-300 rounded-lg shadow-sm"
-            />
-          )}
+          <canvas
+            ref={canvasRef}
+            className="border border-gray-300 rounded-lg shadow-sm"
+            width={800}
+            height={600}
+          />
         </div>
       </div>
     </div>
