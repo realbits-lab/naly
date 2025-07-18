@@ -29,6 +29,20 @@ cd examples/extract
 ./test.sh 1-[number]
 ```
 
+### Running Commands in Background
+When running npm commands (like `npm run dev`), add `&` at the end to run them in the background:
+```bash
+npm run dev &
+```
+This allows the development server to continue running while you can execute other commands in the same terminal session.
+
+### Logging Commands to File
+To capture command output to a log file for later inspection:
+```bash
+npm run dev > app.log 2>&1 &
+```
+This redirects both stdout and stderr to `app.log` and runs in the background. Use `tail -f app.log` to monitor logs in real-time.
+
 ## Key Features
 
 ### Testing Framework

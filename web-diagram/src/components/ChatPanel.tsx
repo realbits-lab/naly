@@ -90,8 +90,8 @@ export default function ChatPanel({ onDiagramGenerated }: ChatPanelProps) {
       {/* Header */}
       <div className="p-4 border-b bg-white">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+          <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-1 h-1 text-white" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Diagram Generator</h2>
@@ -107,8 +107,8 @@ export default function ChatPanel({ onDiagramGenerated }: ChatPanelProps) {
         <div className="space-y-6">
           {messages.length === 0 && (
             <div className="text-center py-8">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Welcome to Diagram Generator</h3>
               <p className="text-muted-foreground mb-4">
