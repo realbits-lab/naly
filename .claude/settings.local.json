@@ -79,7 +79,8 @@
       "Bash(npm init:*)",
       "Bash(docker build:*)",
       "Bash(code:*)",
-      "Bash(cursor:*)"
+      "Bash(cursor:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   },

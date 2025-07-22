@@ -129,6 +129,10 @@ out/
 # Model Context Protocol configuration
 .mcp.json
 
+# Claude configuration (local settings only)
+.claude/settings.local.json
+.claude/mcpjson/*.json
+
 # Python
 # Python bytecode cache
 **/__pycache__/
