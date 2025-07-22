@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Generator - AI-Powered Diagram Creator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Shape Generator</h1>
+            <p>Create beautiful diagrams with AI</p>
+        </header>
+        
+        <main class="main-content">
+            <!-- Chat Panel -->
+            <section class="chat-panel">
+                <div class="chat-header">
+                    <h2>💬 Chat</h2>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        <p>Welcome! Describe the shape or diagram you want to create.</p>
+                        <p>Examples:</p>
+                        <ul>
+                            <li>"Create a flowchart for user login process"</li>
+                            <li>"Draw a pie chart showing sales distribution"</li>
+                            <li>"Make an organizational chart for a startup"</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <textarea 
+                        id="promptInput" 
+                        placeholder="Describe your shape or diagram..."
+                        rows="3"
+                    ></textarea>
+                    <button id="sendButton" class="send-button">
+                        <span class="button-text">Send</span>
+                        <span class="loading-spinner" style="display: none;">⏳</span>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Canvas Panel -->
+            <section class="canvas-panel">
+                <div class="canvas-header">
+                    <h2>🖼️ Canvas</h2>
+                    <div class="canvas-controls">
+                        <button id="zoomIn" title="Zoom In">🔍+</button>
+                        <button id="zoomOut" title="Zoom Out">🔍-</button>
+                        <button id="resetZoom" title="Reset Zoom">🔄</button>
+                        <button id="exportShape" title="Export">💾</button>
+                    </div>
+                </div>
+                
+                <div class="canvas-container" id="canvasContainer">
+                    <div class="canvas-content" id="canvasContent">
+                        <div class="empty-state">
+                            <p>Your generated shapes will appear here</p>
+                            <p>Start by entering a prompt in the chat panel</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Powered by Google Gemini AI | Part of PowerPoint Template Generation Framework</p>
+        </footer>
+    </div>
+    
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>⚠️ Error</h3>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
