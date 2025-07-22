@@ -91,7 +91,9 @@ jspm_packages/
 # Environment variables
 .env
 # Environment variable files with suffixes
-.env.*
+.env.local
+.env.develop
+.env.main
 
 # next.js build output
 # Next.js build directory
@@ -118,12 +120,21 @@ out/
 # misc
 # macOS folder metadata
 .DS_Store
+# Windows thumbnail cache
+Thumbs.db
 # SSL certificates and private keys
 *.pem
 
-# vscode
+# IDE
 # Visual Studio Code settings
 .vscode/
+# IntelliJ IDEA settings
+.idea/
+# Vim swap files
+*.swp
+*.swo
+# Backup files
+*~
 
 # mcp
 # Model Context Protocol configuration
@@ -223,3 +234,8 @@ venv.bak/
 
 examples/extract/outputs
 **/~$*
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
