@@ -76,7 +76,10 @@
       "Bash(npm run:*)",
       "Bash(./demo_ppt_rag.sh:*)",
       "Bash(timeout 5 bash -c 'echo -e \"\"n\\nn\"\" | npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --use-npm')",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "Bash(docker build:*)",
+      "Bash(code:*)",
+      "Bash(cursor:*)"
     ],
     "deny": []
   },

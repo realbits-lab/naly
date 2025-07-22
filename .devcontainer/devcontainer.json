@@ -13,9 +13,36 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "anthropic.claude-code",
+        "anysphere.remote-containers",
+        "anysphere.remote-ssh",
+        "arcticicestudio.nord-visual-studio-code",
+        "bierner.markdown-mermaid",
+        "bierner.markdown-preview-github-styles",
+        "bradlc.vscode-tailwindcss",
         "dbaeumer.vscode-eslint",
+        "dotjoshjohnson.xml",
         "esbenp.prettier-vscode",
-        "eamodio.gitlens"
+        "foxundermoon.shell-format",
+        "gxl.git-graph-3",
+        "irongeek.vscode-env",
+        "juanblanco.solidity",
+        "mechatroner.rainbow-csv",
+        "ms-python.autopep8",
+        "ms-python.debugpy",
+        "ms-python.isort",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-keymap",
+        "ms-toolsai.jupyter-renderers",
+        "ms-toolsai.jupyter-cell-tags",
+        "ms-vscode.makefile-tools",
+        "prisma.prisma",
+        "redhat.vscode-yaml",
+        "vector-of-bool.gitflow",
+        "vscodevim.vim",
+        "wekex.jsonlint"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -32,7 +59,9 @@
           "zsh": {
             "path": "zsh"
           }
-        }
+        },
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.formatting.provider": "black"
       }
     }
   },
