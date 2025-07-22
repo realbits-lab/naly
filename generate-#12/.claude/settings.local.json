@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(markitdown:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(psql:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npx:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(chmod:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(pkill:*)",
+      "Bash(ls:*)",
+      "Bash(mv:*)",
+      "Bash(true)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(./test-complete.js)",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_close"
+    ],
+    "deny": []
+  }
+}
