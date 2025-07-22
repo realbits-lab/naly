@@ -17,6 +17,9 @@ const exportBtn = document.getElementById('exportShape');
 // State
 let currentZoom = 1;
 let isGenerating = false;
+let currentPrompt = '';
+let iterationCount = 0;
+const MAX_ITERATIONS = 3;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -49,11 +52,13 @@ function setupEventListeners() {
     });
 }
 
-// Send Message
+// Send Message with Iterative Feedback
 async function handleSend() {
     const prompt = promptInput.value.trim();
     if (!prompt || isGenerating) return;
     
+    currentPrompt = prompt;
+    iterationCount = 0;
     isGenerating = true;
     updateUI(true);
     
@@ -63,24 +68,71 @@ async function handleSend() {
     // Clear input
     promptInput.value = '';
     
+    // Start generation with feedback loop
+    await generateWithFeedback(prompt);
+    
+    isGenerating = false;
+    updateUI(false);
+}
+
+// Generate with Feedback Loop
+async function generateWithFeedback(prompt, previousAnalysis = null) {
     try {
+        iterationCount++;
+        
+        if (iterationCount > MAX_ITERATIONS) {
+            addMessage(`Reached maximum iterations (${MAX_ITERATIONS}). Using best result.`, 'system');
+            return;
+        }
+        
+        // Show iteration status
+        if (iterationCount > 1) {
+            addMessage(`Iteration ${iterationCount}: Regenerating based on feedback...`, 'system');
+        }
+        
+        // Prepare request data
+        const requestData = {
+            prompt,
+            iteration: iterationCount,
+            feedback: previousAnalysis
+        };
+        
         // Call API
         const response = await fetch('/api/generate-shape', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify(requestData)
         });
         
         const data = await response.json();
         
         if (data.success) {
-            // Add assistant message
-            addMessage('Shape generated successfully! Check the canvas.', 'assistant');
-            
             // Render shape
             renderShape(data);
+            
+            // Wait for rendering to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Capture and analyze the shape
+            const analysis = await captureAndAnalyzeShape(data.metadata);
+            
+            if (analysis && !analysis.suitable && analysis.regenerate && iterationCount < MAX_ITERATIONS) {
+                // Show feedback
+                addMessage(`Analysis: Score ${analysis.score}/100. Issues found: ${analysis.feedback.join(', ')}`, 'system');
+                
+                // Regenerate with feedback
+                await generateWithFeedback(prompt, analysis);
+            } else {
+                // Success!
+                const finalScore = analysis ? analysis.score : 100;
+                addMessage(`Shape generated successfully! PowerPoint suitability: ${finalScore}/100`, 'assistant');
+                
+                if (analysis && analysis.suggestions.length > 0) {
+                    addMessage(`Suggestions for manual improvement: ${analysis.suggestions.join('; ')}`, 'system');
+                }
+            }
         } else {
             throw new Error(data.error || 'Failed to generate shape');
         }
@@ -89,9 +141,47 @@ async function handleSend() {
         console.error('Error:', error);
         showError(error.message);
         addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
-    } finally {
-        isGenerating = false;
-        updateUI(false);
+    }
+}
+
+// Capture and Analyze Shape
+async function captureAndAnalyzeShape(metadata) {
+    try {
+        const shapeContainer = canvasContent.querySelector('.shape-container');
+        if (!shapeContainer) {
+            console.warn('No shape container found for analysis');
+            return null;
+        }
+        
+        // Capture the shape using html2canvas
+        const canvas = await html2canvas(shapeContainer, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Higher quality
+            logging: false
+        });
+        
+        // Convert to base64
+        const imageData = canvas.toDataURL('image/png');
+        
+        // Send for analysis
+        const response = await fetch('/api/analyze-shape', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                imageData,
+                metadata
+            })
+        });
+        
+        const analysis = await response.json();
+        return analysis;
+        
+    } catch (error) {
+        console.error('Shape analysis error:', error);
+        // Continue without analysis if it fails
+        return null;
     }
 }
 
@@ -99,7 +189,13 @@ async function handleSend() {
 function addMessage(text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
-    messageDiv.innerHTML = `<p>${escapeHtml(text)}</p>`;
+    
+    if (type === 'system') {
+        messageDiv.innerHTML = `<p><em>${escapeHtml(text)}</em></p>`;
+    } else {
+        messageDiv.innerHTML = `<p>${escapeHtml(text)}</p>`;
+    }
+    
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -122,12 +218,21 @@ function renderShape(data) {
     // Add CSS
     if (data.css) {
         const styleElement = document.createElement('style');
-        styleElement.textContent = data.css.replace(/\.shape/g, `#${uniqueId} .shape`);
+        // Update CSS to use ppt-shape- prefix as per system prompt
+        let processedCSS = data.css;
+        if (!data.css.includes('ppt-shape-')) {
+            processedCSS = data.css.replace(/\.shape/g, '.ppt-shape');
+        }
+        styleElement.textContent = processedCSS.replace(/\.ppt-shape/g, `#${uniqueId} .ppt-shape`);
         document.head.appendChild(styleElement);
     }
     
     // Add HTML
-    shapeContainer.innerHTML = `<div id="${uniqueId}">${data.html}</div>`;
+    let processedHTML = data.html;
+    if (!data.html.includes('ppt-shape')) {
+        processedHTML = data.html.replace(/class="shape/g, 'class="ppt-shape');
+    }
+    shapeContainer.innerHTML = `<div id="${uniqueId}">${processedHTML}</div>`;
     
     // Clear previous shapes (optional - remove if you want to keep history)
     canvasContent.innerHTML = '';
@@ -148,6 +253,15 @@ function renderShape(data) {
     
     // Reset zoom
     resetZoom();
+    
+    // Add iteration indicator if in feedback loop
+    if (iterationCount > 1) {
+        const iterationBadge = document.createElement('div');
+        iterationBadge.className = 'iteration-badge';
+        iterationBadge.textContent = `Iteration ${iterationCount}`;
+        iterationBadge.style.cssText = 'position: absolute; top: 10px; right: 10px; background: #2563eb; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+        shapeContainer.appendChild(iterationBadge);
+    }
 }
 
 // Zoom Functions
@@ -162,46 +276,36 @@ function resetZoom() {
 }
 
 // Export Shape
-function exportShape() {
+async function exportShape() {
     const shapeContainer = canvasContent.querySelector('.shape-container');
     if (!shapeContainer) {
         showError('No shape to export');
         return;
     }
     
-    // Simple implementation - you can enhance this with html2canvas or similar
-    const htmlContent = shapeContainer.innerHTML;
-    const styles = Array.from(document.styleSheets)
-        .map(sheet => {
-            try {
-                return Array.from(sheet.cssRules)
-                    .map(rule => rule.cssText)
-                    .join('\n');
-            } catch (e) {
-                return '';
-            }
-        })
-        .join('\n');
-    
-    const fullHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-    <style>${styles}</style>
-</head>
-<body>
-    ${htmlContent}
-</body>
-</html>`;
-    
-    // Download
-    const blob = new Blob([fullHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `shape-${Date.now()}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+        // Use html2canvas for high-quality export
+        const canvas = await html2canvas(shapeContainer, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            logging: false
+        });
+        
+        // Convert to blob and download
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `powerpoint-shape-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        addMessage('Shape exported as PNG image.', 'system');
+    } catch (error) {
+        console.error('Export error:', error);
+        showError('Failed to export shape');
+    }
 }
 
 // UI Updates
@@ -251,7 +355,7 @@ const examplePrompts = [
 function addExampleButtons() {
     const examplesContainer = document.createElement('div');
     examplesContainer.className = 'example-prompts mt-2';
-    examplesContainer.innerHTML = '<p style="font-size: 0.8rem; color: #666;">Quick examples:</p>';
+    examplesContainer.innerHTML = '<p style="font-size: 0.8rem; color: #666;">Quick examples (optimized for PowerPoint):</p>';
     
     const buttonsDiv = document.createElement('div');
     buttonsDiv.style.display = 'flex';
@@ -286,3 +390,23 @@ function addExampleButtons() {
 
 // Initialize example buttons
 addExampleButtons();
+
+// Add feedback indicator styles
+const style = document.createElement('style');
+style.textContent = `
+.iteration-badge {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.message.system {
+    background-color: #FEF3C7;
+    color: #92400E;
+    font-size: 0.9rem;
+}
+`;
+document.head.appendChild(style);

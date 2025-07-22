@@ -42,10 +42,14 @@ generate-#21/
 
 - **Interactive Chat Panel**: User-friendly interface for entering shape prompts
 - **Smart Prompt Analysis**: Enhances user prompts for better AI comprehension
-- **Gemini AI Integration**: Leverages Google's Gemini 1.5 Pro model for shape generation
+- **Gemini AI Integration**: Leverages Google's Gemini 2.5 Pro model for shape generation
 - **Real-time Canvas Rendering**: Instant visualization of generated shapes
 - **Infographic Style**: Shapes are generated to be visually appealing and informative
 - **Responsive Design**: Works on desktop and mobile devices
+- **🔄 Iterative Feedback Loop**: Automatically analyzes and improves shapes for PowerPoint
+- **📊 PowerPoint Optimization**: Ensures all shapes meet presentation standards
+- **🎯 Visual Quality Analysis**: AI-powered assessment of shape suitability
+- **📸 High-Quality Export**: Export shapes as PNG images for presentations
 
 ## 💻 Installation
 
@@ -104,15 +108,53 @@ The system prompt in `systemPrompts/shapeGeneration.txt` guides Gemini to:
 - "Make a mind map about climate change"
 - "Design a Venn diagram comparing programming languages"
 
+## 🔄 Iterative Feedback System
+
+The shape generator includes an intelligent feedback loop that ensures all generated shapes are optimized for PowerPoint presentations:
+
+### How It Works
+
+1. **Initial Generation**: Creates a shape based on your prompt
+2. **Visual Analysis**: Captures and analyzes the rendered shape
+3. **PowerPoint Suitability Check**: Evaluates against these criteria:
+   - Visual clarity (contrast, text size, boundaries)
+   - Professional appearance (clean design, appropriate colors)
+   - Technical compatibility (scalability, print-friendly)
+   - Content effectiveness (hierarchy, labeling, flow)
+4. **Automatic Improvement**: If score < 70/100, regenerates with specific feedback
+5. **Final Optimization**: Ensures the shape meets all PowerPoint standards
+
+### Scoring System
+
+Each shape is scored out of 100 points:
+- **25 points**: Visual Clarity
+- **25 points**: Professional Appearance  
+- **25 points**: PowerPoint Compatibility
+- **25 points**: Content Effectiveness
+
+Shapes scoring 70+ are considered suitable for presentations.
+
+### Maximum Iterations
+
+The system will iterate up to 3 times to achieve the best result. Each iteration incorporates feedback from the previous analysis to improve:
+- Color contrast
+- Text readability
+- Layout simplicity
+- Professional styling
+- Element sizing
+- Overall clarity
+
 ## 🔌 API Endpoints
 
 ### POST /api/generate-shape
-Generate a shape from a user prompt.
+Generate a shape from a user prompt with optional feedback iteration.
 
 **Request**:
 ```json
 {
-  "prompt": "Create a flowchart for user authentication"
+  "prompt": "Create a flowchart for user authentication",
+  "iteration": 1,
+  "feedback": null
 }
 ```
 
@@ -120,13 +162,47 @@ Generate a shape from a user prompt.
 ```json
 {
   "success": true,
-  "html": "<div class='shape'>...</div>",
-  "css": ".shape { ... }",
+  "html": "<div class='ppt-shape'>...</div>",
+  "css": ".ppt-shape { ... }",
   "js": "// Shape interaction code",
   "enhancedPrompt": "Generate a detailed flowchart...",
   "metadata": {
     "shapeType": "flowchart",
+    "elements": 5,
+    "powerpointReady": true
+  },
+  "iteration": 1
+}
+```
+
+### POST /api/analyze-shape
+Analyze a shape for PowerPoint suitability.
+
+**Request**:
+```json
+{
+  "imageData": "data:image/png;base64,...",
+  "metadata": {
+    "shapeType": "flowchart",
     "elements": 5
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "suitable": true,
+  "score": 85,
+  "feedback": ["Text size could be larger"],
+  "suggestions": ["Increase font size to 16pt"],
+  "regenerate": false,
+  "breakdown": {
+    "clarity": 20,
+    "professional": 23,
+    "compatibility": 22,
+    "effectiveness": 20
   }
 }
 ```
@@ -169,10 +245,35 @@ The system prompt instructs Gemini to:
 
 ## 🧪 Testing
 
-Run tests:
+### Unit Tests
+Run unit tests:
 ```bash
 npm test
 ```
+
+### Feedback System Test
+Test the iterative feedback loop:
+```bash
+# Start the server first
+npm start
+
+# In another terminal, run the feedback test
+npm run test:feedback
+```
+
+This test will:
+1. Generate shapes for various prompts
+2. Analyze them for PowerPoint suitability
+3. Demonstrate the iterative improvement process
+4. Show scoring and feedback details
+
+### Manual Testing
+1. Start the server: `npm start`
+2. Open browser: `http://localhost:3000`
+3. Try prompts like:
+   - "Create a pie chart with small text" (will trigger feedback)
+   - "Draw a flowchart with thin lines" (will trigger feedback)
+   - "Make a professional bar chart" (should pass first time)
 
 Test coverage includes:
 - Prompt analysis accuracy
@@ -180,6 +281,8 @@ Test coverage includes:
 - Shape rendering
 - UI responsiveness
 - Error scenarios
+- Feedback loop iterations
+- PowerPoint optimization
 
 ## 🚧 Future Enhancements
 
