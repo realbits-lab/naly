@@ -3,9 +3,9 @@
  * Handles communication with Google's Gemini AI for shape generation
  */
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const fs = require('fs').promises;
-const path = require('path');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fs = require("fs").promises;
+const path = require("path");
 
 // Initialize Gemini
 let genAI;
@@ -13,36 +13,41 @@ let model;
 
 // Initialize the Gemini client
 function initializeGemini() {
-    if (!process.env.GOOGLE_API_KEY) {
-        throw new Error('GOOGLE_API_KEY environment variable is not set');
-    }
-    
-    genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        generationConfig: {
-            temperature: 0.7,
-            topK: 20,
-            topP: 0.9,
-            maxOutputTokens: 4096,
-        }
-    });
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY environment variable is not set");
+  }
+
+  genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  model = genAI.getGenerativeModel({
+    model: "gemini-2.5-pro", // Using the most capable model
+    generationConfig: {
+      temperature: 0.1,
+      topK: 0.1,
+      topP: 0.1,
+      maxOutputTokens: 32768, // Increased for more complex shapes
+    },
+  });
 }
 
 // Load system prompt
 async function loadSystemPrompt() {
-    try {
-        const promptPath = path.join(__dirname, '..', 'systemPrompts', 'shapeGeneration.txt');
-        return await fs.readFile(promptPath, 'utf-8');
-    } catch (error) {
-        console.warn('System prompt file not found, using default');
-        return getDefaultSystemPrompt();
-    }
+  try {
+    const promptPath = path.join(
+      __dirname,
+      "..",
+      "systemPrompts",
+      "shapeGeneration.txt"
+    );
+    return await fs.readFile(promptPath, "utf-8");
+  } catch (error) {
+    console.warn("System prompt file not found, using default");
+    return getDefaultSystemPrompt();
+  }
 }
 
 // Default system prompt if file is not found
 function getDefaultSystemPrompt() {
-    return `You are an expert at creating beautiful, informative diagrams and shapes using HTML, CSS, and JavaScript.
+  return `You are an expert at creating beautiful, informative diagrams and shapes using HTML, CSS, and JavaScript.
 
 Your task is to generate code that creates visually appealing shapes and diagrams based on user requests.
 
@@ -92,45 +97,44 @@ Remember: The goal is to create shapes that effectively communicate information 
  * @returns {object} Generated shape code and metadata
  */
 async function generateShapeWithGemini(enhancedPrompt) {
-    try {
-        // Initialize if not already done
-        if (!model) {
-            initializeGemini();
-        }
-        
-        // Load system prompt
-        const systemPrompt = await loadSystemPrompt();
-        
-        // Combine system prompt with enhanced user prompt
-        const fullPrompt = `${systemPrompt}
+  try {
+    // Initialize if not already done
+    if (!model) {
+      initializeGemini();
+    }
+
+    // Load system prompt
+    const systemPrompt = await loadSystemPrompt();
+
+    // Combine system prompt with enhanced user prompt
+    const fullPrompt = `${systemPrompt}
 
 USER REQUEST:
 ${enhancedPrompt}
 
 Generate the shape code now:`;
-        
-        // Generate content
-        console.log('Calling Gemini API...');
-        const result = await model.generateContent(fullPrompt);
-        const response = await result.response;
-        const text = response.text();
-        
-        // Parse the response
-        const parsedResponse = parseGeminiResponse(text);
-        
-        return parsedResponse;
-        
-    } catch (error) {
-        console.error('Gemini API Error:', error);
-        
-        // Fallback response for testing/demo
-        if (error.message.includes('API_KEY')) {
-            console.warn('Using fallback response due to missing API key');
-            return getFallbackResponse(enhancedPrompt);
-        }
-        
-        throw error;
+
+    // Generate content
+    console.log("Calling Gemini API...");
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse the response
+    const parsedResponse = parseGeminiResponse(text);
+
+    return parsedResponse;
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+
+    // Fallback response for testing/demo
+    if (error.message.includes("API_KEY")) {
+      console.warn("Using fallback response due to missing API key");
+      return getFallbackResponse(enhancedPrompt);
     }
+
+    throw error;
+  }
 }
 
 /**
@@ -139,38 +143,39 @@ Generate the shape code now:`;
  * @returns {object} Parsed shape data
  */
 function parseGeminiResponse(responseText) {
-    try {
-        // Try to parse as JSON first
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            return {
-                html: parsed.html || '',
-                css: parsed.css || '',
-                js: parsed.js || '',
-                metadata: parsed.metadata || {}
-            };
-        }
-        
-        // Fallback: Extract code blocks
-        const htmlMatch = responseText.match(/```html\n([\s\S]*?)\n```/);
-        const cssMatch = responseText.match(/```css\n([\s\S]*?)\n```/);
-        const jsMatch = responseText.match(/```javascript\n([\s\S]*?)\n```/);
-        
-        return {
-            html: htmlMatch ? htmlMatch[1] : '<div class="shape-error">Failed to parse HTML</div>',
-            css: cssMatch ? cssMatch[1] : '.shape-error { color: red; }',
-            js: jsMatch ? jsMatch[1] : '',
-            metadata: {
-                shapeType: 'unknown',
-                parseMethod: 'fallback'
-            }
-        };
-        
-    } catch (error) {
-        console.error('Error parsing Gemini response:', error);
-        throw new Error('Failed to parse AI response');
+  try {
+    // Try to parse as JSON first
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        html: parsed.html || "",
+        css: parsed.css || "",
+        js: parsed.js || "",
+        metadata: parsed.metadata || {},
+      };
     }
+
+    // Fallback: Extract code blocks
+    const htmlMatch = responseText.match(/```html\n([\s\S]*?)\n```/);
+    const cssMatch = responseText.match(/```css\n([\s\S]*?)\n```/);
+    const jsMatch = responseText.match(/```javascript\n([\s\S]*?)\n```/);
+
+    return {
+      html: htmlMatch
+        ? htmlMatch[1]
+        : '<div class="shape-error">Failed to parse HTML</div>',
+      css: cssMatch ? cssMatch[1] : ".shape-error { color: red; }",
+      js: jsMatch ? jsMatch[1] : "",
+      metadata: {
+        shapeType: "unknown",
+        parseMethod: "fallback",
+      },
+    };
+  } catch (error) {
+    console.error("Error parsing Gemini response:", error);
+    throw new Error("Failed to parse AI response");
+  }
 }
 
 /**
@@ -179,24 +184,24 @@ function parseGeminiResponse(responseText) {
  * @returns {object} Fallback shape data
  */
 function getFallbackResponse(prompt) {
-    const promptLower = prompt.toLowerCase();
-    
-    // Detect shape type from prompt
-    if (promptLower.includes('pie')) {
-        return getPieChartFallback();
-    } else if (promptLower.includes('flow')) {
-        return getFlowchartFallback();
-    } else if (promptLower.includes('bar')) {
-        return getBarChartFallback();
-    } else {
-        return getDefaultShapeFallback();
-    }
+  const promptLower = prompt.toLowerCase();
+
+  // Detect shape type from prompt
+  if (promptLower.includes("pie")) {
+    return getPieChartFallback();
+  } else if (promptLower.includes("flow")) {
+    return getFlowchartFallback();
+  } else if (promptLower.includes("bar")) {
+    return getBarChartFallback();
+  } else {
+    return getDefaultShapeFallback();
+  }
 }
 
 // Fallback shapes
 function getPieChartFallback() {
-    return {
-        html: `
+  return {
+    html: `
 <div class="shape-container">
     <div class="shape-pie-chart">
         <svg viewBox="0 0 200 200" class="pie-svg">
@@ -225,7 +230,7 @@ function getPieChartFallback() {
         </div>
     </div>
 </div>`,
-        css: `
+    css: `
 .shape-container {
     display: flex;
     justify-content: center;
@@ -271,7 +276,7 @@ function getPieChartFallback() {
     height: 20px;
     border-radius: 4px;
 }`,
-        js: `
+    js: `
 // Add interactivity to pie segments
 const segments = document.querySelectorAll('.pie-segment');
 const legendItems = document.querySelectorAll('.legend-item');
@@ -285,17 +290,17 @@ segments.forEach((segment, index) => {
         legendItems[index].style.fontWeight = 'normal';
     });
 });`,
-        metadata: {
-            shapeType: 'piechart',
-            elements: 4,
-            description: 'Interactive pie chart with hover effects'
-        }
-    };
+    metadata: {
+      shapeType: "piechart",
+      elements: 4,
+      description: "Interactive pie chart with hover effects",
+    },
+  };
 }
 
 function getFlowchartFallback() {
-    return {
-        html: `
+  return {
+    html: `
 <div class="shape-container">
     <div class="shape-flowchart">
         <div class="flow-node flow-start">Start</div>
@@ -317,7 +322,7 @@ function getFlowchartFallback() {
         <div class="flow-node flow-end">End</div>
     </div>
 </div>`,
-        css: `
+    css: `
 .shape-container {
     display: flex;
     justify-content: center;
@@ -387,18 +392,18 @@ function getFlowchartFallback() {
     align-items: center;
     gap: 1rem;
 }`,
-        js: '',
-        metadata: {
-            shapeType: 'flowchart',
-            elements: 6,
-            description: 'Simple flowchart with decision branch'
-        }
-    };
+    js: "",
+    metadata: {
+      shapeType: "flowchart",
+      elements: 6,
+      description: "Simple flowchart with decision branch",
+    },
+  };
 }
 
 function getBarChartFallback() {
-    return {
-        html: `
+  return {
+    html: `
 <div class="shape-container">
     <div class="shape-bar-chart">
         <div class="chart-title">Sample Data Visualization</div>
@@ -430,7 +435,7 @@ function getBarChartFallback() {
         </div>
     </div>
 </div>`,
-        css: `
+    css: `
 .shape-container {
     display: flex;
     justify-content: center;
@@ -492,18 +497,18 @@ function getBarChartFallback() {
     color: #666;
     font-weight: 500;
 }`,
-        js: '',
-        metadata: {
-            shapeType: 'barchart',
-            elements: 4,
-            description: 'Animated bar chart with hover effects'
-        }
-    };
+    js: "",
+    metadata: {
+      shapeType: "barchart",
+      elements: 4,
+      description: "Animated bar chart with hover effects",
+    },
+  };
 }
 
 function getDefaultShapeFallback() {
-    return {
-        html: `
+  return {
+    html: `
 <div class="shape-container">
     <div class="shape-default">
         <h3>Shape Generator</h3>
@@ -519,7 +524,7 @@ function getDefaultShapeFallback() {
         </div>
     </div>
 </div>`,
-        css: `
+    css: `
 .shape-container {
     display: flex;
     justify-content: center;
@@ -550,17 +555,17 @@ function getDefaultShapeFallback() {
     height: 200px;
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }`,
-        js: '',
-        metadata: {
-            shapeType: 'placeholder',
-            elements: 1,
-            description: 'Default placeholder shape'
-        }
-    };
+    js: "",
+    metadata: {
+      shapeType: "placeholder",
+      elements: 1,
+      description: "Default placeholder shape",
+    },
+  };
 }
 
 // Export functions
 module.exports = {
-    generateShapeWithGemini,
-    initializeGemini
+  generateShapeWithGemini,
+  initializeGemini,
 };

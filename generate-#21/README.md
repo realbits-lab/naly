@@ -42,7 +42,7 @@ generate-#21/
 
 - **Interactive Chat Panel**: User-friendly interface for entering shape prompts
 - **Smart Prompt Analysis**: Enhances user prompts for better AI comprehension
-- **Gemini AI Integration**: Leverages Google's Gemini model for shape generation
+- **Gemini AI Integration**: Leverages Google's Gemini 1.5 Pro model for shape generation
 - **Real-time Canvas Rendering**: Instant visualization of generated shapes
 - **Infographic Style**: Shapes are generated to be visually appealing and informative
 - **Responsive Design**: Works on desktop and mobile devices
