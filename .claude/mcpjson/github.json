@@ -1,9 +1,0 @@
-{
-  "command": "npx",
-  "args": [
-    "github-mcp-server"
-  ],
-  "env": {
-    "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
-  }
-}
