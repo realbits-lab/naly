@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in with Google</title>
+    <link rel="stylesheet" href="google-login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="logo-section">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-logo">
+                <h1>Sign in</h1>
+                <p>Use your Google Account</p>
+            </div>
+            
+            <form class="login-form" id="loginForm">
+                <div class="input-group">
+                    <input type="email" id="email" required>
+                    <label for="email">Email or phone</label>
+                </div>
+                
+                <div class="forgot-email">
+                    <a href="#">Forgot email?</a>
+                </div>
+                
+                <div class="guest-mode">
+                    <p>Not your computer? Use Guest mode to sign in privately.</p>
+                    <a href="#">Learn more</a>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="#" class="create-account">Create account</a>
+                    <button type="submit" class="next-btn">Next</button>
+                </div>
+            </form>
+            
+            <!-- Alternative: Direct Google Sign-In Button -->
+            <div class="google-signin-section">
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button class="google-signin-btn" id="googleSignIn">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google">
+                    <span>Continue with Google</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="language-selector">
+                <select>
+                    <option>English (United States)</option>
+                </select>
+            </div>
+            
+            <div class="footer-links">
+                <a href="#">Help</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="google-login.js"></script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #202124;
+}
+
+.container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 48px 40px 36px;
+    margin-bottom: 20px;
+}
+
+.logo-section {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.google-logo {
+    width: 88px;
+    height: 30px;
+    margin-bottom: 16px;
+    object-fit: contain;
+}
+
+.logo-section h1 {
+    font-size: 24px;
+    font-weight: 400;
+    margin-bottom: 8px;
+    color: #202124;
+}
+
+.logo-section p {
+    font-size: 16px;
+    color: #5f6368;
+}
+
+.login-form {
+    margin-bottom: 32px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+    border-color: #1a73e8;
+    border-width: 2px;
+    padding: 12px 14px;
+}
+
+.input-group input:focus + label,
+.input-group input:valid + label {
+    transform: translateY(-24px) scale(0.75);
+    color: #1a73e8;
+}
+
+.input-group label {
+    position: absolute;
+    left: 15px;
+    top: 13px;
+    font-size: 16px;
+    color: #5f6368;
+    pointer-events: none;
+    transition: all 0.2s;
+    transform-origin: left top;
+}
+
+.forgot-email {
+    margin-bottom: 24px;
+}
+
+.forgot-email a {
+    color: #1a73e8;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.forgot-email a:hover {
+    text-decoration: underline;
+}
+
+.guest-mode {
+    margin-bottom: 32px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #5f6368;
+}
+
+.guest-mode a {
+    color: #1a73e8;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.guest-mode a:hover {
+    text-decoration: underline;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-account {
+    color: #1a73e8;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.create-account:hover {
+    text-decoration: underline;
+}
+
+.next-btn {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.next-btn:hover {
+    background: #1557b0;
+}
+
+.google-signin-section {
+    margin-top: 32px;
+}
+
+.divider {
+    text-align: center;
+    margin: 24px 0;
+    position: relative;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #dadce0;
+}
+
+.divider span {
+    background: white;
+    padding: 0 16px;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+.google-signin-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    font-weight: 500;
+    color: #3c4043;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.google-signin-btn:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-color: #c8c8c8;
+}
+
+.google-signin-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.language-selector select {
+    border: none;
+    background: transparent;
+    color: #5f6368;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.footer-links {
+    display: flex;
+    gap: 24px;
+}
+
+.footer-links a {
+    color: #5f6368;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+/* iPhone 14 Pro Max specific optimization */
+@media (max-width: 430px) and (max-height: 932px) {
+    body {
+        padding: 20px 0;
+        align-items: flex-start;
+    }
+    
+    .container {
+        padding: 20px 16px;
+        max-width: 398px;
+    }
+    
+    .login-card {
+        padding: 40px 32px 32px;
+        margin-bottom: 16px;
+    }
+    
+    .google-logo {
+        width: 96px;
+        height: 32px;
+        margin-bottom: 20px;
+    }
+    
+    .logo-section h1 {
+        font-size: 22px;
+        margin-bottom: 12px;
+    }
+    
+    .logo-section p {
+        font-size: 15px;
+    }
+    
+    .input-group {
+        margin-bottom: 20px;
+    }
+    
+    .input-group input {
+        padding: 16px 15px;
+        font-size: 16px;
+    }
+    
+    .input-group input:focus {
+        padding: 15px 14px;
+    }
+    
+    .guest-mode {
+        padding: 14px;
+        margin-bottom: 28px;
+        font-size: 13px;
+    }
+    
+    .google-signin-btn {
+        padding: 14px 12px;
+        font-size: 15px;
+    }
+    
+    .google-signin-btn img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .footer {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .footer-links {
+        gap: 20px;
+    }
+}
+
+/* General mobile responsive design */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .login-card {
+        padding: 32px 24px 24px;
+    }
+    
+    .logo-section h1 {
+        font-size: 20px;
+    }
+    
+    .footer {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .footer-links {
+        gap: 16px;
+    }
+}
+
+/* Animation for form validation */
+.input-group.error input {
+    border-color: #d93025;
+    border-width: 2px;
+}
+
+.input-group.error label {
+    color: #d93025;
+}
+
+.error-message {
+    color: #d93025;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-left: 15px;
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.next-btn.loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
