@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Voting Systems Chat</title>
+    <link rel="stylesheet" href="chat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <div class="header-content">
+                <button class="back-btn" onclick="goBack()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="header-info">
+                    <h1>Electronic Voting Systems</h1>
+                    <p>Ask questions about voting system operations</p>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar-circle" id="userAvatar">U</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="chat-main">
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                    <div class="bot-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        <h3>Welcome to Electronic Voting Systems Chat!</h3>
+                        <p>I'm here to help you understand electronic voting systems operations. You can ask me questions or choose from the suggested topics below.</p>
+                    </div>
+                </div>
+
+                <div class="suggested-questions">
+                    <h4>Suggested Questions:</h4>
+                    <div class="question-grid">
+                        <button class="question-btn" onclick="askQuestion(this)" data-question="How does electronic voting ensure ballot security and prevent fraud?">
+                            <span class="question-icon">🔒</span>
+                            <span class="question-text">How does electronic voting ensure ballot security and prevent fraud?</span>
+                        </button>
+                        
+                        <button class="question-btn" onclick="askQuestion(this)" data-question="What are the main components and architecture of an electronic voting system?">
+                            <span class="question-icon">⚙️</span>
+                            <span class="question-text">What are the main components and architecture of an electronic voting system?</span>
+                        </button>
+                        
+                        <button class="question-btn" onclick="askQuestion(this)" data-question="How is voter authentication and identity verification handled in e-voting systems?">
+                            <span class="question-icon">👤</span>
+                            <span class="question-text">How is voter authentication and identity verification handled in e-voting systems?</span>
+                        </button>
+                        
+                        <button class="question-btn" onclick="askQuestion(this)" data-question="What backup and recovery procedures exist for electronic voting system failures?">
+                            <span class="question-icon">💾</span>
+                            <span class="question-text">What backup and recovery procedures exist for electronic voting system failures?</span>
+                        </button>
+                        
+                        <button class="question-btn" onclick="askQuestion(this)" data-question="How are electronic voting results audited and verified for accuracy?">
+                            <span class="question-icon">📊</span>
+                            <span class="question-text">How are electronic voting results audited and verified for accuracy?</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                <div class="bot-avatar">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Ask a question about electronic voting systems..."
+                    rows="1"
+                    maxlength="500"
+                ></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="footer-info">
+                <p>This is a demonstration of electronic voting systems Q&A interface</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="chat.js"></script>
+</body>
+</html>
