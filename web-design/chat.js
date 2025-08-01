@@ -120,7 +120,7 @@ function showBotResponse(userMessage) {
     
     // Check if user asked for FAQ
     if (userMessage.toLowerCase().includes('faq')) {
-        showSuggestedQuestions();
+        showSuggestedQuestions(userMessage);
         return;
     }
     
@@ -239,10 +239,11 @@ function getErrorCodeSolution(errorCode) {
     }
 }
 
-function showSuggestedQuestions() {
+function showSuggestedQuestions(userMessage = '') {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'bot-message message-fade-in';
+    messageDiv.id = 'faq-message';
     
     messageDiv.innerHTML = `
         <div class="bot-avatar">
@@ -254,7 +255,7 @@ function showSuggestedQuestions() {
         </div>
         <div class="message-bubble">
             <p style="margin-bottom: 16px;">Here are the frequently asked questions about electronic voting systems:</p>
-            <div class="question-grid">
+            <div class="question-grid" id="initial-questions">
                 <button class="question-btn" onclick="askQuestion(this)" data-question="How does electronic voting ensure ballot security and prevent fraud?" style="margin-bottom: 8px;">
                     <span class="question-icon">🔒</span>
                     <span class="question-text">How does electronic voting ensure ballot security and prevent fraud?</span>
@@ -269,15 +270,26 @@ function showSuggestedQuestions() {
                     <span class="question-icon">👤</span>
                     <span class="question-text">How is voter authentication and identity verification handled in e-voting systems?</span>
                 </button>
-                
+            </div>
+            
+            <div class="question-grid" id="additional-questions" style="display: none;">
                 <button class="question-btn" onclick="askQuestion(this)" data-question="What backup and recovery procedures exist for electronic voting system failures?" style="margin-bottom: 8px;">
                     <span class="question-icon">💾</span>
                     <span class="question-text">What backup and recovery procedures exist for electronic voting system failures?</span>
                 </button>
                 
-                <button class="question-btn" onclick="askQuestion(this)" data-question="How are electronic voting results audited and verified for accuracy?" style="margin-bottom: 0;">
+                <button class="question-btn" onclick="askQuestion(this)" data-question="How are electronic voting results audited and verified for accuracy?" style="margin-bottom: 8px;">
                     <span class="question-icon">📊</span>
                     <span class="question-text">How are electronic voting results audited and verified for accuracy?</span>
+                </button>
+            </div>
+            
+            <div class="faq-buttons" style="margin-top: 16px; display: flex; gap: 8px;">
+                <button class="faq-action-btn" id="show-more-btn" onclick="showMoreFAQ()" style="padding: 8px 16px; background: #4285f4; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">
+                    Show more FAQ
+                </button>
+                <button class="faq-action-btn" onclick="showDirectAnswer('${userMessage}')" style="padding: 8px 16px; background: #34a853; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">
+                    Show direct answer
                 </button>
             </div>
         </div>
@@ -325,6 +337,54 @@ function goBack() {
     } else {
         window.location.href = 'google-login.html';
     }
+}
+
+function showMoreFAQ() {
+    const additionalQuestions = document.getElementById('additional-questions');
+    const showMoreBtn = document.getElementById('show-more-btn');
+    
+    if (additionalQuestions && showMoreBtn) {
+        additionalQuestions.style.display = 'block';
+        showMoreBtn.style.display = 'none';
+    }
+    
+    scrollToBottom();
+}
+
+function showDirectAnswer(userMessage) {
+    // Remove the FAQ message from the chat
+    const faqMessage = document.getElementById('faq-message');
+    if (faqMessage) {
+        faqMessage.remove();
+    }
+    
+    // Show the direct answer to the user's question without FAQ detection
+    setTimeout(() => {
+        showDirectBotResponse(userMessage);
+    }, 500);
+}
+
+function showDirectBotResponse(userMessage) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'bot-message message-fade-in';
+    
+    // Find matching answer or provide a general response (bypass FAQ detection)
+    let response = findBestResponse(userMessage);
+    
+    messageDiv.innerHTML = `
+        <div class="bot-avatar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="message-bubble">${formatResponse(response.answer)}</div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
 }
 
 // Initialize welcome message animation
